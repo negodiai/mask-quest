@@ -135,14 +135,41 @@
         }
         
         .menu-label {
-            font-size: 14px;
-            font-weight: 600;
-        }
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;  /* светло-серый */
+}
         
         .menu-desc {
             font-size: 11px;
             color: #64748b;
             margin-top: 4px;
+        }  
+      
+        .map-choice-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px;
+            background: #252542;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .map-choice-btn:hover {
+            background: #2d2d54;
+            transform: translateY(-2px);
+        }
+
+        .map-choice-btn i {
+            font-size: 24px;
         }
         
         .page-title {
@@ -637,6 +664,24 @@
             color: #94a3b8;
             font-size: 14px;
             margin-top: 16px;
+        }      
+        
+        /* Анимация для свайпа */
+        .swipe-container {
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        .swipe-transition {
+            transition: transform 0.3s ease;
+        }
+        
+        .swipe-back {
+            transform: translateX(100%);
+        }
+
+        #app {
+            transition: transform 0.3s ease;
+            min-height: 100vh;
         }
     </style>
 </head>
@@ -922,36 +967,35 @@
             </div>
             
             <div class="menu-grid">
-                <button class="menu-item" onclick="navigate('map')">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);"><i class="fas fa-map-marked-alt"></i></div>
-                    <div class="menu-label">Вся карта</div>
-                    <div class="menu-desc">Все ${progress.totalMasks} локаций</div>
-                </button>
-                <button class="menu-item" onclick="navigate('routes')">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"><i class="fas fa-route"></i></div>
-                    <div class="menu-label">Маршруты</div>
-                    <div class="menu-desc">${progress.totalRoutes} маршрутов</div>
-                </button>
-                <button class="menu-item" onclick="navigate('catalog')">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
-                    <div class="menu-label">Каталог</div>
-                    <div class="menu-desc">Список локаций</div>
-                </button>
-                <button class="menu-item" onclick="navigate('activate')">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
-                    <div class="menu-label">Активировать</div>
-                    <div class="menu-desc">Отсканируй маску</div>
-                </button>
-                <button class="menu-item" onclick="navigate('privacy')">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-shield-alt"></i></div>
-                    <div class="menu-label">Политика</div>
-                    <div class="menu-desc">Конфиденциальность</div>
-                </button>
-                <button class="menu-item" onclick="openSupport()">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-headset"></i></div>
-                    <div class="menu-label">Поддержка</div>
-                    <div class="menu-desc">Помощь</div>
-                </button>
+    <button class="menu-item" onclick="showMapChooser()">
+    <div class="menu-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);"><i class="fas fa-map-marked-alt"></i></div>
+    <div class="menu-label">Вся карта</div>
+</button>
+    <button class="menu-item" onclick="navigate('routes')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"><i class="fas fa-route"></i></div>
+        <div class="menu-label">Маршруты</div>
+    </button>
+    <button class="menu-item" onclick="navigate('catalog')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
+        <div class="menu-label">Локации</div>
+    </button>
+    <button class="menu-item" onclick="navigate('activate')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
+        <div class="menu-label">Активировать маску</div>
+    </button>
+    <button class="menu-item" onclick="navigate('achievements')">
+    <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-trophy"></i></div>
+    <div class="menu-label">Достижения</div>
+</button>
+    <button class="menu-item" onclick="openSupport()">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-headset"></i></div>
+        <div class="menu-label">Поддержка</div>
+    </button>
+</div>
+                    
+                                <!-- Политика конфиденциальности внизу -->
+            <div style="text-align: center; margin-top: 5px;">
+                <a href="#" onclick="showPrivacyPopup(); return false;" style="color: #64748b; font-size: 12px; text-decoration: none;">Политика конфиденциальности</a>
             </div>
         </div>
     `;
@@ -1162,6 +1206,23 @@
                 </div>
             `;
         }
+
+                // Рендер страницы достижений (пока пустая)
+        function renderAchievements() {
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Достижения</h1>
+                    <p class="page-subtitle">Ваши награды и прогресс</p>
+                    
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <i class="fas fa-trophy" style="font-size: 64px; color: #3d3d5c; margin-bottom: 20px;"></i>
+                        <p style="color: #64748b;">Скоро здесь появятся достижения!</p>
+                        <p style="color: #64748b; font-size: 13px;">Активируйте больше масок, чтобы получать награды.</p>
+                    </div>
+                </div>
+            `;
+        }
         
         // Рендер карты
         function renderMap() {
@@ -1327,6 +1388,83 @@
             } else {
                 alert('Поддержка: @undergroundmask_support в Telegram');
             }
+        }     
+        
+        // Показать всплывающее окно с политикой конфиденциальности
+        function showPrivacyPopup() {
+            const modalHtml = `
+                <div id="privacy-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 400px;">
+                        <div class="modal-header">
+                            <h2>Политика конфиденциальности</h2>
+                            <button class="close-btn" onclick="closePrivacyPopup()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <div class="privacy-text" style="max-height: 400px; overflow-y: auto;">
+                                <p><strong>НЕГОДЯЙ</strong> — туристический квест по Калининграду.</p>
+                                <br>
+                                <p>Мы собираем только следующие данные:</p>
+                                <ul style="margin-left: 20px; margin-top: 10px;">
+                                    <li>Ваш Telegram ID (для идентификации)</li>
+                                    <li>Геолокацию (только при активации маски)</li>
+                                    <li>Дату и время активации масок</li>
+                                </ul>
+                                <br>
+                                <p>Мы не передаём ваши данные третьим лицам.</p>
+                                <br>
+                                <p>Геолокация используется исключительно для проверки нахождения рядом с маской.</p>
+                                <br>
+                                <p>Вы можете удалить свои данные, написав в поддержку.</p>
+                                <br>
+                                <p><em>Последнее обновление: ${new Date().toLocaleDateString('ru-RU')}</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Закрыть всплывающее окно политики
+        function closePrivacyPopup() {
+            const modal = document.getElementById('privacy-modal');
+            if (modal) modal.remove();
+        }
+
+        // Показать выбор карты
+        function showMapChooser() {
+            const modalHtml = `
+                <div id="map-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2>Выберите карту</h2>
+                            <button class="close-btn" onclick="closeMapChooser()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <button class="map-choice-btn" onclick="openYandexMaps()">
+                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
+                                Яндекс.Карты
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Закрыть окно выбора карты
+        function closeMapChooser() {
+            const modal = document.getElementById('map-modal');
+            if (modal) modal.remove();
+        }
+
+        // Открыть Яндекс.Карты (центр Калининграда)
+        function openYandexMaps() {
+            const url = 'https://yandex.ru/maps/?ll=20.463649,54.679629&z=14';
+            window.open(url, '_blank');
+            closeMapChooser();
         }
         
         // Экранирование HTML
@@ -1340,8 +1478,58 @@
             });
         }
         
+        // === ОБРАБОТЧИК СВАЙПОВ (смахивание вправо для возврата) ===
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        
+        function handleTouchStart(event) {
+            touchStartX = event.changedTouches[0].screenX;
+            touchStartY = event.changedTouches[0].screenY;
+        }
+        
+        function handleTouchEnd(event) {
+            touchEndX = event.changedTouches[0].screenX;
+            touchEndY = event.changedTouches[0].screenY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Если свайп вправо (deltaX > 50) и не слишком по диагонали
+            if (deltaX > 50 && Math.abs(deltaY) < 100) {
+                // Проверяем, не на главной ли мы странице
+                if (currentPage !== 'main') {
+                    // Анимация (опционально)
+                    const appDiv = document.getElementById('app');
+                    if (appDiv) {
+                        appDiv.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            appDiv.style.transform = '';
+                        }, 300);
+                    }
+                    // Возврат на главную
+                    navigate('main');
+                }
+            }
+        }
+        
+        // Добавляем обработчики к контейнеру приложения
+        function enableSwipeToGoBack() {
+            const appDiv = document.getElementById('app');
+            if (appDiv) {
+                // Удаляем старые обработчики, чтобы не дублировать
+                appDiv.removeEventListener('touchstart', handleTouchStart);
+                appDiv.removeEventListener('touchend', handleTouchEnd);
+                // Добавляем новые
+                appDiv.addEventListener('touchstart', handleTouchStart);
+                appDiv.addEventListener('touchend', handleTouchEnd);
+            }
+        }
+
         // Главная функция рендеринга
-        function render() {
+                function render() {
             const appDiv = document.getElementById('app');
             if (!appDiv) return;
             
@@ -1366,6 +1554,9 @@
                 case 'privacy':
                     content = renderPrivacy();
                     break;
+                case 'achievements':
+                    content = renderAchievements();
+                    break;
                 case 'map':
                     content = renderMap();
                     break;
@@ -1374,6 +1565,11 @@
             }
             
             appDiv.innerHTML = content;
+            
+            // Включаем свайп для возврата (кроме главной)
+            if (currentPage !== 'main') {
+                enableSwipeToGoBack();
+            }
         }
         
         // Запускаем приложение
@@ -1391,6 +1587,11 @@
         window.showExtendedMaskInfo = showExtendedMaskInfo;
         window.closeModal = closeModal;
         window.openRouteOnMap = openRouteOnMap;
+window.showMapChooser = showMapChooser;
+window.closeMapChooser = closeMapChooser;
+window.openYandexMaps = openYandexMaps;
+        window.showPrivacyPopup = showPrivacyPopup;
+        window.closePrivacyPopup = closePrivacyPopup;
     </script>
 </body>
 </html>
