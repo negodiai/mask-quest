@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Underground Mask - Калининградский квест</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <!-- Яндекс.Карты API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=5f1366e2-a11d-413e-b05a-165bce31ed4a&lang=ru_RU"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #2d2d44;
+            color: #fff;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #3B82F6;
+            color: #3B82F6;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .card {
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .progress-section {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        
+        .progress-bar-bg {
+            height: 8px;
+            background: #2d2d44;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: #3B82F6;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .menu-item {
+            background: #252542;
+            border: none;
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .menu-item:hover {
+            background: #2d2d54;
+            transform: translateY(-2px);
+        }
+        
+        .menu-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .menu-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .menu-desc {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 16px 0 8px;
+        }
+        
+        .page-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+        
+        .route-card {
+            background: #252542;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .route-image {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .route-image i {
+            font-size: 48px;
+            color: rgba(255,255,255,0.3);
+        }
+        
+        .route-info {
+            padding: 16px;
+        }
+        
+        .route-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .route-description {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        
+        .activate-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        
+        .activate-icon i {
+            font-size: 36px;
+            color: white;
+        }
+        
+        /* Стили для уведомлений */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .toast-success {
+            background: #10B981;
+            color: white;
+        }
+        
+        .toast-error {
+            background: #EF4444;
+            color: white;
+        }
+        
+        .toast-warning {
+            background: #F59E0B;
+            color: white;
+        }
+        
+        .toast-info {
+            background: #3B82F6;
+            color: white;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        .status-message {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background: #1a2e1a;
+            color: #10B981;
+        }
+        
+        .status-error {
+            background: #2e1a1a;
+            color: #EF4444;
+        }
+        
+        .status-info {
+            background: #1a1a2e;
+            color: #3B82F6;
+        }
+        
+        .back-button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 8px 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #252542;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+        }
+        
+        .stat-card.masks .stat-icon {
+            background: linear-gradient(135deg, #10B981, #059669);
+        }
+        
+        .stat-card.routes .stat-icon {
+            background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .stat-icon i {
+            font-size: 20px;
+            color: white;
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        
+        .stat-total {
+            font-size: 11px;
+            color: #3d3d5c;
+            margin-top: 4px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin: 20px 0 16px 0;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 16px;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2d2d44;
+            border-top-color: #3B82F6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 40px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .history-icon {
+            width: 60px;
+            height: 60px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .history-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .history-icon i {
+            font-size: 24px;
+            color: #3d3d5c;
+        }
+        
+        .history-content {
+            flex: 1;
+        }
+        
+        .history-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+        
+        .history-date {
+            font-size: 11px;
+            color: #64748b;
+        }
+        
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .small-btn {
+            padding: 8px 16px;
+            width: auto;
+            font-size: 13px;
+        }
+        
+        .privacy-text {
+            background: #252542;
+            border-radius: 16px;
+            padding: 24px;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+        
+        .mask-image {
+            width: 80px;
+            height: 80px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .mask-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .mask-image i {
+            font-size: 32px;
+            color: #3d3d5c;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .modal-container {
+            background: #1a1a2e;
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .modal-container::-webkit-scrollbar-track {
+            background: #2d2d44;
+        }
+        
+        .modal-container::-webkit-scrollbar-thumb {
+            background: #3B82F6;
+            border-radius: 4px;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #2d2d44;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .modal-content {
+            padding: 20px;
+        }
+        
+        .main-photo {
+            width: 100%;
+            height: 250px;
+            background: #252542;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .main-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .main-photo i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 64px;
+            color: #3B82F6;
+        }
+        
+        .price-block {
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .price-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #10B981;
+        }
+        
+        .price-label {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .action-buttons .btn {
+            flex: 1;
+            padding: 12px;
+        }
+        
+        .gallery-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 12px 0;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .gallery-item {
+            aspect-ratio: 1;
+            background: #252542;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .gallery-item i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 24px;
+            color: #3d3d5c;
+        }
+        
+        .history-text {
+            background: #252542;
+            border-radius: 16px;
+            padding: 20px;
+            line-height: 1.6;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // Конфигурация API
+        const API_BASE = window.location.origin + '/api';
+        
+        // Глобальное состояние
+        let currentPage = 'main';
+        let currentUserId = null;
+        let currentRouteId = null;
+        let appState = {
+            masks: [],
+            routes: [],
+            progress: { activatedMasks: 0, totalMasks: 0, completedRoutes: 0, totalRoutes: 0 },
+            activations: []
+        };
+        
+        // Функция для показа всплывающего уведомления
+        let toastTimeout = null;
+        
+        function showToast(message, type = 'success') {
+            // Удаляем предыдущее уведомление
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
+            
+            // Создаём новое уведомление
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            
+            // Выбираем иконку в зависимости от типа
+            let icon = '';
+            if (type === 'success') {
+                icon = '<i class="fas fa-check-circle" style="font-size: 18px;"></i>';
+            } else if (type === 'error') {
+                icon = '<i class="fas fa-exclamation-circle" style="font-size: 18px;"></i>';
+            } else if (type === 'warning') {
+                icon = '<i class="fas fa-exclamation-triangle" style="font-size: 18px;"></i>';
+            } else {
+                icon = '<i class="fas fa-info-circle" style="font-size: 18px;"></i>';
+            }
+            
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            // Автоматически удаляем через 3 секунды
+            toastTimeout = setTimeout(() => {
+                if (toast && toast.remove) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+        
+        // Получаем userId из Telegram
+        function initTelegram() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                
+                const user = tg.initDataUnsafe?.user;
+                if (user && user.id) {
+                    currentUserId = user.id.toString();
+                }
+            }
+            
+            if (!currentUserId) {
+                currentUserId = 'test_user_' + Date.now();
+            }
+            
+            console.log('User ID:', currentUserId);
+            loadInitialData();
+        }
+        
+        // Загрузка начальных данных
+        async function loadInitialData() {
+            await Promise.all([
+                loadProgress(),
+                loadMasks(),
+                loadRoutes(),
+                loadActivations()
+            ]);
+            render();
+        }
+        
+        async function loadProgress() {
+            try {
+                const res = await fetch(`${API_BASE}/user/progress?userId=${currentUserId}`);
+                const data = await res.json();
+                appState.progress = data;
+            } catch (e) {
+                console.error('Failed to load progress:', e);
+            }
+        }
+        
+        async function loadMasks() {
+            try {
+                const res = await fetch(`${API_BASE}/masks/list`);
+                const data = await res.json();
+                appState.masks = data;
+            } catch (e) {
+                console.error('Failed to load masks:', e);
+            }
+        }
+        
+        async function loadRoutes() {
+            try {
+                const res = await fetch(`${API_BASE}/routes/list?userId=${currentUserId}`);
+                const data = await res.json();
+                appState.routes = data;
+            } catch (e) {
+                console.error('Failed to load routes:', e);
+            }
+        }
+        
+        async function loadActivations() {
+            try {
+                const res = await fetch(`${API_BASE}/user/activations?userId=${currentUserId}`);
+                const data = await res.json();
+                appState.activations = data;
+            } catch (e) {
+                console.error('Failed to load activations:', e);
+            }
+        }
+        
+        // Навигация
+        function navigate(page, params = {}) {
+            currentPage = page;
+            if (params.routeId) currentRouteId = params.routeId;
+            render();
+        }
+        
+        // Активация маски с новыми уведомлениями
+        async function activateMask() {
+            if (!navigator.geolocation) {
+                showToast('Геолокация не поддерживается', 'error');
+                return;
+            }
+            
+            showToast('Определение местоположения...', 'info');
+            
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const tg = window.Telegram?.WebApp;
+                    const user = tg?.initDataUnsafe?.user || {};
+                    
+                    const res = await fetch(`${API_BASE}/masks/activate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: currentUserId,
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            telegramData: {
+                                chatId: user.id,
+                                username: user.username,
+                                firstName: user.first_name
+                            }
+                        })
+                    });
+                    
+                    const result = await res.json();
+                    
+                    if (result.success) {
+    // Успешная активация
+    showToast(`Вы успешно активировали маску!`, 'success');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+    // Показываем контент маски
+    showActivatedMask(result.mask);
+    await loadInitialData();
+} else if (result.error === 'already_activated') {
+    // Уже активирована
+    showToast(`Вы уже активировали эту маску! Ищите следующую.`, 'warning');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+    }
+} else if (result.error === 'too_far') {
+    // Слишком далеко
+    showToast(`Вы слишком далеко (${result.distance}м). Подойдите ближе (в радиусе 30м)`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else if (result.error === 'no_mask_nearby') {
+    // Нет маски рядом
+    showToast(`Рядом нет масок. Подойдите к любой маске в радиусе 30м`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else {
+    showToast(result.message || 'Ошибка активации', 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+}
+                } catch (e) {
+                    console.error('Activation error:', e);
+                    showToast('Ошибка активации. Попробуйте еще раз.', 'error');
+                }
+            }, (error) => {
+                let message = 'Не удалось определить местоположение';
+                if (error.code === error.PERMISSION_DENIED) {
+                    message = 'Разрешите доступ к геолокации в настройках';
+                }
+                showToast(message, 'error');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000
+            });
+        }
+        
+        let lastActivatedMask = null;
+        
+        function showActivatedMask(mask) {
+            lastActivatedMask = mask;
+            const successDiv = document.getElementById('activation-success');
+            const formDiv = document.getElementById('activation-form');
+            if (successDiv && formDiv) {
+                formDiv.classList.add('hidden');
+                successDiv.classList.remove('hidden');
+                
+                document.getElementById('activated-mask-name').innerText = mask.name;
+                document.getElementById('activated-mask-description').innerText = mask.fullDescription || mask.description;
+                
+                const imgHtml = `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; border-radius: 16px; margin-bottom: 16px;"><div style="display: none; background: #1a1a2e; border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 16px;"><i class="fas fa-mask" style="font-size: 48px; color: #3d3d5c;"></i></div>`;
+                const photoContainer = document.getElementById('activated-mask-photo');
+                if (photoContainer) photoContainer.innerHTML = imgHtml;
+            }
+        }
+        
+        function resetActivation() {
+            lastActivatedMask = null;
+            const successDiv = document.getElementById('activation-success');
+            const formDiv = document.getElementById('activation-form');
+            if (successDiv && formDiv) {
+                successDiv.classList.add('hidden');
+                formDiv.classList.remove('hidden');
+            }
+        }
+        
+        // Рендер главного меню
+        function renderMainMenu() {
+    const progress = appState.progress;
+    const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
+    const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
+    
+    return `
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/images/logo.png" alt="НЕГОДЯЙ" style="max-width: 100%; height: auto; width: 200px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <span style="display: none; font-size: 24px; font-weight: 700;">НЕГОДЯЙ</span>
+                </div>
+                <p style="font-size: 14px; color: #64748b; margin-top: 8px;">Туристический квест по Калининграду</p>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span>Активированные маски</span>
+                    <span>${progress.activatedMasks} из ${progress.totalMasks}</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${masksPercent}%; background: #10B981;"></div>
+                </div>
+                <div class="progress-header" style="margin-top: 12px;">
+                    <span>Пройденные маршруты</span>
+                    <span>${progress.completedRoutes} из ${progress.totalRoutes}</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${routesPercent}%; background: #8B5CF6;"></div>
+                </div>
+            </div>
+            
+            <div class="menu-grid">
+                <button class="menu-item" onclick="navigate('map')">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);"><i class="fas fa-map-marked-alt"></i></div>
+                    <div class="menu-label">Вся карта</div>
+                    <div class="menu-desc">Все ${progress.totalMasks} локаций</div>
+                </button>
+                <button class="menu-item" onclick="navigate('routes')">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"><i class="fas fa-route"></i></div>
+                    <div class="menu-label">Маршруты</div>
+                    <div class="menu-desc">${progress.totalRoutes} маршрутов</div>
+                </button>
+                <button class="menu-item" onclick="navigate('catalog')">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
+                    <div class="menu-label">Каталог</div>
+                    <div class="menu-desc">Список локаций</div>
+                </button>
+                <button class="menu-item" onclick="navigate('activate')">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
+                    <div class="menu-label">Активировать</div>
+                    <div class="menu-desc">Отсканируй маску</div>
+                </button>
+                <button class="menu-item" onclick="navigate('privacy')">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-shield-alt"></i></div>
+                    <div class="menu-label">Политика</div>
+                    <div class="menu-desc">Конфиденциальность</div>
+                </button>
+                <button class="menu-item" onclick="openSupport()">
+                    <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-headset"></i></div>
+                    <div class="menu-label">Поддержка</div>
+                    <div class="menu-desc">Помощь</div>
+                </button>
+            </div>
+        </div>
+    `;
+}
+        
+        // Рендер списка маршрутов
+        function renderRoutesList() {
+            if (appState.routes.length === 0) {
+                return `<div class="container"><div class="spinner"></div><p style="text-align: center; color: #64748b;">Загрузка маршрутов...</p></div>`;
+            }
+            
+            let html = `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Маршруты</h1>
+                    <p class="page-subtitle">Выберите маршрут для изучения</p>
+            `;
+            
+            for (const route of appState.routes) {
+                html += `
+                    <div class="route-card" onclick="openRouteOnMap('${route.id}')">
+                        <div class="route-image" style="background-color: ${route.color || '#3B82F6'}">
+                            <i class="fas fa-route"></i>
+                            ${route.isCompleted ? '<div style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-check" style="font-size: 14px; color: white;"></i></div>' : ''}
+                        </div>
+                        <div class="route-info">
+                            <h3 class="route-name">${escapeHtml(route.name)}</h3>
+                            <p class="route-description">${escapeHtml(route.description || '')}</p>
+                            <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+                                <span style="font-size: 12px; color: #64748b;"><i class="fas fa-walking"></i> ${route.distanceKm} км</span>
+                                <span style="font-size: 12px; color: #64748b;"><i class="fas fa-clock"></i> ${route.durationMinutes} мин</span>
+                            </div>
+                            <div class="progress-section" style="padding: 0; background: transparent;">
+                                <div class="progress-header">
+                                    <span>Прогресс</span>
+                                    <span>${route.progressPercent}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${route.progressPercent}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        function renderRouteDetail() {
+            return `<div class="container"><div class="spinner"></div></div>`;
+        }
+        
+        // Рендер каталога
+        function renderCatalog() {
+            const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            
+            let masksHtml = '';
+            for (const mask of appState.masks) {
+                const isActivated = activatedIds.has(mask.id);
+                masksHtml += `
+                    <div class="card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}">
+                        <div style="display: flex; gap: 12px;">
+                            <div class="mask-image">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; height: 100%; object-fit: cover;">
+                                <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)} <span style="font-size: 11px; color: ${isActivated ? '#10B981' : '#64748b'};">${isActivated ? '✓ Активирована' : 'Не активирована'}</span></h4>
+                                <p style="font-size: 13px; color: #64748b; margin: 0 0 12px 0;">${escapeHtml(mask.description || '')}</p>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-secondary small-btn" onclick="openLocation(${mask.latitude}, ${mask.longitude})"><i class="fas fa-map-marker-alt"></i> Локация</button>
+                                    ${mask.isAvailable ? `<button class="btn btn-primary small-btn" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}')"><i class="fas fa-shopping-cart"></i> Купить</button>` : ''}
+                                    <button class="btn btn-secondary small-btn" onclick="showSimpleMaskInfo('${mask.id}')"><i class="fas fa-info-circle"></i> Инфо</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Каталог масок</h1>
+                    <p class="page-subtitle">Все ${appState.masks.length} локаций Калининграда</p>
+                    ${masksHtml}
+                </div>
+            `;
+        }
+        
+        // Рендер активации
+        function renderActivate() {
+            const progress = appState.progress;
+            
+            let historyHtml = '';
+            for (const act of appState.activations.slice(0, 20)) {
+                const mask = act.mask;
+                if (!mask) continue;
+                const date = new Date(act.activatedAt);
+                const formattedDate = date.toLocaleDateString('ru-RU');
+                historyHtml += `
+                    <div class="history-item">
+                        <div class="history-icon">
+                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; height: 100%; object-fit: cover;">
+                            <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
+                        </div>
+                        <div class="history-content">
+                            <h4 class="history-name">${escapeHtml(mask.name)}</h4>
+                            <p class="history-date"><i class="fas fa-calendar"></i> ${formattedDate}</p>
+                        </div>
+                        <div class="history-actions">
+                            ${mask.isAvailable ? `<button class="btn btn-primary small-btn" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}')">Купить</button>` : ''}
+                            <button class="btn btn-secondary small-btn" onclick="showExtendedMaskInfo('${mask.id}')">Инфо</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (historyHtml === '') {
+                historyHtml = '<p style="text-align: center; color: #64748b; padding: 40px;">Вы еще не активировали ни одной маски</p>';
+            }
+            
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    
+                    <div style="text-align: center; padding-top: 20px;">
+                        <div class="activate-icon">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <h1 class="page-title">Активировать маску</h1>
+                        <p class="page-subtitle">Подойдите к маске на расстояние 30 метров и нажмите кнопку ниже</p>
+                        
+                        <div id="activation-form">
+                            <button class="btn btn-primary" onclick="activateMask()" style="margin-bottom: 20px;">
+                                <i class="fas fa-location-arrow"></i> Отправить геолокацию
+                            </button>
+                        </div>
+                        
+                        <div id="activation-success" class="hidden" style="background: #252542; border-radius: 20px; padding: 24px; text-align: left;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                                <i class="fas fa-check-circle" style="font-size: 28px; color: #10B981;"></i>
+                                <h3 style="margin: 0;">Маска активирована!</h3>
+                            </div>
+                            <div id="activated-mask-photo"></div>
+                            <h4 id="activated-mask-name" style="font-size: 20px; margin: 0 0 12px 0;"></h4>
+                            <p id="activated-mask-description" style="font-size: 14px; color: #94a3b8; line-height: 1.6;"></p>
+                            <button class="btn btn-secondary" onclick="resetActivation(); loadInitialData();" style="margin-top: 16px;">Продолжить</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-cards" style="margin-top: 20px;">
+                        <div class="stat-card masks">
+                            <div class="stat-icon">
+                                <i class="fas fa-mask"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">${progress.activatedMasks}</span>
+                                <span class="stat-label">Масок активировано</span>
+                                <span class="stat-total">из ${progress.totalMasks}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card routes">
+                            <div class="stat-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-value">${progress.completedRoutes}</span>
+                                <span class="stat-label">Маршрутов пройдено</span>
+                                <span class="stat-total">из ${progress.totalRoutes}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="section-title">История активаций</h2>
+                    ${historyHtml}
+                </div>
+            `;
+        }
+        
+        // Рендер политики
+        function renderPrivacy() {
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Политика конфиденциальности</h1>
+                    
+                    <div class="privacy-text">
+                        <p><strong>Underground Mask</strong> — туристический квест по Калининграду.</p>
+                        <br>
+                        <p>Мы собираем только следующие данные:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Ваш Telegram ID (для идентификации)</li>
+                            <li>Геолокацию (только при активации маски)</li>
+                            <li>Дату и время активации масок</li>
+                        </ul>
+                        <br>
+                        <p>Мы не передаём ваши данные третьим лицам.</p>
+                        <br>
+                        <p>Геолокация используется исключительно для проверки нахождения рядом с маской.</p>
+                        <br>
+                        <p>Вы можете удалить свои данные, написав в поддержку.</p>
+                        <br>
+                        <p><em>Последнее обновление: ${new Date().toLocaleDateString('ru-RU')}</em></p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Рендер карты
+        function renderMap() {
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Карта масок</h1>
+                    <div style="background: #252542; border-radius: 16px; padding: 40px; text-align: center;">
+                        <i class="fas fa-map-marked-alt" style="font-size: 48px; color: #3B82F6; margin-bottom: 16px;"></i>
+                        <p>Для просмотра карты перейдите по ссылке:</p>
+                        <a href="https://yandex.ru/maps/?ll=20.463649,54.679629&z=14" target="_blank" style="color: #3B82F6;">Открыть Яндекс.Карты</a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Открыть локацию на карте
+        function openLocation(lat, lng) {
+            window.open(`https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`, '_blank');
+        }
+        
+        // Открыть маршрут на карте
+        function openRouteOnMap(routeId) {
+            const route = appState.routes.find(r => r.id === routeId);
+            if (!route) {
+                alert('Маршрут не найден');
+                return;
+            }
+            
+            const lat = route.centerLat || 54.679629;
+            const lng = route.centerLng || 20.463649;
+            const zoom = route.zoom || 14;
+            
+            const url = `https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`;
+            window.open(url, '_blank');
+        }
+        
+        function openMapForRoute(lat, lng) {
+            if (lat && lng) {
+                window.open(`https://yandex.ru/maps/?pt=${lng},${lat}&z=16&l=map`, '_blank');
+            } else {
+                window.open(`https://yandex.ru/maps/?ll=20.463649,54.679629&z=14`, '_blank');
+            }
+        }
+        
+        // Покупка маски
+        function buyMask(maskName) {
+            const message = `Привет! Хочу купить маску "${maskName}"`;
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.openTelegramLink(`https://t.me/undergroundmask_shop?text=${encodeURIComponent(message)}`);
+            } else {
+                alert(`Для покупки маски "${maskName}" напишите в Telegram: @undergroundmask_shop`);
+            }
+        }
+        
+        // Простая информация о маске (для каталога)
+        function showSimpleMaskInfo(maskId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            if (!mask) return;
+            
+            const modalHtml = `
+                <div id="info-modal" class="modal-overlay">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h2>${escapeHtml(mask.name)}</h2>
+                            <button class="close-btn" onclick="closeModal()">&times;</button>
+                        </div>
+                        <div class="modal-content">
+                            <div class="main-photo">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <i class="fas fa-mask" style="display: none;"></i>
+                            </div>
+                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary" onclick="openLocation(${mask.latitude}, ${mask.longitude}); closeModal();"><i class="fas fa-directions"></i> Маршрут</button>
+                                ${mask.isAvailable ? `<button class="btn btn-primary" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();"><i class="fas fa-shopping-cart"></i> Купить ${mask.price?.amount || '15 000'}₽</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        // Расширенная информация о маске (для активированных)
+        function showExtendedMaskInfo(maskId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            if (!mask) return;
+            
+            let galleryHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                galleryHtml += `
+                    <div class="gallery-item">
+                        <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <i class="fas fa-image" style="display: none;"></i>
+                    </div>
+                `;
+            }
+            
+            const historyText = `Кафедральный собор в Калининграде — выдающийся памятник северной готической архитектуры XIV в., ставший настоящим культурным и философским символом города. Длина здания 88,5 м, высота его самой высокой остроконечной башни — около 51 м: собор невелик. Это — один из немногих сохранившихся образцов кирпичной готики в России. Его строительство началось почти через 80 лет после основания Кёнигсберга рыцарями Тевтонского ордена. Церковь возводили из местного материала — обожженного кирпича, что определило теплый, насыщенно-красноватый цвет здания.
+
+Бывший храм отличается классическими для Средневековья архитектурными решениями. Его изюминка — ассиметричный, строгий и выразительный двухбашенный фасад. По горизонтали он визуально разделен штукатурными поясами, а по вертикали — арочными стрельчатыми проемами разных размеров.
+
+Северная башня завершается треугольным фронтоном, а круглую южную венчает шпиль, на котором установлен флюгер. Фасад ее украшен часами-курантами — точной копией тех, что были установлены тут в XVII в, но до наших дней не дожили. Промежуток между башнями заполняет ажурный щипец. Внутри собора — восстановленные элементы сводов с росписями, витражи и трибуны для органа. Парадный вход украшает готическая арка.
+
+Побывать в соборе будет интересно не только тем, кого завораживает Средневековье и интересует немецкий период истории города. Сегодня этот памятник архитектуры — настоящее арт-пространство. В его стенах открыты музеи с оригинальными экспозициями, любителей музыки ждет большой концертный зал с главным действующим органным комплексом страны. Здесь проводятся выставки и конференции, фестивали и экскурсии.
+
+Одновременно это место памяти Иммануила Канта — его могила расположена у северо-восточной стены собора. Великому ученому и уроженцу города посвящена экспозиция одного из музеев, а потому здесь непременно стоит побывать всем почитателям его философии. Есть в соборе и часовни для верующих — евангелистская и православная.`;
+            
+            const modalHtml = `
+                <div id="info-modal" class="modal-overlay">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h2>${escapeHtml(mask.name)}</h2>
+                            <button class="close-btn" onclick="closeModal()">&times;</button>
+                        </div>
+                        <div class="modal-content">
+                            <div class="main-photo">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <i class="fas fa-mask" style="display: none;"></i>
+                            </div>
+                            
+                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
+                            
+                            <div class="price-block">
+                                <div class="price-value">${mask.price?.amount || '15 000'} ₽</div>
+                                <div class="price-label">стоимость маски</div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();"><i class="fas fa-shopping-cart"></i> Купить</button>
+                                <button class="btn btn-secondary" onclick="openLocation(${mask.latitude}, ${mask.longitude}); closeModal();"><i class="fas fa-directions"></i> Построить маршрут</button>
+                            </div>
+                            
+                            <div class="gallery-title">📸 Фотогалерея</div>
+                            <div class="gallery">
+                                ${galleryHtml}
+                            </div>
+                            
+                            <div class="gallery-title">📖 Историческая справка</div>
+                            <div class="history-text">
+                                ${historyText}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        // Закрыть модальное окно
+        function closeModal() {
+            const modal = document.getElementById('info-modal');
+            if (modal) modal.remove();
+        }
+        
+        // Открыть поддержку
+        function openSupport() {
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.openTelegramLink('https://t.me/undergroundmask_support');
+            } else {
+                alert('Поддержка: @undergroundmask_support в Telegram');
+            }
+        }
+        
+        // Экранирование HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Главная функция рендеринга
+        function render() {
+            const appDiv = document.getElementById('app');
+            if (!appDiv) return;
+            
+            let content = '';
+            
+            switch (currentPage) {
+                case 'main':
+                    content = renderMainMenu();
+                    break;
+                case 'routes':
+                    content = renderRoutesList();
+                    break;
+                case 'route-detail':
+                    content = renderRouteDetail();
+                    break;
+                case 'catalog':
+                    content = renderCatalog();
+                    break;
+                case 'activate':
+                    content = renderActivate();
+                    break;
+                case 'privacy':
+                    content = renderPrivacy();
+                    break;
+                case 'map':
+                    content = renderMap();
+                    break;
+                default:
+                    content = renderMainMenu();
+            }
+            
+            appDiv.innerHTML = content;
+        }
+        
+        // Запускаем приложение
+        initTelegram();
+        
+        // Делаем функции глобальными
+        window.navigate = navigate;
+        window.activateMask = activateMask;
+        window.resetActivation = resetActivation;
+        window.openLocation = openLocation;
+        window.openMapForRoute = openMapForRoute;
+        window.buyMask = buyMask;
+        window.openSupport = openSupport;
+        window.showSimpleMaskInfo = showSimpleMaskInfo;
+        window.showExtendedMaskInfo = showExtendedMaskInfo;
+        window.closeModal = closeModal;
+        window.openRouteOnMap = openRouteOnMap;
+    </script>
+</body>
+</html>
