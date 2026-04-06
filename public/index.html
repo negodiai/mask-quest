@@ -683,12 +683,58 @@
             transition: transform 0.3s ease;
             min-height: 100vh;
         }
+
+                #app {
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            will-change: transform;
+        }
+
+                /* Для анимации свайпа */
+        #app {
+            overflow-x: hidden;
+        }
+
+                /* Кнопка "Наверх" */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background: rgba(100, 116, 139, 0.7);
+            backdrop-filter: blur(4px);
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .scroll-top-btn:hover {
+            transform: scale(1.05);
+            background: rgba(100, 116, 139, 0.9);
+        }
+        
+        .scroll-top-btn.show {
+            display: flex;
+        }
     </style>
 </head>
 <body>
-    <div id="app">
+        <div id="app">
         <div class="spinner"></div>
     </div>
+    
+    <!-- Кнопка "Наверх" -->
+    <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
 
     <script>
         // Конфигурация API
@@ -1306,6 +1352,26 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Добавляем проверку прокрутки для модального окна
+            setTimeout(() => {
+                const modal = document.getElementById('info-modal');
+                if (modal) {
+                    modal.addEventListener('scroll', function() {
+                        const btn = document.getElementById('scrollTopBtn');
+                        if (!btn) return;
+                        if (modal.scrollTop > 300) {
+                            btn.classList.add('show');
+                            btn.onclick = () => {
+                                modal.scrollTo({ top: 0, behavior: 'smooth' });
+                            };
+                        } else {
+                            btn.classList.remove('show');
+                            btn.onclick = () => scrollToTop();
+                        }
+                    });
+                }
+            }, 100);
         }
         
         // Расширенная информация о маске (для активированных)
@@ -1490,7 +1556,7 @@
             touchStartY = event.changedTouches[0].screenY;
         }
         
-        function handleTouchEnd(event) {
+                function handleTouchEnd(event) {
             touchEndX = event.changedTouches[0].screenX;
             touchEndY = event.changedTouches[0].screenY;
             
@@ -1501,32 +1567,109 @@
             if (deltaX > 50 && Math.abs(deltaY) < 100) {
                 // Проверяем, не на главной ли мы странице
                 if (currentPage !== 'main') {
-                    // Анимация (опционально)
-                    const appDiv = document.getElementById('app');
-                    if (appDiv) {
-                        appDiv.style.transform = 'translateX(100%)';
-                        setTimeout(() => {
-                            appDiv.style.transform = '';
-                        }, 300);
-                    }
-                    // Возврат на главную
-                    navigate('main');
+                    // Сохраняем текущий HTML перед переходом
+                    const currentHtml = document.getElementById('app').innerHTML;
+                    const nextPage = 'main';
+                    const nextHtml = (() => {
+                        // Временный рендер главной страницы
+                        const savedPage = currentPage;
+                        currentPage = nextPage;
+                        const html = renderMainMenu();
+                        currentPage = savedPage;
+                        return html;
+                    })();
+                    
+                    // Создаём контейнер для анимации
+                    const container = document.getElementById('app');
+                    const oldDiv = document.createElement('div');
+                    const newDiv = document.createElement('div');
+                    
+                    oldDiv.innerHTML = currentHtml;
+                    newDiv.innerHTML = nextHtml;
+                    
+                    oldDiv.style.position = 'absolute';
+                    oldDiv.style.top = '0';
+                    oldDiv.style.left = '0';
+                    oldDiv.style.width = '100%';
+                    oldDiv.style.minHeight = '100vh';
+                    oldDiv.style.transition = 'transform 0.3s ease';
+                    oldDiv.style.transform = 'translateX(0)';
+                    
+                    newDiv.style.position = 'absolute';
+                    newDiv.style.top = '0';
+                    newDiv.style.left = '0';
+                    newDiv.style.width = '100%';
+                    newDiv.style.minHeight = '100vh';
+                    newDiv.style.transition = 'transform 0.3s ease';
+                    newDiv.style.transform = 'translateX(-100%)'; // Начинаем слева (за экраном)
+                    
+                    container.style.position = 'relative';
+                    container.style.minHeight = '100vh';
+                    container.innerHTML = '';
+                    container.appendChild(newDiv);
+                    container.appendChild(oldDiv);
+                    
+                    // Запускаем анимацию через 10мс для гарантии
+                    setTimeout(() => {
+                        oldDiv.style.transform = 'translateX(100%)';  // Старый уезжает вправо
+                        newDiv.style.transform = 'translateX(0)';      // Новый приезжает слева
+                    }, 10);
+                    
+                    // После анимации переходим на главную страницу
+                    setTimeout(() => {
+                        navigate('main');
+                        container.style.position = '';
+                        container.style.minHeight = '';
+                    }, 300);
                 }
             }
         }
         
         // Добавляем обработчики к контейнеру приложения
-        function enableSwipeToGoBack() {
+                function enableSwipeToGoBack() {
             const appDiv = document.getElementById('app');
             if (appDiv) {
-                // Удаляем старые обработчики, чтобы не дублировать
                 appDiv.removeEventListener('touchstart', handleTouchStart);
                 appDiv.removeEventListener('touchend', handleTouchEnd);
-                // Добавляем новые
                 appDiv.addEventListener('touchstart', handleTouchStart);
                 appDiv.addEventListener('touchend', handleTouchEnd);
             }
         }
+
+                // === КНОПКА "НАВЕРХ" ===
+        
+        let scrollTimeout = null;
+        
+        function checkScroll() {
+            const btn = document.getElementById('scrollTopBtn');
+            if (!btn) return;
+            
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            // Показываем кнопку ТОЛЬКО если прокрутили больше 300px
+            if (scrollY > 300) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
+        
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Добавляем обработчик прокрутки
+        window.addEventListener('scroll', function() {
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(checkScroll, 50);
+        });
+        
+        // Вызываем проверку при загрузке и при изменении размера
+        window.addEventListener('load', checkScroll);
+        window.addEventListener('resize', checkScroll);
 
         // Главная функция рендеринга
                 function render() {
@@ -1566,6 +1709,17 @@
             
             appDiv.innerHTML = content;
             
+            // Сбрасываем проверку прокрутки при смене страницы
+            setTimeout(() => {
+                const btn = document.getElementById('scrollTopBtn');
+                if (btn) {
+                    btn.classList.remove('show');
+                }
+                // Принудительно скроллим наверх при смене страницы
+                window.scrollTo(0, 0);
+                checkScroll();
+            }, 100);
+            
             // Включаем свайп для возврата (кроме главной)
             if (currentPage !== 'main') {
                 enableSwipeToGoBack();
@@ -1592,6 +1746,7 @@ window.closeMapChooser = closeMapChooser;
 window.openYandexMaps = openYandexMaps;
         window.showPrivacyPopup = showPrivacyPopup;
         window.closePrivacyPopup = closePrivacyPopup;
+                window.scrollToTop = scrollToTop;
     </script>
 </body>
 </html>
