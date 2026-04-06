@@ -243,8 +243,8 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 14px 20px;
-            border-radius: 50px;
+            padding: 12px 24px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -253,8 +253,9 @@
             z-index: 2000;
             animation: slideDown 0.3s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            max-width: 90%;
+            max-width: 85%;
             text-align: center;
+            white-space: nowrap;
         }
         
         .toast-success {
@@ -724,6 +725,173 @@
         .scroll-top-btn.show {
             display: flex;
         }
+
+                               /* Кнопка фильтра в маршрутах */
+        .filter-btn {
+            background: transparent;
+            border: none;
+            border-radius: 30px;
+            width: 40px;
+            height: 40px;
+            color: #94a3b8;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .filter-btn.filter-all {
+            color: #ffffff;
+        }
+        
+        .filter-btn.filter-completed {
+            color: #10B981;
+        }
+        
+        .filter-btn.filter-uncompleted {
+            color: #64748b;
+        }
+        
+        .route-header-with-filter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .route-header-with-filter h1 {
+            margin: 0;
+        }
+
+                /* Кликабельная карточка */
+        .clickable-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .clickable-card:hover {
+            transform: translateY(-2px);
+            background: #2d2d54;
+        }
+
+                                       /* Маленькие кнопки в модальном окне */
+        .action-buttons-small {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        
+        .btn-small {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .btn-success-small {
+            background: #10B981;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px 20px;
+        }
+        
+        .btn-success-small .btn-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-success-small i {
+            font-size: 16px;
+        }
+        
+        .btn-success-small .price-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .btn-secondary-small {
+            background: #2d2d44;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .btn-secondary-small:hover {
+            background: #3d3d5c;
+        }
+
+                .btn-success-small {
+            background: #10B981;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-align: center;
+        }
+        
+        .btn-success-small i {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        
+        .btn-success-small .price-text {
+            font-size: 11px;
+            opacity: 0.9;
+            font-weight: normal;
+        }
+        
+        .btn-success-small span {
+            display: block;
+        }
+
+                /* Принудительные стили для кнопки Купить */
+        .btn-success-small {
+            background: #10B981 !important;
+            color: white !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            text-align: center !important;
+            padding: 10px 20px !important;
+        }
+        
+        .btn-success-small .btn-top-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+        }
+        
+        .btn-success-small i {
+            font-size: 16px !important;
+            margin: 0 !important;
+        }
+        
+        .btn-success-small .price-text {
+            font-size: 11px !important;
+            opacity: 0.9 !important;
+            font-weight: normal !important;
+            display: block !important;
+        }
     </style>
 </head>
 <body>
@@ -750,6 +918,8 @@
             progress: { activatedMasks: 0, totalMasks: 0, completedRoutes: 0, totalRoutes: 0 },
             activations: []
         };
+                let currentFilter = 'all'; // all, completed, uncompleted
+                        let currentMaskFilter = 'all'; // all, activated, notactivated
         
         // Функция для показа всплывающего уведомления
         let toastTimeout = null;
@@ -862,6 +1032,34 @@
                 console.error('Failed to load activations:', e);
             }
         }
+
+                // Функция для получения отфильтрованных маршрутов
+        function getFilteredRoutes() {
+            if (currentFilter === 'all') {
+                return appState.routes;
+            } else if (currentFilter === 'completed') {
+                return appState.routes.filter(route => route.isCompleted === true);
+            } else if (currentFilter === 'uncompleted') {
+                return appState.routes.filter(route => route.isCompleted === false);
+            }
+            return appState.routes;
+        }
+        
+        // Функция для переключения фильтра
+        function cycleFilter() {
+            if (currentFilter === 'all') {
+                currentFilter = 'completed';
+                showToast('Показаны пройденные маршруты', 'info');
+            } else if (currentFilter === 'completed') {
+                currentFilter = 'uncompleted';
+                showToast('Показаны непройденные маршруты', 'info');
+            } else if (currentFilter === 'uncompleted') {
+                currentFilter = 'all';
+                showToast('Показаны все маршруты', 'info');
+            }
+            renderRoutesList();
+            render(); // Перерисовываем страницу
+        }
         
         // Навигация
         function navigate(page, params = {}) {
@@ -912,7 +1110,7 @@
     await loadInitialData();
 } else if (result.error === 'already_activated') {
     // Уже активирована
-    showToast(`Вы уже активировали эту маску! Ищите следующую.`, 'warning');
+    showToast(`Вы уже активировали эту маску!`, 'warning');
     if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
     }
@@ -924,7 +1122,7 @@
     }
 } else if (result.error === 'no_mask_nearby') {
     // Нет маски рядом
-    showToast(`Рядом нет масок. Подойдите к любой маске в радиусе 30м`, 'error');
+    showToast(`Рядом нет масок!`, 'error');
     if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
     }
@@ -1023,7 +1221,7 @@
     </button>
     <button class="menu-item" onclick="navigate('catalog')">
         <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
-        <div class="menu-label">Локации</div>
+        <div class="menu-label">Каталог масок</div>
     </button>
     <button class="menu-item" onclick="navigate('activate')">
         <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
@@ -1048,21 +1246,64 @@
 }
         
         // Рендер списка маршрутов
-        function renderRoutesList() {
-            if (appState.routes.length === 0) {
-                return `<div class="container"><div class="spinner"></div><p style="text-align: center; color: #64748b;">Загрузка маршрутов...</p></div>`;
+                        function renderRoutesList() {
+            const filteredRoutes = getFilteredRoutes();
+            
+            // Текст на кнопке фильтра
+            let filterText = '';
+            if (currentFilter === 'all') filterText = 'Все';
+            else if (currentFilter === 'completed') filterText = 'Пройдены';
+            else if (currentFilter === 'uncompleted') filterText = 'Не пройдены';
+            
+            if (filteredRoutes.length === 0) {
+                return `
+                    <div class="container">
+                        <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                                                <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Выбери маршрут</h1>
+                            <button class="filter-btn filter-${currentFilter}" onclick="cycleFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                        <div class="progress-section" style="margin-bottom: 20px;">
+                            <div class="progress-header">
+                                <span>Общий прогресс по маршрутам</span>
+                                <span>${appState.progress.completedRoutes} из ${appState.progress.totalRoutes}</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${appState.progress.totalRoutes > 0 ? (appState.progress.completedRoutes / appState.progress.totalRoutes * 100) : 0}%; background: #8B5CF6;"></div>
+                            </div>
+                        </div>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет маршрутов в этом разделе</p>
+                    </div>
+                `;
             }
             
             let html = `
                 <div class="container">
                     <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <h1 class="page-title">Маршруты</h1>
-                    <p class="page-subtitle">Выберите маршрут для изучения</p>
+                                       <div class="route-header-with-filter">
+                        <h1 class="page-title" style="margin: 0;">Выбери маршрут</h1>
+                        <button class="filter-btn filter-${currentFilter}" onclick="cycleFilter()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Общая шкала прогресса по маршрутам -->
+                    <div class="progress-section" style="margin-bottom: 20px;">
+                        <div class="progress-header">
+                            <span>Общий прогресс по маршрутам</span>
+                            <span>${appState.progress.completedRoutes} из ${appState.progress.totalRoutes}</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${appState.progress.totalRoutes > 0 ? (appState.progress.completedRoutes / appState.progress.totalRoutes * 100) : 0}%; background: #8B5CF6;"></div>
+                        </div>
+                    </div>
             `;
             
-            for (const route of appState.routes) {
+            for (const route of filteredRoutes) {
                 html += `
-                    <div class="route-card" onclick="openRouteOnMap('${route.id}')">
+                    <div class="route-card" onclick="showRouteMapChooser('${route.id}')">
                         <div class="route-image" style="background-color: ${route.color || '#3B82F6'}">
                             <i class="fas fa-route"></i>
                             ${route.isCompleted ? '<div style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-check" style="font-size: 14px; color: white;"></i></div>' : ''}
@@ -1073,6 +1314,7 @@
                             <div style="display: flex; gap: 16px; margin-bottom: 12px;">
                                 <span style="font-size: 12px; color: #64748b;"><i class="fas fa-walking"></i> ${route.distanceKm} км</span>
                                 <span style="font-size: 12px; color: #64748b;"><i class="fas fa-clock"></i> ${route.durationMinutes} мин</span>
+                                <span style="font-size: 12px; color: #64748b;"><i class="fas fa-mask"></i> ${route.totalMasks} масок</span>
                             </div>
                             <div class="progress-section" style="padding: 0; background: transparent;">
                                 <div class="progress-header">
@@ -1095,29 +1337,86 @@
         function renderRouteDetail() {
             return `<div class="container"><div class="spinner"></div></div>`;
         }
-        
-        // Рендер каталога
-        function renderCatalog() {
+
+                // Функция для получения отфильтрованных масок
+        function getFilteredMasks() {
             const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
             
+            if (currentMaskFilter === 'all') {
+                return appState.masks;
+            } else if (currentMaskFilter === 'activated') {
+                return appState.masks.filter(mask => activatedIds.has(mask.id));
+            } else if (currentMaskFilter === 'notactivated') {
+                return appState.masks.filter(mask => !activatedIds.has(mask.id));
+            }
+            return appState.masks;
+        }
+        
+        // Функция для переключения фильтра масок
+        function cycleMaskFilter() {
+            if (currentMaskFilter === 'all') {
+                currentMaskFilter = 'activated';
+                showToast('Показаны активированные маски', 'info');
+            } else if (currentMaskFilter === 'activated') {
+                currentMaskFilter = 'notactivated';
+                showToast('Показаны не активированные маски', 'info');
+            } else if (currentMaskFilter === 'notactivated') {
+                currentMaskFilter = 'all';
+                showToast('Показаны все маски', 'info');
+            }
+            renderCatalog();
+            render();
+        }
+        
+        // Рендер каталога
+                        function renderCatalog() {
+            const filteredMasks = getFilteredMasks();
+            const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            const activatedCount = appState.activations.length;
+            const totalMasks = appState.masks.length;
+            
+            let filterClass = '';
+            if (currentMaskFilter === 'all') filterClass = 'filter-all';
+            else if (currentMaskFilter === 'activated') filterClass = 'filter-completed';
+            else if (currentMaskFilter === 'notactivated') filterClass = 'filter-uncompleted';
+            
+            if (filteredMasks.length === 0) {
+                return `
+                    <div class="container">
+                        <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                        <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Локации</h1>
+                            <button class="filter-btn ${filterClass}" onclick="cycleMaskFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                        <div class="progress-section" style="margin-bottom: 20px;">
+                            <div class="progress-header">
+                                <span>Прогресс по локациям</span>
+                                <span>${activatedCount} из ${totalMasks}</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${totalMasks > 0 ? (activatedCount / totalMasks * 100) : 0}%; background: #10B981;"></div>
+                            </div>
+                        </div>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет масок в этом разделе</p>
+                    </div>
+                `;
+            }
+            
             let masksHtml = '';
-            for (const mask of appState.masks) {
+            for (const mask of filteredMasks) {
                 const isActivated = activatedIds.has(mask.id);
                 masksHtml += `
-                    <div class="card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}">
+                    <div class="card clickable-card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px;">
                             <div class="mask-image">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
-                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)} <span style="font-size: 11px; color: ${isActivated ? '#10B981' : '#64748b'};">${isActivated ? '✓ Активирована' : 'Не активирована'}</span></h4>
-                                <p style="font-size: 13px; color: #64748b; margin: 0 0 12px 0;">${escapeHtml(mask.description || '')}</p>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-secondary small-btn" onclick="openLocation(${mask.latitude}, ${mask.longitude})"><i class="fas fa-map-marker-alt"></i> Локация</button>
-                                    ${mask.isAvailable ? `<button class="btn btn-primary small-btn" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}')"><i class="fas fa-shopping-cart"></i> Купить</button>` : ''}
-                                    <button class="btn btn-secondary small-btn" onclick="showSimpleMaskInfo('${mask.id}')"><i class="fas fa-info-circle"></i> Инфо</button>
-                                </div>
+                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
+                                <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
                             </div>
                         </div>
                     </div>
@@ -1127,8 +1426,24 @@
             return `
                 <div class="container">
                     <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <h1 class="page-title">Каталог масок</h1>
-                    <p class="page-subtitle">Все ${appState.masks.length} локаций Калининграда</p>
+                    <div class="route-header-with-filter">
+                        <h1 class="page-title" style="margin: 0;">Локации</h1>
+                        <button class="filter-btn ${filterClass}" onclick="cycleMaskFilter()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Прогресс по локациям -->
+                    <div class="progress-section" style="margin-bottom: 20px;">
+                        <div class="progress-header">
+                            <span>Прогресс по локациям</span>
+                            <span>${activatedCount} из ${totalMasks}</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${totalMasks > 0 ? (activatedCount / totalMasks * 100) : 0}%; background: #10B981;"></div>
+                        </div>
+                    </div>
+                    
                     ${masksHtml}
                 </div>
             `;
@@ -1305,6 +1620,75 @@
             const url = `https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`;
             window.open(url, '_blank');
         }
+
+                // Показать выбор карты для маршрута
+        function showRouteMapChooser(routeId) {
+            const route = appState.routes.find(r => r.id === routeId);
+            if (!route) {
+                showToast('Маршрут не найден', 'error');
+                return;
+            }
+            
+            // Координаты центра маршрута (если есть, иначе центр Калининграда)
+            const lat = route.centerLat || 54.679629;
+            const lng = route.centerLng || 20.463649;
+            const zoom = route.zoom || 14;
+            
+            const modalHtml = `
+                <div id="route-map-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2>${escapeHtml(route.name)}</h2>
+                            <button class="close-btn" onclick="closeRouteMapChooser()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
+                            <button class="map-choice-btn" onclick="openYandexMapsForRoute(${lat}, ${lng}, ${zoom})">
+                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
+                                Яндекс.Карты
+                            </button>
+                            <button class="map-choice-btn" onclick="openGoogleMapsForRoute(${lat}, ${lng})" style="margin-top: 12px;">
+                                <i class="fab fa-google" style="color: #4285F4;"></i>
+                                Google Maps
+                            </button>
+                            <button class="map-choice-btn" onclick="open2GISForRoute(${lat}, ${lng})" style="margin-top: 12px;">
+                                <i class="fas fa-building" style="color: #00A0E3;"></i>
+                                2GIS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        // Закрыть окно выбора карты для маршрута
+        function closeRouteMapChooser() {
+            const modal = document.getElementById('route-map-modal');
+            if (modal) modal.remove();
+        }
+        
+        // Открыть Яндекс.Карты для маршрута
+        function openYandexMapsForRoute(lat, lng, zoom) {
+            const url = `https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
+        
+        // Открыть Google Maps для маршрута
+        function openGoogleMapsForRoute(lat, lng) {
+            const url = `https://www.google.com/maps?q=${lat},${lng}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
+        
+        // Открыть 2GIS для маршрута
+        function open2GISForRoute(lat, lng) {
+            const url = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
         
         function openMapForRoute(lat, lng) {
             if (lat && lng) {
@@ -1329,7 +1713,7 @@
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
-            const modalHtml = `
+                       const modalHtml = `
                 <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
                         <div class="modal-header">
@@ -1338,14 +1722,20 @@
                         </div>
                         <div class="modal-content">
                             <div class="main-photo">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <i class="fas fa-mask" style="display: none;"></i>
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
-                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
-                            <div class="action-buttons">
-                                <button class="btn btn-secondary" onclick="openLocation(${mask.latitude}, ${mask.longitude}); closeModal();"><i class="fas fa-directions"></i> Маршрут</button>
-                                ${mask.isAvailable ? `<button class="btn btn-primary" style="background: #10B981;" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();"><i class="fas fa-shopping-cart"></i> Купить ${mask.price?.amount || '15 000'}₽</button>` : ''}
+                            <div class="action-buttons-small">
+                                ${mask.isAvailable ? `<button class="btn-small btn-success-small" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fas fa-shopping-cart" style="font-size: 16px;"></i>
+        <span style="font-size: 14px; font-weight: 500;">10.000₽</span>
+    </div>
+</button>` : ''}
+<button class="btn-small btn-secondary-small" onclick="openLocation(${mask.latitude}, ${mask.longitude}); closeModal();" style="background: #2d2d44; color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; gap: 8px;">
+    <i class="fas fa-directions"></i> Маршрут
+</button>
                             </div>
+                            <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
                     </div>
                 </div>
@@ -1498,7 +1888,7 @@
             if (modal) modal.remove();
         }
 
-        // Показать выбор карты
+                // Показать выбор карты
         function showMapChooser() {
             const modalHtml = `
                 <div id="map-modal" class="modal-overlay">
@@ -1508,9 +1898,18 @@
                             <button class="close-btn" onclick="closeMapChooser()">&times;</button>
                         </div>
                         <div class="modal-content" style="padding: 20px;">
+                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
                             <button class="map-choice-btn" onclick="openYandexMaps()">
                                 <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
                                 Яндекс.Карты
+                            </button>
+                            <button class="map-choice-btn" onclick="openGoogleMaps()" style="margin-top: 12px;">
+                                <i class="fab fa-google" style="color: #4285F4;"></i>
+                                Google Maps
+                            </button>
+                            <button class="map-choice-btn" onclick="open2GIS()" style="margin-top: 12px;">
+                                <i class="fas fa-building" style="color: #00A0E3;"></i>
+                                2GIS
                             </button>
                         </div>
                     </div>
@@ -1529,6 +1928,20 @@
         // Открыть Яндекс.Карты (центр Калининграда)
         function openYandexMaps() {
             const url = 'https://yandex.ru/maps/?ll=20.463649,54.679629&z=14';
+            window.open(url, '_blank');
+            closeMapChooser();
+        }
+
+                // Открыть Google Maps (центр Калининграда)
+        function openGoogleMaps() {
+            const url = 'https://www.google.com/maps?q=54.679629,20.463649';
+            window.open(url, '_blank');
+            closeMapChooser();
+        }
+        
+        // Открыть 2GIS (Калининград)
+        function open2GIS() {
+            const url = 'https://2gis.ru/kaliningrad';
             window.open(url, '_blank');
             closeMapChooser();
         }
@@ -1747,6 +2160,15 @@ window.openYandexMaps = openYandexMaps;
         window.showPrivacyPopup = showPrivacyPopup;
         window.closePrivacyPopup = closePrivacyPopup;
                 window.scrollToTop = scrollToTop;
+                        window.showRouteMapChooser = showRouteMapChooser;
+        window.closeRouteMapChooser = closeRouteMapChooser;
+        window.openYandexMapsForRoute = openYandexMapsForRoute;
+        window.openGoogleMapsForRoute = openGoogleMapsForRoute;
+        window.open2GISForRoute = open2GISForRoute;
+                window.cycleFilter = cycleFilter;
+                        window.openGoogleMaps = openGoogleMaps;
+        window.open2GIS = open2GIS;
+                window.cycleMaskFilter = cycleMaskFilter;
     </script>
 </body>
 </html>
