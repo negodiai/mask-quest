@@ -1170,6 +1170,75 @@
             transform: translateY(-1px);
             opacity: 0.9;
         }
+
+                /* Стили для окна поддержки */
+        .support-contact-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .support-contact-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #2563EB, #1d4ed8);
+        }
+        
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .info-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        
+        .info-icon {
+            width: 36px;
+            height: 36px;
+            background: #252542;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .info-icon i {
+            font-size: 18px;
+            color: #3B82F6;
+        }
+        
+        .info-text {
+            flex: 1;
+        }
+        
+        .info-text strong {
+            display: block;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .info-text span {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.4;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -2992,12 +3061,104 @@
         }
         
         // Открыть поддержку
-        function openSupport() {
+                function openSupport() {
+            const modalHtml = `
+                <div id="support-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 400px;">
+                        <div class="modal-header">
+                            <h2>Поддержка</h2>
+                            <button class="close-btn" onclick="closeSupportModal()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <!-- Кнопка связи с администратором -->
+                            <button class="support-contact-btn" onclick="contactAdmin()">
+                                <i class="fas fa-headset"></i>
+                                Связаться с администратором
+                            </button>
+                            
+                            <!-- Разделитель -->
+                            <div style="height: 1px; background: #2d2d44; margin: 20px 0;"></div>
+                            
+                            <!-- Заголовок раздела информации -->
+                            <h3 style="color: #fff; margin-bottom: 16px; font-size: 16px;">О приложении</h3>
+                            
+                            <!-- Список кнопок с описанием -->
+                            <div class="info-list">
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-map-marked-alt"></i></div>
+                                    <div class="info-text">
+                                        <strong>Вся карта</strong>
+                                        <span>Открывает выбор карты (Яндекс, Google, 2GIS) для просмотра всех локаций Калининграда</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-route"></i></div>
+                                    <div class="info-text">
+                                        <strong>Маршруты</strong>
+                                        <span>Показывает список туристических маршрутов с прогрессом, фильтром и возможностью открыть на карте</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-list"></i></div>
+                                    <div class="info-text">
+                                        <strong>Локации (каталог масок)</strong>
+                                        <span>Список всех масок с фото, описанием, фильтром по статусу и возможностью просмотра детальной информации</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-qrcode"></i></div>
+                                    <div class="info-text">
+                                        <strong>Активировать маску</strong>
+                                        <span>Активация масок через геолокацию. Отслеживает прогресс и сохраняет историю активаций</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-trophy"></i></div>
+                                    <div class="info-text">
+                                        <strong>Достижения</strong>
+                                        <span>Ваши награды и достижения за пройденные маршруты и активированные маски (в разработке)</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <div class="info-icon"><i class="fas fa-shield-alt"></i></div>
+                                    <div class="info-text">
+                                        <strong>Политика конфиденциальности</strong>
+                                        <span>Информация о собираемых данных и их использовании</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Версия приложения -->
+                            <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid #2d2d44;">
+                                <span style="font-size: 11px; color: #3d3d5c;">Версия 1.0.0 | НЕГОДЯЙ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        // Закрыть окно поддержки
+        function closeSupportModal() {
+            const modal = document.getElementById('support-modal');
+            if (modal) modal.remove();
+        }
+        
+        // Связаться с администратором
+        function contactAdmin() {
             if (window.Telegram?.WebApp) {
                 window.Telegram.WebApp.openTelegramLink('https://t.me/undergroundmask_support');
             } else {
                 alert('Поддержка: @undergroundmask_support в Telegram');
             }
+            closeSupportModal();
         }     
         
         // Показать всплывающее окно с политикой конфиденциальности
@@ -3361,6 +3522,8 @@ window.openYandexMaps = openYandexMaps;
         window.prevFullscreenSlideExtendedTab = prevFullscreenSlideExtendedTab;
         window.nextFullscreenSlideExtendedTab = nextFullscreenSlideExtendedTab;
         window.goToFullscreenSlideExtendedTab = goToFullscreenSlideExtendedTab;
+                window.closeSupportModal = closeSupportModal;
+        window.contactAdmin = contactAdmin;
     </script>
 </body>
 </html>
