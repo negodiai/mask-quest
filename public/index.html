@@ -2328,7 +2328,7 @@
         }
         
         // Расширенная информация о маске (для активированных)
-                                        function showExtendedMaskInfo(maskId) {
+                                                        function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
@@ -2336,30 +2336,7 @@
             window.currentExtendedMask = mask;
             window.currentExtendedTab = 'present';
             
-            // Создаём карусель для вкладки "Настоящее"
-            function getGalleryForTab(tabName) {
-                let gallerySlides = '';
-                let galleryDots = '';
-                for (let i = 1; i <= 5; i++) {
-                    gallerySlides += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');" onclick="event.stopPropagation(); openFullscreenExtendedTab('${tabName}', ${i - 1})"></div>`;
-                    galleryDots += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
-                }
-                
-                return `
-                    <div class="gallery-container" id="gallery-container-${tabName}">
-                        <div class="gallery-slides" id="gallery-slides-${tabName}" style="transform: translateX(0%);">
-                            ${gallerySlides}
-                        </div>
-                        <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlideExtendedTab('${tabName}')">‹</div>
-                        <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlideExtendedTab('${tabName}')">›</div>
-                        <div class="gallery-nav" id="gallery-nav-${tabName}">
-                            ${galleryDots}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Тексты для разных эпох
+            // Тексты для разных эпох (оставляем как есть)
             const texts = {
                 present: `Современный Калининград — это удивительное сочетание европейской архитектуры и российской культуры. Город, который пережил возрождение и стал одним из самых привлекательных туристических центров России.
 
@@ -2419,6 +2396,29 @@
                 past: `Кёнигсберг (1333-1945)`
             };
             
+            // Функция для создания карусели с полнофункциональными фото
+            function createGalleryForTab(tabName) {
+                let slidesHtml = '';
+                let dotsHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
+                }
+                
+                return `
+                    <div class="gallery-container" id="gallery-container-${tabName}">
+                        <div class="gallery-slides" id="gallery-slides-${tabName}" style="transform: translateX(0%);">
+                            ${slidesHtml}
+                        </div>
+                        <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlideExtendedTab('${tabName}')">‹</div>
+                        <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlideExtendedTab('${tabName}')">›</div>
+                        <div class="gallery-nav" id="gallery-nav-${tabName}">
+                            ${dotsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            
             const modalHtml = `
                 <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
@@ -2427,8 +2427,8 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <!-- Главное фото -->
-                            <div class="main-photo" onclick="openFullscreenExtendedTab('present', 0)">
+                            <!-- Главное фото (без onclick) -->
+                            <div class="main-photo">
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
                             
@@ -2457,21 +2457,21 @@
                             <!-- Контейнер для контента вкладок -->
                             <div id="tab-content-container">
                                 <div id="present-content" style="display: block;">
-                                    <div id="present-gallery-container">${getGalleryForTab('present')}</div>
+                                    ${createGalleryForTab('present')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.present}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.present}</p>
                                     </div>
                                 </div>
                                 <div id="ussr-content" style="display: none;">
-                                    <div id="ussr-gallery-container">${getGalleryForTab('ussr')}</div>
+                                    ${createGalleryForTab('ussr')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.ussr}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.ussr}</p>
                                     </div>
                                 </div>
                                 <div id="past-content" style="display: none;">
-                                    <div id="past-gallery-container">${getGalleryForTab('past')}</div>
+                                    ${createGalleryForTab('past')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.past}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.past}</p>
@@ -2488,13 +2488,34 @@
             // Сохраняем ID маски для полноэкранного режима
             window.currentFullscreenMaskId = mask.id;
             
-            // Добавляем обработчики свайпа для всех галерей
-            ['present', 'ussr', 'past'].forEach(tab => {
-                setTimeout(() => {
+                        // Инициализация каруселей и кнопки "Наверх"
+            setTimeout(() => {
+                // Инициализируем карусели для всех вкладок
+                ['present', 'ussr', 'past'].forEach(tab => {
+                    // Убеждаемся, что глобальные переменные для индексов существуют
+                    if (window[`currentIndex_${tab}`] === undefined) {
+                        window[`currentIndex_${tab}`] = 0;
+                    }
+                    
+                    // Добавляем нажатие на фото для открытия полноэкранного режима
+                    const slides = document.querySelectorAll(`#gallery-container-${tab} .gallery-slide`);
+                    slides.forEach((slide, idx) => {
+                        slide.style.cursor = 'pointer';
+                        slide.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openFullscreenForTab(tab, idx);
+                        });
+                    });
+                    
+                    // Добавляем обработчики свайпа для галереи
                     const container = document.getElementById(`gallery-container-${tab}`);
                     if (container) {
                         let touchStartX = 0;
                         let touchEndX = 0;
+                        
+                        // Удаляем старые обработчики, чтобы не дублировать
+                        container.removeEventListener('touchstart', null);
+                        container.removeEventListener('touchend', null);
                         
                         container.addEventListener('touchstart', (e) => {
                             touchStartX = e.changedTouches[0].screenX;
@@ -2506,15 +2527,201 @@
                             
                             if (Math.abs(deltaX) > 50) {
                                 if (deltaX > 0) {
-                                    window[`prevSlideExtendedTab_${tab}`]();
+                                    // Свайп вправо - предыдущее фото
+                                    if (window[`currentIndex_${tab}`] > 0) {
+                                        window[`currentIndex_${tab}`]--;
+                                        const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                        if (slidesEl) {
+                                            slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        }
+                                        updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    }
                                 } else {
-                                    window[`nextSlideExtendedTab_${tab}`]();
+                                    // Свайп влево - следующее фото
+                                    if (window[`currentIndex_${tab}`] < 4) {
+                                        window[`currentIndex_${tab}`]++;
+                                        const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                        if (slidesEl) {
+                                            slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        }
+                                        updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    }
                                 }
                             }
                         });
                     }
-                }, 100);
-            });
+                    
+                    // Добавляем обработчики для стрелок
+                    const leftArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-left`);
+                    const rightArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-right`);
+                    
+                    if (leftArrow) {
+                        leftArrow.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window[`currentIndex_${tab}`] > 0) {
+                                window[`currentIndex_${tab}`]--;
+                                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                if (slidesEl) {
+                                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                }
+                                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                            }
+                        };
+                    }
+                    
+                    if (rightArrow) {
+                        rightArrow.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window[`currentIndex_${tab}`] < 4) {
+                                window[`currentIndex_${tab}`]++;
+                                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                if (slidesEl) {
+                                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                }
+                                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                            }
+                        };
+                    }
+                });
+                
+                // Кнопка "Наверх" внутри модального окна
+                const modalContainer = document.querySelector('#info-modal .modal-container');
+                if (modalContainer && !document.getElementById('scroll-top-btn-modal')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.id = 'scroll-top-btn-modal';
+                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    scrollBtn.style.cssText = `
+                        position: sticky;
+                        bottom: 20px;
+                        left: calc(100% - 70px);
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 25px;
+                        background: rgba(100, 116, 139, 0.5);
+                        backdrop-filter: blur(4px);
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1001;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                        margin-bottom: 10px;
+                    `;
+                    
+                    scrollBtn.onclick = () => {
+                        modalContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    
+                    scrollBtn.onmouseenter = () => {
+                        scrollBtn.style.transform = 'scale(1.05)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
+                    };
+                    scrollBtn.onmouseleave = () => {
+                        scrollBtn.style.transform = 'scale(1)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
+                    };
+                    
+                    modalContainer.appendChild(scrollBtn);
+                    
+                    modalContainer.addEventListener('scroll', () => {
+                        if (modalContainer.scrollTop > 300) {
+                            scrollBtn.style.display = 'flex';
+                        } else {
+                            scrollBtn.style.display = 'none';
+                        }
+                    });
+                }
+            }, 200);
+        }
+        
+        // Функция для открытия полноэкранного режима из карусели
+                function openFullscreenForTab(tab, startIndex) {
+            const maskId = window.currentFullscreenMaskId;
+            const currentIndex = window[`currentIndex_${tab}`] || startIndex;
+            
+            let fullscreenSlides = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            }
+            
+            let fullscreenDots = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === currentIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i - 1})"></div>`;
+            }
+            
+            const fullscreenHtml = `
+                <div id="fullscreen-modal-extended" class="fullscreen-modal">
+                    <div class="fullscreen-close" onclick="closeFullscreenExtendedTab()">✕</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-left" onclick="prevFullscreenSlideExtendedTab('${tab}')">‹</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-right" onclick="nextFullscreenSlideExtendedTab('${tab}')">›</div>
+                    <div class="fullscreen-slides" id="fullscreen-slides-extended" style="transform: translateX(-${currentIndex * 100}%);">
+                        ${fullscreenSlides}
+                    </div>
+                    <div class="fullscreen-nav" id="fullscreen-nav-extended">
+                        ${fullscreenDots}
+                    </div>
+                    <div class="fullscreen-counter" id="fullscreen-counter-extended">${currentIndex + 1} / 5</div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
+            
+            // Сохраняем текущий индекс для полноэкранного режима
+            window.fullscreenCurrentTab = tab;
+            window.fullscreenCurrentIndex = currentIndex;
+            
+            // Добавляем свайп для полноэкранного режима
+            setTimeout(() => {
+                const modal = document.getElementById('fullscreen-modal-extended');
+                if (modal) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+                    
+                    modal.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                    });
+                    
+                    modal.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        const deltaX = touchEndX - touchStartX;
+                        
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                // Свайп вправо - предыдущее
+                                if (window.fullscreenCurrentIndex > 0) {
+                                    window.fullscreenCurrentIndex--;
+                                    const slides = document.getElementById('fullscreen-slides-extended');
+                                    if (slides) {
+                                        slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
+                                    }
+                                    updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                                    updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                                    // Обновляем индекс вкладки
+                                    window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                                }
+                            } else {
+                                // Свайп влево - следующее
+                                if (window.fullscreenCurrentIndex < 4) {
+                                    window.fullscreenCurrentIndex++;
+                                    const slides = document.getElementById('fullscreen-slides-extended');
+                                    if (slides) {
+                                        slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
+                                    }
+                                    updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                                    updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                                    // Обновляем индекс вкладки
+                                    window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                                }
+                            }
+                        }
+                    });
+                }
+            }, 100);
         }
         
         // Переключение вкладок
@@ -2542,7 +2749,7 @@
         let currentIndex_past = 0;
         const imagesCount = 5;
         
-        function updateDotsForTab(tab, index) {
+                function updateDotsForTab(tab, index) {
             const dots = document.querySelectorAll(`#gallery-nav-${tab} .gallery-dot`);
             dots.forEach((dot, i) => {
                 if (i === index) {
@@ -2652,31 +2859,43 @@
             if (modal) modal.remove();
         }
         
-        function prevFullscreenSlideExtendedTab(tab) {
-            let currentIndex = window[`currentIndex_${tab}`];
-            if (currentIndex > 0) {
-                currentIndex--;
-                window[`currentIndex_${tab}`] = currentIndex;
+                function prevFullscreenSlideExtendedTab(tab) {
+            if (window.fullscreenCurrentIndex > 0) {
+                window.fullscreenCurrentIndex--;
                 const slides = document.getElementById('fullscreen-slides-extended');
                 if (slides) {
-                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+                    slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateFullscreenDotsExtendedTab(currentIndex);
-                updateFullscreenCounterExtendedTab(currentIndex);
+                updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                // Синхронизируем с индексом вкладки
+                window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                // Синхронизируем карусель вкладки
+                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                if (slidesEl) {
+                    slidesEl.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
+                }
+                updateDotsForTab(tab, window.fullscreenCurrentIndex);
             }
         }
         
         function nextFullscreenSlideExtendedTab(tab) {
-            let currentIndex = window[`currentIndex_${tab}`];
-            if (currentIndex < imagesCount - 1) {
-                currentIndex++;
-                window[`currentIndex_${tab}`] = currentIndex;
+            if (window.fullscreenCurrentIndex < 4) {
+                window.fullscreenCurrentIndex++;
                 const slides = document.getElementById('fullscreen-slides-extended');
                 if (slides) {
-                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+                    slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateFullscreenDotsExtendedTab(currentIndex);
-                updateFullscreenCounterExtendedTab(currentIndex);
+                updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                // Синхронизируем с индексом вкладки
+                window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                // Синхронизируем карусель вкладки
+                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                if (slidesEl) {
+                    slidesEl.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
+                }
+                updateDotsForTab(tab, window.fullscreenCurrentIndex);
             }
         }
         
@@ -3133,6 +3352,11 @@ window.openYandexMaps = openYandexMaps;
         window.nextSlideExtendedTab = nextSlideExtendedTab;
         window.goToSlideExtendedTab = goToSlideExtendedTab;
         window.openFullscreenExtendedTab = openFullscreenExtendedTab;
+        window.closeFullscreenExtendedTab = closeFullscreenExtendedTab;
+        window.prevFullscreenSlideExtendedTab = prevFullscreenSlideExtendedTab;
+        window.nextFullscreenSlideExtendedTab = nextFullscreenSlideExtendedTab;
+        window.goToFullscreenSlideExtendedTab = goToFullscreenSlideExtendedTab;
+                window.openFullscreenForTab = openFullscreenForTab;
         window.closeFullscreenExtendedTab = closeFullscreenExtendedTab;
         window.prevFullscreenSlideExtendedTab = prevFullscreenSlideExtendedTab;
         window.nextFullscreenSlideExtendedTab = nextFullscreenSlideExtendedTab;
