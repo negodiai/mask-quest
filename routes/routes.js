@@ -3,35 +3,45 @@ const router = express.Router();
 const db = require('../data/db');
 
 // GET /api/routes/list - список маршрутов с прогрессом
-router.get('/list', (req, res) => {
+router.get('/list', async (req, res) => {
     const { userId } = req.query;
-    const routes = db.getAllRoutes();
     
-    if (!userId) {
-        return res.json(routes);
-    }
-    
-    // Получаем все активации пользователя
-    const activations = db.getActivationsByUserId(userId);
-    const routeMasks = db.getAllRouteMasks();
-    
-    const routesWithProgress = routes.map(route => {
-        const masksInRoute = routeMasks.filter(rm => rm.routeId === route.id);
-        const totalMasks = masksInRoute.length;
-        const activatedCount = masksInRoute.filter(rm => 
-            activations.some(a => a.maskId === rm.maskId)
-        ).length;
+    try {
+        const routesResult = await db.query('SELECT * FROM routes WHERE "isActive" = 1 ORDER BY name');
+        const routes = routesResult.rows;
         
-        return {
-            ...route,
-            totalMasks,
-            activatedCount,
-            progressPercent: totalMasks > 0 ? Math.round((activatedCount / totalMasks) * 100) : 0,
-            isCompleted: activatedCount === totalMasks && totalMasks > 0
-        };
-    });
-    
-    res.json(routesWithProgress);
+        if (!userId) {
+            return res.json(routes);
+        }
+        
+        // Получаем активации пользователя
+        const activationsResult = await db.query('SELECT "maskId" FROM user_activations WHERE "userId" = $1', [userId]);
+        const activatedMaskIds = new Set(activationsResult.rows.map(r => r.maskId));
+        
+        // Получаем связи маршрутов и масок
+        const routeMasksResult = await db.query('SELECT "routeId", "maskId" FROM route_masks');
+        const routeMasks = routeMasksResult.rows;
+        
+        const routesWithProgress = await Promise.all(routes.map(async (route) => {
+            const masksInRoute = routeMasks.filter(rm => rm.routeId === route.id);
+            const totalMasks = masksInRoute.length;
+            const activatedCount = masksInRoute.filter(rm => activatedMaskIds.has(rm.maskId)).length;
+            const progressPercent = totalMasks > 0 ? Math.round((activatedCount / totalMasks) * 100) : 0;
+            const isCompleted = activatedCount === totalMasks && totalMasks > 0;
+            
+            return {
+                ...route,
+                totalMasks,
+                activatedCount,
+                progressPercent,
+                isCompleted
+            };
+        }));
+        
+        res.json(routesWithProgress);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET /api/routes/detail - детали маршрута
