@@ -347,6 +347,22 @@
             const res = await fetch(`${API_BASE}/admin/stats?userId=${currentUserId}`);
             window.stats = await res.json();
         }
+
+                async function refreshData() {
+            showMessage('Обновление данных...', 'info');
+            try {
+                await Promise.all([
+                    loadMasks(),
+                    loadRoutes(),
+                    loadStats()
+                ]);
+                renderAdminPanel();
+                showMessage('Данные успешно обновлены!', 'success');
+            } catch (e) {
+                console.error('Refresh error:', e);
+                showMessage('Ошибка обновления данных', 'error');
+            }
+        }
         
         function renderAdminPanel() {
             const html = `
@@ -359,10 +375,15 @@
                     <i class="fas fa-id-badge"></i> Ваш ID: ${currentUserId}
                 </div>
                 
-                <div class="tabs">
-                    <button class="tab-btn ${currentTab === 'masks' ? 'active' : ''}" onclick="switchTab('masks')">📋 Маски</button>
-                    <button class="tab-btn ${currentTab === 'routes' ? 'active' : ''}" onclick="switchTab('routes')">🗺️ Маршруты</button>
-                    <button class="tab-btn ${currentTab === 'stats' ? 'active' : ''}" onclick="switchTab('stats')">📊 Статистика</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div class="tabs" style="margin-bottom: 0;">
+                        <button class="tab-btn ${currentTab === 'masks' ? 'active' : ''}" onclick="switchTab('masks')">📋 Маски</button>
+                        <button class="tab-btn ${currentTab === 'routes' ? 'active' : ''}" onclick="switchTab('routes')">🗺️ Маршруты</button>
+                        <button class="tab-btn ${currentTab === 'stats' ? 'active' : ''}" onclick="switchTab('stats')">📊 Статистика</button>
+                    </div>
+                    <button class="btn-icon" onclick="refreshData()" title="Обновить данные" style="background: #252542; padding: 8px 12px; border-radius: 10px;">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
                 </div>
                 
                 <div id="masks-tab" class="tab-content ${currentTab === 'masks' ? 'active' : ''}">
@@ -656,18 +677,23 @@
             }
         }
         
-        async function deleteRoute(id) {
+                async function deleteRoute(id) {
             if (!confirm('Удалить маршрут? Это действие нельзя отменить.')) return;
             
-            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Маршрут удалён', 'success');
-                loadRoutes().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
+            try {
+                const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    showMessage('Маршрут удалён', 'success');
+                    await loadRoutes();
+                    renderAdminPanel();
+                } else {
+                    showMessage('Ошибка удаления', 'error');
+                }
+            } catch (e) {
+                showMessage('Ошибка сети', 'error');
             }
         }
         
@@ -841,7 +867,7 @@
             });
         }
 
-                async function publishRoute(id) {
+                        async function publishRoute(id) {
             if (!confirm('Опубликовать маршрут? Он станет доступен пользователям.')) return;
             
             try {
@@ -854,7 +880,9 @@
                 
                 if (res.ok) {
                     showMessage(result.message || 'Маршрут опубликован!', 'success');
-                    loadRoutes().then(() => renderAdminPanel());
+                    // Очищаем кеш и перезагружаем
+                    await loadRoutes();
+                    renderAdminPanel();
                 } else {
                     showMessage(result.error || 'Ошибка публикации', 'error');
                 }
@@ -876,6 +904,8 @@
         window.closeModal = closeModal;
         window.saveModal = saveModal;
         window.showMessage = showMessage;
+                window.refreshData = refreshData;
+        window.refreshRoutes = refreshRoutes;
         
         init();
     </script>
