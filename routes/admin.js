@@ -230,4 +230,72 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     }
 });
 
+// Опубликовать маршрут (сделать isActive = 1)
+router.post('/routes/:id/publish', checkAdmin, async (req, res) => {
+    try {
+        // 1. Проверяем, существует ли маршрут
+        const routeResult = await db.query('SELECT * FROM routes WHERE id = $1', [req.params.id]);
+        if (routeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маршрут не найден' });
+        }
+        
+        // 2. Обновляем статус isActive = 1 (опубликован)
+        await db.query(`
+            UPDATE routes 
+            SET "isActive" = 1, 
+                "updatedAt" = CURRENT_TIMESTAMP
+            WHERE id = $1
+        `, [req.params.id]);
+        
+        // 3. Логируем действие администратора
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details, "createdAt")
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `, [req.headers['x-user-id'], 'PUBLISH_ROUTE', req.params.id, JSON.stringify({ routeId: req.params.id })]);
+        
+        // 4. Отправляем успешный ответ
+        res.json({ 
+            success: true, 
+            message: 'Маршрут опубликован и доступен пользователям' 
+        });
+    } catch (err) {
+        console.error('Publish route error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Снять с публикации маршрут (сделать isActive = 0)
+router.post('/routes/:id/unpublish', checkAdmin, async (req, res) => {
+    try {
+        // 1. Проверяем, существует ли маршрут
+        const routeResult = await db.query('SELECT * FROM routes WHERE id = $1', [req.params.id]);
+        if (routeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маршрут не найден' });
+        }
+        
+        // 2. Обновляем статус isActive = 0 (черновик)
+        await db.query(`
+            UPDATE routes 
+            SET "isActive" = 0, 
+                "updatedAt" = CURRENT_TIMESTAMP
+            WHERE id = $1
+        `, [req.params.id]);
+        
+        // 3. Логируем действие администратора
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details, "createdAt")
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `, [req.headers['x-user-id'], 'UNPUBLISH_ROUTE', req.params.id, JSON.stringify({ routeId: req.params.id })]);
+        
+        // 4. Отправляем успешный ответ
+        res.json({ 
+            success: true, 
+            message: 'Маршрут снят с публикации' 
+        });
+    } catch (err) {
+        console.error('Unpublish route error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
