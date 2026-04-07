@@ -1,12 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../data/db');
-const { calculateDistance, ACTIVATION_RADIUS_METERS } = require('../utils/geo');
+const db = require('../database');
 
-// GET /api/masks/list - список всех масок
+// Функция расчета расстояния между двумя точками
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+const ACTIVATION_RADIUS_METERS = 50;
+
+// GET /api/masks/list - список всех опубликованных масок
 router.get('/list', async (req, res) => {
     try {
-        // Возвращаем только опубликованные маски (isAvailable = 1)
         const result = await db.query(`
             SELECT id, name, description, latitude, longitude, "photoHash", "isAvailable", 
                    "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink"
@@ -31,7 +43,7 @@ router.get('/list', async (req, res) => {
         
         res.json(safeMasks);
     } catch (err) {
-        console.error('Error loading masks list:', err);
+        console.error('Error in /list:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -70,7 +82,7 @@ router.get('/detail', async (req, res) => {
             twoGisLink: mask.twoGisLink
         });
     } catch (err) {
-        console.error('Error loading mask detail:', err);
+        console.error('Error in /detail:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -88,13 +100,16 @@ router.get('/nearby', async (req, res) => {
     const searchRadius = parseFloat(radius);
     
     try {
-        // Получаем только опубликованные маски
         const result = await db.query('SELECT * FROM masks WHERE "isAvailable" = 1');
         const allMasks = result.rows;
         
         const nearbyMasks = allMasks
             .map(mask => ({
-                ...mask,
+                id: mask.id,
+                name: mask.name,
+                description: mask.description,
+                latitude: mask.latitude,
+                longitude: mask.longitude,
                 distance: calculateDistance(userLat, userLng, mask.latitude, mask.longitude)
             }))
             .filter(mask => mask.distance <= searchRadius)
@@ -102,139 +117,103 @@ router.get('/nearby', async (req, res) => {
         
         res.json(nearbyMasks);
     } catch (err) {
-        console.error('Error loading nearby masks:', err);
+        console.error('Error in /nearby:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 // POST /api/masks/activate - активация маски по геолокации
-router.post('/activate', (req, res) => {
+router.post('/activate', async (req, res) => {
     const { userId, maskId, latitude, longitude, telegramData } = req.body;
+    const { v4: uuidv4 } = require('uuid');
     
     if (!userId || !latitude || !longitude) {
         return res.status(400).json({ 
             success: false, 
-            error: 'missing_fields',
-            message: 'Не хватает данных: userId, latitude, longitude' 
+            message: 'Не хватает данных' 
         });
     }
     
     const userLat = parseFloat(latitude);
     const userLng = parseFloat(longitude);
     
-    // Если указан конкретный maskId
-    if (maskId) {
-        const mask = db.getMaskById(maskId);
-        if (!mask) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'mask_not_found',
-                message: 'Маска не найдена' 
+    try {
+        let targetMask = null;
+        
+        if (maskId) {
+            const result = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+            if (result.rows.length === 0) {
+                return res.json({ success: false, error: 'mask_not_found', message: 'Маска не найдена' });
+            }
+            targetMask = result.rows[0];
+        } else {
+            const allMasks = await db.query('SELECT * FROM masks WHERE "isAvailable" = 1');
+            let nearest = null;
+            let minDist = Infinity;
+            
+            for (const mask of allMasks.rows) {
+                const dist = calculateDistance(userLat, userLng, mask.latitude, mask.longitude);
+                if (dist <= ACTIVATION_RADIUS_METERS && dist < minDist) {
+                    minDist = dist;
+                    nearest = mask;
+                }
+            }
+            targetMask = nearest;
+        }
+        
+        if (!targetMask) {
+            return res.json({
+                success: false,
+                error: 'no_mask_nearby',
+                message: `Рядом нет масок. Подойдите в радиусе ${ACTIVATION_RADIUS_METERS}м`
             });
         }
         
-        const distance = calculateDistance(userLat, userLng, mask.latitude, mask.longitude);
-        
+        const distance = calculateDistance(userLat, userLng, targetMask.latitude, targetMask.longitude);
         if (distance > ACTIVATION_RADIUS_METERS) {
             return res.json({
                 success: false,
                 error: 'too_far',
-                message: `Вы слишком далеко (${Math.round(distance)}м). Подойдите ближе (в радиусе ${ACTIVATION_RADIUS_METERS}м)`,
-                distance: Math.round(distance)
+                message: `Вы слишком далеко (${Math.round(distance)}м). Подойдите ближе (${ACTIVATION_RADIUS_METERS}м)`
             });
         }
         
-        // Проверяем, не активирована ли уже
-        const existing = db.getActivationByUserAndMask(userId, mask.id);
-        if (existing) {
+        const existing = await db.query(
+            'SELECT * FROM user_activations WHERE "userId" = $1 AND "maskId" = $2',
+            [userId, targetMask.id]
+        );
+        
+        if (existing.rows.length > 0) {
             return res.json({
                 success: false,
                 error: 'already_activated',
-                message: 'Вы уже активировали эту маску! Ищите следующую.',
-                activatedAt: existing.activatedAt
+                message: 'Вы уже активировали эту маску! Ищите следующую.'
             });
         }
         
-        // Создаём активацию
-        const activation = db.saveActivation({
-            userId,
-            maskId: mask.id,
-            latitude: userLat,
-            longitude: userLng,
-            telegramData: telegramData || {}
-        });
+        const activationId = uuidv4();
+        await db.query(`
+            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData")
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [activationId, userId, targetMask.id, userLat, userLng, JSON.stringify(telegramData || {})]);
         
-        return res.json({
+        res.json({
             success: true,
-            message: `Поздравляем! Вы активировали маску "${mask.name}"`,
+            message: `Поздравляем! Вы активировали маску "${targetMask.name}"`,
             mask: {
-                id: mask.id,
-                name: mask.name,
-                fullDescription: mask.fullDescription,
-                activationPhotoHash: mask.activationPhotoHash,
-                audioGuideHash: mask.audioGuideHash,
-                price: mask.price,
-                isAvailable: mask.isAvailable
-            },
-            activation
+                id: targetMask.id,
+                name: targetMask.name,
+                fullDescription: targetMask.fullDescription,
+                activationPhotoHash: targetMask.activationPhotoHash,
+                audioGuideHash: targetMask.audioGuideHash,
+                price: { amount: targetMask.priceAmount, currency: targetMask.priceCurrency || 'RUB' },
+                isAvailable: targetMask.isAvailable === 1
+            }
         });
+    } catch (err) {
+        console.error('Activation error:', err);
+        res.status(500).json({ success: false, message: 'Ошибка активации' });
     }
-    
-    // Если maskId не указан - ищем ближайшую маску
-    const allMasks = db.getAllMasks();
-    let nearestMask = null;
-    let minDistance = Infinity;
-    
-    for (const mask of allMasks) {
-        const distance = calculateDistance(userLat, userLng, mask.latitude, mask.longitude);
-        if (distance <= ACTIVATION_RADIUS_METERS && distance < minDistance) {
-            minDistance = distance;
-            nearestMask = mask;
-        }
-    }
-    
-    if (!nearestMask) {
-        return res.json({
-            success: false,
-            error: 'no_mask_nearby',
-            message: `Рядом нет масок. Подойдите к любой маске в радиусе ${ACTIVATION_RADIUS_METERS}м`
-        });
-    }
-    
-    // Проверяем, не активирована ли уже
-    const existing = db.getActivationByUserAndMask(userId, nearestMask.id);
-    if (existing) {
-        return res.json({
-            success: false,
-            error: 'already_activated',
-            message: 'Вы уже активировали эту маску! Ищите следующую.',
-            activatedAt: existing.activatedAt
-        });
-    }
-    
-    // Создаём активацию
-    const activation = db.saveActivation({
-        userId,
-        maskId: nearestMask.id,
-        latitude: userLat,
-        longitude: userLng,
-        telegramData: telegramData || {}
-    });
-    
-    res.json({
-        success: true,
-        message: `Поздравляем! Вы активировали маску "${nearestMask.name}"`,
-        mask: {
-            id: nearestMask.id,
-            name: nearestMask.name,
-            fullDescription: nearestMask.fullDescription,
-            activationPhotoHash: nearestMask.activationPhotoHash,
-            audioGuideHash: nearestMask.audioGuideHash,
-            price: nearestMask.price,
-            isAvailable: nearestMask.isAvailable
-        },
-        activation
-    });
 });
 
 module.exports = router;
