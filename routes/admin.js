@@ -202,4 +202,32 @@ router.get('/stats', checkAdmin, async (req, res) => {
     }
 });
 
+// Опубликовать маску (сделать isAvailable = true и перенести в каталог)
+router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
+    try {
+        // Проверяем, существует ли маска
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [req.params.id]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        // Обновляем статус isAvailable = 1 (опубликовано)
+        await db.query(`
+            UPDATE masks SET "isAvailable" = 1, "updatedAt" = CURRENT_TIMESTAMP
+            WHERE id = $1
+        `, [req.params.id]);
+        
+        // Логируем действие
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details)
+            VALUES ($1, $2, $3, $4)
+        `, [req.headers['x-user-id'], 'PUBLISH_MASK', req.params.id, JSON.stringify({ maskId: req.params.id })]);
+        
+        res.json({ success: true, message: 'Маска опубликована и доступна в каталоге' });
+    } catch (err) {
+        console.error('Publish error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

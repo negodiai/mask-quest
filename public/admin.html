@@ -258,6 +258,14 @@
             font-size: 13px;
             color: #94a3b8;
         }
+
+                .btn-publish {
+            color: #10B981;
+        }
+        
+        .btn-publish:hover {
+            color: #059669;
+        }
     </style>
 </head>
 <body>
@@ -382,7 +390,7 @@
             document.getElementById('app').innerHTML = html;
         }
         
-        function renderMasksList() {
+                function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
             
             return masks.map(mask => `
@@ -390,13 +398,15 @@
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(mask.name)}</span>
                         <div>
-                            <button class="btn-icon" onclick="editMask('${mask.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')"><i class="fas fa-trash"></i></button>
+                            ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
+                            <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📍 ${mask.latitude}, ${mask.longitude}</div>
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
+                        <div>${mask.isAvailable ? '<span style="color: #10B981;">✅ Опубликована</span>' : '<span style="color: #F59E0B;">⏳ Черновик</span>'}</div>
                     </div>
                 </div>
             `).join('');
@@ -619,6 +629,28 @@
                 loadMasks().then(() => renderAdminPanel());
             } else {
                 showMessage('Ошибка удаления', 'error');
+            }
+        }
+
+                async function publishMask(id) {
+            if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await res.json();
+                
+                if (res.ok) {
+                    showMessage(result.message || 'Маска опубликована!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                } else {
+                    showMessage(result.error || 'Ошибка публикации', 'error');
+                }
+            } catch (e) {
+                showMessage('Ошибка сети', 'error');
             }
         }
         
