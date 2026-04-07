@@ -9,6 +9,11 @@ const routesRoutes = require('./routes/routes');
 const userRoutes = require('./routes/user');
 const seedRoutes = require('./routes/seed');
 
+const db = require('./database');
+
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
