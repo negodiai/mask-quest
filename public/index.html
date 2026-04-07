@@ -3896,6 +3896,169 @@
                 enableSwipeToGoBack();
             }
         }
+
+                // === ФУНКЦИИ ДЛЯ КАРУСЕЛИ В КАРТОЧКЕ МАСКИ ===
+        
+        let currentExtendedIndex = 0;
+        let extendedImagesCount = 5;
+        
+        function updateExtendedDots() {
+            const dots = document.querySelectorAll('#gallery-nav-extended .gallery-dot');
+            dots.forEach((dot, i) => {
+                if (i === currentExtendedIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function prevSlideExtended() {
+            if (currentExtendedIndex > 0) {
+                currentExtendedIndex--;
+                const slides = document.getElementById('gallery-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateExtendedDots();
+            }
+        }
+        
+        function nextSlideExtended() {
+            if (currentExtendedIndex < extendedImagesCount - 1) {
+                currentExtendedIndex++;
+                const slides = document.getElementById('gallery-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateExtendedDots();
+            }
+        }
+        
+        function goToSlideExtended(index) {
+            currentExtendedIndex = index;
+            const slides = document.getElementById('gallery-slides-extended');
+            if (slides) {
+                slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+            }
+            updateExtendedDots();
+        }
+        
+        // Полноэкранный режим для карусели
+        function openFullscreenExtended(startIndex) {
+            const maskId = window.currentFullscreenMaskId || 'mask_1';
+            currentExtendedIndex = startIndex;
+            
+            let fullscreenSlides = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            }
+            
+            let fullscreenDots = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === startIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtended(${i - 1})"></div>`;
+            }
+            
+            const fullscreenHtml = `
+                <div id="fullscreen-modal-extended" class="fullscreen-modal">
+                    <div class="fullscreen-close" onclick="closeFullscreenExtended()">✕</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-left" onclick="prevFullscreenSlideExtended()">‹</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-right" onclick="nextFullscreenSlideExtended()">›</div>
+                    <div class="fullscreen-slides" id="fullscreen-slides-extended" style="transform: translateX(-${startIndex * 100}%);">
+                        ${fullscreenSlides}
+                    </div>
+                    <div class="fullscreen-nav" id="fullscreen-nav-extended">
+                        ${fullscreenDots}
+                    </div>
+                    <div class="fullscreen-counter" id="fullscreen-counter-extended">${startIndex + 1} / 5</div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
+            
+            // Добавляем свайп для полноэкранного режима
+            setTimeout(() => {
+                const modal = document.getElementById('fullscreen-modal-extended');
+                if (modal) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+                    
+                    modal.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                    });
+                    
+                    modal.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        const deltaX = touchEndX - touchStartX;
+                        
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                prevFullscreenSlideExtended();
+                            } else {
+                                nextFullscreenSlideExtended();
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        function closeFullscreenExtended() {
+            const modal = document.getElementById('fullscreen-modal-extended');
+            if (modal) modal.remove();
+        }
+        
+        function prevFullscreenSlideExtended() {
+            if (currentExtendedIndex > 0) {
+                currentExtendedIndex--;
+                const slides = document.getElementById('fullscreen-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateFullscreenDotsExtended(currentExtendedIndex);
+                updateFullscreenCounterExtended(currentExtendedIndex);
+            }
+        }
+        
+        function nextFullscreenSlideExtended() {
+            if (currentExtendedIndex < extendedImagesCount - 1) {
+                currentExtendedIndex++;
+                const slides = document.getElementById('fullscreen-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateFullscreenDotsExtended(currentExtendedIndex);
+                updateFullscreenCounterExtended(currentExtendedIndex);
+            }
+        }
+        
+        function goToFullscreenSlideExtended(index) {
+            currentExtendedIndex = index;
+            const slides = document.getElementById('fullscreen-slides-extended');
+            if (slides) {
+                slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+            }
+            updateFullscreenDotsExtended(currentExtendedIndex);
+            updateFullscreenCounterExtended(currentExtendedIndex);
+        }
+        
+        function updateFullscreenDotsExtended(currentIndex) {
+            const dots = document.querySelectorAll('#fullscreen-nav-extended .fullscreen-dot');
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function updateFullscreenCounterExtended(currentIndex) {
+            const counter = document.getElementById('fullscreen-counter-extended');
+            if (counter) {
+                counter.textContent = `${currentIndex + 1} / ${extendedImagesCount}`;
+            }
+        }
         
         // Запускаем приложение
         initTelegram();
@@ -3971,6 +4134,14 @@ window.openYandexMaps = openYandexMaps;
         window.closeAchievementModal = closeAchievementModal;
         window.contactAdminForAchievement = contactAdminForAchievement;
                 window.cycleAchievementFilter = cycleAchievementFilter;
+                        window.prevSlideExtended = prevSlideExtended;
+        window.nextSlideExtended = nextSlideExtended;
+        window.goToSlideExtended = goToSlideExtended;
+        window.openFullscreenExtended = openFullscreenExtended;
+        window.closeFullscreenExtended = closeFullscreenExtended;
+        window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
+        window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
+        window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
     </script>
 </body>
 </html>
