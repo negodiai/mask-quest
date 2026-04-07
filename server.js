@@ -14,6 +14,9 @@ const db = require('./database');
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+// Подключаем PostgreSQL
+const db = require('./database');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -36,4 +39,13 @@ app.get('/', (req, res) => {
 // Запускаем сервер
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
+});
+
+// Обработка ошибок базы данных
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) {
+    console.error('Unhandled Rejection:', err);
 });
