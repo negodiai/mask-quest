@@ -1,4 +1,4 @@
-const ACTIVATION_RADIUS_METERS = 3000;
+const ACTIVATION_RADIUS_METERS = 50;
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000;

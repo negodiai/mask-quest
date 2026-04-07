@@ -1753,9 +1753,6 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
         }
         
         function closeAchievementModal() {
@@ -1781,16 +1778,13 @@
         }
         
         // Активация маски с новыми уведомлениями
-                        async function activateMask() {
-            // Запрашиваем геолокацию
+        async function activateMask() {
             if (!navigator.geolocation) {
                 showToast('Геолокация не поддерживается', 'error');
-                playHapticFeedback('error');
                 return;
             }
             
             showToast('Определение местоположения...', 'info');
-            playHapticFeedback('click');
             
             navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
@@ -1815,28 +1809,41 @@
                     const result = await res.json();
                     
                     if (result.success) {
-                        showToast(result.message, 'success');
-                        playHapticFeedback('success');
-                        // Показываем контент маски
-                        showActivatedMask(result.mask);
-                        await loadInitialData();
-                    } else if (result.error === 'already_activated') {
-                        showToast(result.message, 'warning');
-                        playHapticFeedback('warning');
-                    } else if (result.error === 'too_far') {
-                        showToast(result.message, 'error');
-                        playHapticFeedback('error');
-                    } else if (result.error === 'no_mask_nearby') {
-                        showToast(result.message, 'error');
-                        playHapticFeedback('error');
-                    } else {
-                        showToast(result.message || 'Ошибка активации', 'error');
-                        playHapticFeedback('error');
-                    }
+    // Успешная активация
+    showToast(`Вы успешно активировали маску!`, 'success');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+    // Показываем контент маски
+    showActivatedMask(result.mask);
+    await loadInitialData();
+} else if (result.error === 'already_activated') {
+    // Уже активирована
+    showToast(`Вы уже активировали эту маску!`, 'warning');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+    }
+} else if (result.error === 'too_far') {
+    // Слишком далеко
+    showToast(`Вы слишком далеко (${result.distance}м). Подойдите ближе (в радиусе 30м)`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else if (result.error === 'no_mask_nearby') {
+    // Нет маски рядом
+    showToast(`Рядом нет масок!`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else {
+    showToast(result.message || 'Ошибка активации', 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+}
                 } catch (e) {
                     console.error('Activation error:', e);
                     showToast('Ошибка активации. Попробуйте еще раз.', 'error');
-                    playHapticFeedback('error');
                 }
             }, (error) => {
                 let message = 'Не удалось определить местоположение';
@@ -1844,7 +1851,6 @@
                     message = 'Разрешите доступ к геолокации в настройках';
                 }
                 showToast(message, 'error');
-                playHapticFeedback('error');
             }, {
                 enableHighAccuracy: true,
                 timeout: 10000
@@ -2812,9 +2818,6 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-                        // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
             
             // Добавляем проверку прокрутки для модального окна
             setTimeout(() => {
@@ -3146,10 +3149,7 @@
                         }
                     });
                 }
-                        }, 200);
-            
-            // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
+            }, 200);
         }
         
         // Функция для открытия полноэкранного режима из карусели
@@ -3469,9 +3469,6 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
         }
         
         // Закрыть окно выбора карты для маски
@@ -3590,9 +3587,6 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
         }
         
         // Закрыть окно поддержки
@@ -3682,9 +3676,6 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            // Добавляем звуки на кнопки в модальном окне
-            addClickSoundsToModal();
         }
 
         // Закрыть окно выбора карты
@@ -3852,75 +3843,6 @@
         window.addEventListener('load', checkScroll);
         window.addEventListener('resize', checkScroll);
 
-                        // === ЗВУКИ И ТАКТИЛЬНАЯ ОБРАТНАЯ СВЯЗЬ ===
-        function playHapticFeedback(type) {
-            if (!window.Telegram?.WebApp?.HapticFeedback) {
-                console.log('HapticFeedback не поддерживается');
-                return;
-            }
-            
-            const tg = window.Telegram.WebApp;
-            
-            switch(type) {
-                case 'success':
-                    tg.HapticFeedback.notificationOccurred('success');
-                    break;
-                case 'error':
-                    tg.HapticFeedback.notificationOccurred('error');
-                    break;
-                case 'warning':
-                    tg.HapticFeedback.notificationOccurred('warning');
-                    break;
-                case 'click':
-                    tg.HapticFeedback.impactOccurred('light');
-                    break;
-                case 'heavy':
-                    tg.HapticFeedback.impactOccurred('heavy');
-                    break;
-                case 'medium':
-                    tg.HapticFeedback.impactOccurred('medium');
-                    break;
-                default:
-                    tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-        
-        // Функция для добавления звуков на все кликабельные элементы
-        function addClickSoundsToContainer(container) {
-            if (!container) return;
-            
-            const clickableElements = container.querySelectorAll('button, .menu-item, .route-card, .card, .achievement-card, .filter-btn, .back-button, .map-choice-btn, .tab-button, .btn-small-catalog, .support-contact-btn, .info-item, .history-item');
-            
-            clickableElements.forEach(el => {
-                el.removeEventListener('click', handleClickSound);
-                el.addEventListener('click', handleClickSound);
-            });
-        }
-        
-        function handleClickSound(e) {
-            if (e.target.closest('.history-actions')) {
-                return;
-            }
-            playHapticFeedback('click');
-        }
-        
-        function addClickSoundsToModal() {
-            setTimeout(() => {
-                const modal = document.querySelector('.modal-overlay:last-child');
-                if (modal) {
-                    const clickableInModal = modal.querySelectorAll('button, .close-btn, .achievement-reward-btn');
-                    clickableInModal.forEach(el => {
-                        el.removeEventListener('click', handleModalClickSound);
-                        el.addEventListener('click', handleModalClickSound);
-                    });
-                }
-            }, 100);
-        }
-        
-        function handleModalClickSound(e) {
-            playHapticFeedback('click');
-        }
-
         // Главная функция рендеринга
                 function render() {
             const appDiv = document.getElementById('app');
@@ -3957,12 +3879,7 @@
                     content = renderMainMenu();
             }
             
-                        appDiv.innerHTML = content;
-            
-            // Добавляем звуки на все кликабельные элементы на странице
-            setTimeout(() => {
-                addClickSoundsToContainer(appDiv);
-            }, 50);
+            appDiv.innerHTML = content;
             
             // Сбрасываем проверку прокрутки при смене страницы
             setTimeout(() => {
