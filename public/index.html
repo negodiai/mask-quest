@@ -1526,20 +1526,13 @@
             }
         }
         
-                async function loadRoutes() {
+        async function loadRoutes() {
             try {
                 const res = await fetch(`${API_BASE}/routes/list?userId=${currentUserId}`);
-                if (!res.ok) {
-                    console.error('Routes API error:', res.status);
-                    appState.routes = [];
-                    return;
-                }
                 const data = await res.json();
-                appState.routes = data || [];
-                console.log('Routes loaded:', appState.routes.length);
+                appState.routes = data;
             } catch (e) {
                 console.error('Failed to load routes:', e);
-                appState.routes = [];
             }
         }
         
@@ -1965,22 +1958,34 @@
         
         // Рендер списка маршрутов
                         function renderRoutesList() {
-            // Проверяем, есть ли маршруты
-            if (!appState.routes || appState.routes.length === 0) {
+            const filteredRoutes = getFilteredRoutes();
+            
+            // Текст на кнопке фильтра
+            let filterText = '';
+            if (currentFilter === 'all') filterText = 'Все';
+            else if (currentFilter === 'completed') filterText = 'Пройдены';
+            else if (currentFilter === 'uncompleted') filterText = 'Не пройдены';
+            
+            if (filteredRoutes.length === 0) {
                 return `
                     <div class="container">
                         <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                        <h1 class="page-title">Выбери маршрут для изучения</h1>
+                                                <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Выбери маршрут</h1>
+                            <button class="filter-btn filter-${currentFilter}" onclick="cycleFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
                         <div class="progress-section" style="margin-bottom: 20px;">
                             <div class="progress-header">
                                 <span>Общий прогресс по маршрутам</span>
-                                <span>0 из 0</span>
+                                <span>${appState.progress.completedRoutes} из ${appState.progress.totalRoutes}</span>
                             </div>
                             <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" style="width: 0%; background: #8B5CF6;"></div>
+                                <div class="progress-bar-fill" style="width: ${appState.progress.totalRoutes > 0 ? (appState.progress.completedRoutes / appState.progress.totalRoutes * 100) : 0}%; background: #8B5CF6;"></div>
                             </div>
                         </div>
-                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет доступных маршрутов</p>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет маршрутов в этом разделе</p>
                     </div>
                 `;
             }

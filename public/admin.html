@@ -324,7 +324,7 @@
         let masks = [];
         let routes = [];
         
-                async function loadAdminPanel() {
+        async function loadAdminPanel() {
             await Promise.all([
                 loadMasks(),
                 loadRoutes(),
@@ -347,24 +347,8 @@
             const res = await fetch(`${API_BASE}/admin/stats?userId=${currentUserId}`);
             window.stats = await res.json();
         }
-
-                async function refreshData() {
-            showMessage('Обновление данных...', 'info');
-            try {
-                await Promise.all([
-                    loadMasks(),
-                    loadRoutes(),
-                    loadStats()
-                ]);
-                renderAdminPanel();
-                showMessage('Данные успешно обновлены!', 'success');
-            } catch (e) {
-                console.error('Refresh error:', e);
-                showMessage('Ошибка обновления данных', 'error');
-            }
-        }
         
-                function renderAdminPanel() {
+        function renderAdminPanel() {
             const html = `
                 <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
@@ -428,7 +412,7 @@
             `).join('');
         }
         
-                function renderRoutesList() {
+        function renderRoutesList() {
             if (routes.length === 0) return '<p style="text-align: center; color: #64748b;">Нет маршрутов</p>';
             
             return routes.map(route => `
@@ -436,15 +420,13 @@
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(route.name)}</span>
                         <div>
-                            ${!route.isActive ? `<button class="btn-icon btn-publish" onclick="publishRoute('${route.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
-                            <button class="btn-icon" onclick="editRoute('${route.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon" onclick="editRoute('${route.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📏 ${route.distanceKm} км | ⏱️ ${route.durationMinutes} мин</div>
                         <div>📝 ${escapeHtml(route.description || 'Без описания')}</div>
-                        <div>${route.isActive ? '<span style="color: #10B981;">✅ Опубликован</span>' : '<span style="color: #F59E0B;">⏳ Черновик</span>'}</div>
                     </div>
                 </div>
             `).join('');
@@ -672,23 +654,18 @@
             }
         }
         
-                async function deleteRoute(id) {
+        async function deleteRoute(id) {
             if (!confirm('Удалить маршрут? Это действие нельзя отменить.')) return;
             
-            try {
-                const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (res.ok) {
-                    showMessage('Маршрут удалён', 'success');
-                    await loadRoutes();
-                    renderAdminPanel();
-                } else {
-                    showMessage('Ошибка удаления', 'error');
-                }
-            } catch (e) {
-                showMessage('Ошибка сети', 'error');
+            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                showMessage('Маршрут удалён', 'success');
+                loadRoutes().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка удаления', 'error');
             }
         }
         
@@ -861,46 +838,6 @@
                 return m;
             });
         }
-
-                        async function publishRoute(id) {
-            if (!confirm('Опубликовать маршрут? Он станет доступен пользователям.')) return;
-            
-            try {
-                const res = await fetch(`${API_BASE}/admin/routes/${id}/publish?userId=${currentUserId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const result = await res.json();
-                
-                if (res.ok) {
-                    showMessage(result.message || 'Маршрут опубликован!', 'success');
-                    // Очищаем кеш и перезагружаем
-                    await loadRoutes();
-                    renderAdminPanel();
-                } else {
-                    showMessage(result.error || 'Ошибка публикации', 'error');
-                }
-            } catch (e) {
-                showMessage('Ошибка сети', 'error');
-            }
-        }
-
-                // Делаем функции глобальными для onclick
-        window.switchTab = switchTab;
-        window.showAddMaskModal = showAddMaskModal;
-        window.showAddRouteModal = showAddRouteModal;
-        window.deleteMask = deleteMask;
-        window.deleteRoute = deleteRoute;
-        window.editMask = editMask;
-        window.editRoute = editRoute;
-        window.publishMask = publishMask;
-        window.publishRoute = publishRoute;
-        window.closeModal = closeModal;
-        window.saveModal = saveModal;
-        window.showMessage = showMessage;
-                window.refreshData = refreshData;
-        window.refreshRoutes = refreshRoutes;
         
         init();
     </script>
