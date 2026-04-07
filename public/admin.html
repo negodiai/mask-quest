@@ -324,7 +324,7 @@
         let masks = [];
         let routes = [];
         
-        async function loadAdminPanel() {
+                async function loadAdminPanel() {
             await Promise.all([
                 loadMasks(),
                 loadRoutes(),
@@ -364,7 +364,7 @@
             }
         }
         
-        function renderAdminPanel() {
+                function renderAdminPanel() {
             const html = `
                 <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
@@ -375,15 +375,10 @@
                     <i class="fas fa-id-badge"></i> Ваш ID: ${currentUserId}
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                    <div class="tabs" style="margin-bottom: 0;">
-                        <button class="tab-btn ${currentTab === 'masks' ? 'active' : ''}" onclick="switchTab('masks')">📋 Маски</button>
-                        <button class="tab-btn ${currentTab === 'routes' ? 'active' : ''}" onclick="switchTab('routes')">🗺️ Маршруты</button>
-                        <button class="tab-btn ${currentTab === 'stats' ? 'active' : ''}" onclick="switchTab('stats')">📊 Статистика</button>
-                    </div>
-                    <button class="btn-icon" onclick="refreshData()" title="Обновить данные" style="background: #252542; padding: 8px 12px; border-radius: 10px;">
-                        <i class="fas fa-sync-alt"></i> Обновить
-                    </button>
+                <div class="tabs">
+                    <button class="tab-btn ${currentTab === 'masks' ? 'active' : ''}" onclick="switchTab('masks')">📋 Маски</button>
+                    <button class="tab-btn ${currentTab === 'routes' ? 'active' : ''}" onclick="switchTab('routes')">🗺️ Маршруты</button>
+                    <button class="tab-btn ${currentTab === 'stats' ? 'active' : ''}" onclick="switchTab('stats')">📊 Статистика</button>
                 </div>
                 
                 <div id="masks-tab" class="tab-content ${currentTab === 'masks' ? 'active' : ''}">
