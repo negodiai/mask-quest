@@ -1350,6 +1350,42 @@
             transform: scale(1.02);
             background: linear-gradient(135deg, #D97706, #B45309);
         }
+
+                        /* Кнопка сворачивания приложения */
+        .custom-close-btn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .custom-close-btn span {
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        
+        .custom-close-btn i {
+            color: white;
+            font-size: 12px;
+        }
+        
+        .custom-close-btn:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
@@ -3881,6 +3917,9 @@
             
             appDiv.innerHTML = content;
             
+            // Добавляем кнопку сворачивания (если её нет)
+            setTimeout(addCustomCloseButton, 100);
+            
             // Сбрасываем проверку прокрутки при смене страницы
             setTimeout(() => {
                 const btn = document.getElementById('scrollTopBtn');
@@ -3891,12 +3930,36 @@
                 window.scrollTo(0, 0);
                 checkScroll();
             }, 100);
+
+                        appDiv.innerHTML = content;
+            setTimeout(addCustomCloseButton, 100);
             
             // Включаем свайп для возврата (кроме главной)
             if (currentPage !== 'main') {
                 enableSwipeToGoBack();
             }
         }
+
+                        // === ДОБАВЛЯЕМ КНОПКУ СВЕРНУТЬ ===
+        function addCustomCloseButton() {
+            if (!window.Telegram?.WebApp) return;
+            if (document.getElementById('custom-close-btn')) return;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'custom-close-btn';
+            closeBtn.className = 'custom-close-btn';
+            closeBtn.innerHTML = `<i class="fas fa-chevron-down"></i><span>свернуть</span>`;
+            closeBtn.onclick = () => {
+                if (window.Telegram?.WebApp) {
+                    window.Telegram.WebApp.close();
+                }
+            };
+            document.body.appendChild(closeBtn);
+        }
+        
+        window.addEventListener('load', function() {
+            setTimeout(addCustomCloseButton, 500);
+        });
         
         // Запускаем приложение
         initTelegram();
