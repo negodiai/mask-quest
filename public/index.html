@@ -1351,35 +1351,28 @@
             background: linear-gradient(135deg, #D97706, #B45309);
         }
 
-                        /* Кнопка сворачивания приложения */
+                                /* Кнопка сворачивания приложения */
         .custom-close-btn {
             position: fixed;
             top: 12px;
             right: 12px;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(8px);
-            padding: 6px 12px;
-            border-radius: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
             cursor: pointer;
             z-index: 1000;
             transition: all 0.2s ease;
             border: none;
         }
         
-        .custom-close-btn span {
-            color: white;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-        }
-        
         .custom-close-btn i {
             color: white;
-            font-size: 12px;
+            font-size: 16px;
         }
         
         .custom-close-btn:hover {
@@ -3940,20 +3933,25 @@
             }
         }
 
-                        // === ДОБАВЛЯЕМ КНОПКУ СВЕРНУТЬ ===
+                                // === ДОБАВЛЯЕМ КНОПКУ СВЕРНУТЬ ===
         function addCustomCloseButton() {
             if (!window.Telegram?.WebApp) return;
             if (document.getElementById('custom-close-btn')) return;
             
+            const tg = window.Telegram.WebApp;
+            
             const closeBtn = document.createElement('button');
             closeBtn.id = 'custom-close-btn';
             closeBtn.className = 'custom-close-btn';
-            closeBtn.innerHTML = `<i class="fas fa-chevron-down"></i><span>свернуть</span>`;
+            closeBtn.innerHTML = `<i class="fas fa-chevron-down"></i>`;
+            
             closeBtn.onclick = () => {
-                if (window.Telegram?.WebApp) {
-                    window.Telegram.WebApp.close();
+                // Сворачиваем приложение (как свайп вниз)
+                if (tg && typeof tg.close === 'function') {
+                    tg.close();
                 }
             };
+            
             document.body.appendChild(closeBtn);
         }
         
