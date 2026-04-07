@@ -3,19 +3,17 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Подключаем базу данных PostgreSQL
+const db = require('./database');
+
 // Импортируем наши маршруты (API)
 const masksRoutes = require('./routes/masks');
+const activateByQrRoutes = require('./routes/activate-by-qr');
 const routesRoutes = require('./routes/routes');
 const userRoutes = require('./routes/user');
 const seedRoutes = require('./routes/seed');
-
-const db = require('./database');
-
+const redirectRoutes = require('./routes/redirect');
 const adminRoutes = require('./routes/admin');
-app.use('/api/admin', adminRoutes);
-
-// Подключаем PostgreSQL
-const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,9 +25,12 @@ app.use(express.static('public'));
 
 // Подключаем наши API
 app.use('/api/masks', masksRoutes);
+app.use('/api/masks', activateByQrRoutes);
 app.use('/api/routes', routesRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/scan', redirectRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Главная страница
 app.get('/', (req, res) => {
@@ -46,6 +47,6 @@ process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
 
-process.on('unhandledRejection', (err) {
+process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
 });

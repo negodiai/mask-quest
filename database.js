@@ -5,18 +5,22 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
     console.error('❌ DATABASE_URL не найдена! Добавьте PostgreSQL базу данных в Railway');
-    process.exit(1);
+    // Не выходим, чтобы сервер мог запуститься без БД для тестов
 }
 
 const pool = new Pool({
     connectionString: databaseUrl,
-    ssl: { rejectUnauthorized: false }
+    ssl: databaseUrl ? { rejectUnauthorized: false } : false
 });
 
 // Инициализация таблиц
 async function initDatabase() {
+    if (!databaseUrl) {
+        console.log('⚠️ База данных не настроена, пропускаем инициализацию');
+        return;
+    }
+    
     try {
-        // Таблица масок
         await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
@@ -40,7 +44,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS routes (
                 id TEXT PRIMARY KEY,
@@ -58,7 +61,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица связи масок и маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS route_masks (
                 id SERIAL PRIMARY KEY,
@@ -71,7 +73,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица активаций пользователей
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_activations (
                 id TEXT PRIMARY KEY,
@@ -85,7 +86,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица прогресса маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_route_progress (
                 id TEXT PRIMARY KEY,
@@ -99,7 +99,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица для статистики (логирование действий)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS admin_logs (
                 id SERIAL PRIMARY KEY,
