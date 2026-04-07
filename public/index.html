@@ -1662,12 +1662,46 @@
             }
         }
         
-        function showAchievementToast(achievementName, isSpecial = false) {
-            let message = `🏆 НОВОЕ ДОСТИЖЕНИЕ! 🏆\n${achievementName}`;
-            if (isSpecial) {
-                message += `\n\n✨ Нажми на достижение, чтобы похвастаться! ✨`;
+                function showAchievementToast(achievementName, isSpecial = false) {
+            // Показываем уведомление только на главном экране
+            if (currentPage !== 'main') {
+                // Сохраняем в localStorage, что есть непрочитанное достижение
+                localStorage.setItem(`pending_achievement_${currentUserId}`, achievementName);
+                if (isSpecial) {
+                    localStorage.setItem(`pending_achievement_special_${currentUserId}`, 'true');
+                }
+                return;
             }
+            
+            // Показываем уведомление
+            let message = 'Новое достижение';
             showToast(message, 'success');
+            
+            // Если есть особое достижение, показываем дополнительное уведомление
+            if (isSpecial) {
+                setTimeout(() => {
+                    showToast('Нажми на достижение, чтобы похвастаться!', 'info');
+                }, 3000);
+            }
+        }
+        
+        // Функция для проверки непрочитанных достижений при загрузке главного экрана
+        function checkPendingAchievements() {
+            const pending = localStorage.getItem(`pending_achievement_${currentUserId}`);
+            if (pending) {
+                setTimeout(() => {
+                    showToast('Новое достижение', 'success');
+                    const isSpecial = localStorage.getItem(`pending_achievement_special_${currentUserId}`);
+                    if (isSpecial === 'true') {
+                        setTimeout(() => {
+                            showToast('Нажми на достижение, чтобы похвастаться!', 'info');
+                        }, 3000);
+                    }
+                }, 1000);
+                // Очищаем после показа
+                localStorage.removeItem(`pending_achievement_${currentUserId}`);
+                localStorage.removeItem(`pending_achievement_special_${currentUserId}`);
+            }
         }
         
         function loadUserAchievements() {
@@ -1849,9 +1883,12 @@
         
         // Рендер главного меню
         function renderMainMenu() {
-    const progress = appState.progress;
-    const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
-    const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
+            const progress = appState.progress;
+            const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
+            const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
+            
+            // Проверяем непрочитанные достижения при загрузке главного экрана
+            checkPendingAchievements();
     
     return `
         <div class="container">
