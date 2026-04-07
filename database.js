@@ -116,6 +116,12 @@ async function initDatabase() {
     }
 }
 
+// Получить только опубликованные маски
+async function getPublishedMasks() {
+    const result = await pool.query('SELECT * FROM masks WHERE "isAvailable" = 1 ORDER BY name');
+    return result.rows;
+}
+
 initDatabase();
 
 module.exports = pool;

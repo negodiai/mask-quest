@@ -4,42 +4,79 @@ const db = require('../data/db');
 const { calculateDistance, ACTIVATION_RADIUS_METERS } = require('../utils/geo');
 
 // GET /api/masks/list - список всех масок
-router.get('/list', (req, res) => {
-    const masks = db.getAllMasks();
-    // Убираем чувствительные данные
-    const safeMasks = masks.map(m => ({
-        id: m.id,
-        name: m.name,
-        description: m.description,
-        latitude: m.latitude,
-        longitude: m.longitude,
-        photoHash: m.photoHash,
-        isAvailable: m.isAvailable,
-        price: m.price,
-        yandexMapLink: m.yandexMapLink,
-        googleMapLink: m.googleMapLink,
-        twoGisLink: m.twoGisLink
-    }));
-    res.json(safeMasks);
+router.get('/list', async (req, res) => {
+    try {
+        // Возвращаем только опубликованные маски (isAvailable = 1)
+        const result = await db.query(`
+            SELECT id, name, description, latitude, longitude, "photoHash", "isAvailable", 
+                   "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink"
+            FROM masks 
+            WHERE "isAvailable" = 1
+            ORDER BY name
+        `);
+        
+        const safeMasks = result.rows.map(m => ({
+            id: m.id,
+            name: m.name,
+            description: m.description,
+            latitude: m.latitude,
+            longitude: m.longitude,
+            photoHash: m.photoHash,
+            isAvailable: m.isAvailable === 1,
+            price: { amount: m.priceAmount, currency: m.priceCurrency || 'RUB' },
+            yandexMapLink: m.yandexMapLink,
+            googleMapLink: m.googleMapLink,
+            twoGisLink: m.twoGisLink
+        }));
+        
+        res.json(safeMasks);
+    } catch (err) {
+        console.error('Error loading masks list:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET /api/masks/detail - детали конкретной маски
-router.get('/detail', (req, res) => {
+router.get('/detail', async (req, res) => {
     const { id } = req.query;
+    
     if (!id) {
         return res.status(400).json({ error: 'Mask ID required' });
     }
     
-    const mask = db.getMaskById(id);
-    if (!mask) {
-        return res.status(404).json({ error: 'Mask not found' });
+    try {
+        const result = await db.query('SELECT * FROM masks WHERE id = $1', [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Mask not found' });
+        }
+        
+        const mask = result.rows[0];
+        res.json({
+            id: mask.id,
+            name: mask.name,
+            description: mask.description,
+            fullDescription: mask.fullDescription,
+            latitude: mask.latitude,
+            longitude: mask.longitude,
+            address: mask.address,
+            photoHash: mask.photoHash,
+            activationPhotoHash: mask.activationPhotoHash,
+            audioGuideHash: mask.audioGuideHash,
+            isAvailable: mask.isAvailable === 1,
+            price: { amount: mask.priceAmount, currency: mask.priceCurrency || 'RUB' },
+            yandexMapLink: mask.yandexMapLink,
+            googleMapLink: mask.googleMapLink,
+            twoGisLink: mask.twoGisLink
+        });
+    } catch (err) {
+        console.error('Error loading mask detail:', err);
+        res.status(500).json({ error: err.message });
     }
-    
-    res.json(mask);
 });
 
 // GET /api/masks/nearby - маски рядом с точкой
-router.get('/nearby', (req, res) => {
+router.get('/nearby', async (req, res) => {
     const { lat, lng, radius = 1000 } = req.query;
     
     if (!lat || !lng) {
@@ -50,16 +87,24 @@ router.get('/nearby', (req, res) => {
     const userLng = parseFloat(lng);
     const searchRadius = parseFloat(radius);
     
-    const allMasks = db.getAllMasks();
-    const nearbyMasks = allMasks
-        .map(mask => ({
-            ...mask,
-            distance: calculateDistance(userLat, userLng, mask.latitude, mask.longitude)
-        }))
-        .filter(mask => mask.distance <= searchRadius)
-        .sort((a, b) => a.distance - b.distance);
-    
-    res.json(nearbyMasks);
+    try {
+        // Получаем только опубликованные маски
+        const result = await db.query('SELECT * FROM masks WHERE "isAvailable" = 1');
+        const allMasks = result.rows;
+        
+        const nearbyMasks = allMasks
+            .map(mask => ({
+                ...mask,
+                distance: calculateDistance(userLat, userLng, mask.latitude, mask.longitude)
+            }))
+            .filter(mask => mask.distance <= searchRadius)
+            .sort((a, b) => a.distance - b.distance);
+        
+        res.json(nearbyMasks);
+    } catch (err) {
+        console.error('Error loading nearby masks:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // POST /api/masks/activate - активация маски по геолокации
