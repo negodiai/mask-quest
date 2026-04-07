@@ -1239,6 +1239,117 @@
             line-height: 1.4;
             display: block;
         }
+
+                        /* Стили для достижений */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .achievement-card {
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+            aspect-ratio: 1 / 1;
+            justify-content: center;
+        }
+        
+        .achievement-card.unlocked {
+            background: #1a2e1a;
+            border: 1px solid #10B981;
+        }
+        
+        .achievement-card.locked {
+            background: #1a1a2e;
+            opacity: 0.7;
+        }
+        
+        .achievement-card:hover {
+            transform: translateY(-2px);
+            background: #2d2d54;
+        }
+        
+        .achievement-card.unlocked:hover {
+            background: #1a3a1a;
+        }
+        
+        .achievement-icon {
+            width: 56px;
+            height: 56px;
+            background: #1a1a2e;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .achievement-card.unlocked .achievement-icon i {
+            color: #F59E0B;
+        }
+        
+        .achievement-card.locked .achievement-icon i {
+            color: #3d3d5c;
+        }
+        
+        .achievement-info {
+            width: 100%;
+        }
+        
+        .achievement-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .achievement-desc {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.3;
+        }
+        
+        .achievement-status {
+            font-size: 18px;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+        
+        .achievement-card {
+            position: relative;
+        }
+        
+        .achievement-reward-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .achievement-reward-btn:hover {
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #D97706, #B45309);
+        }
     </style>
 </head>
 <body>
@@ -1267,6 +1378,54 @@
         };
                 let currentFilter = 'all'; // all, completed, uncompleted
                         let currentMaskFilter = 'all'; // all, activated, notactivated
+                                let currentAchievementFilter = 'all'; // all, unlocked, locked
+
+                                // === ДАННЫЕ ДОСТИЖЕНИЙ ===
+        let userAchievements = {
+            firstMask: false,
+            threeMasks: false,
+            fiveMasks: false,
+            dozenMasks: false,
+            fiftyMasks: false,
+            hundredMasks: false,
+            twoFiftyMasks: false,
+            fiveHundredMasks: false,
+            firstRoute: false,
+            threeRoutes: false,
+            sixRoutes: false,
+            tenRoutes: false,
+            fifteenRoutes: false,
+            twentyFourRoutes: false,
+            photographer: false,
+            historian: false,
+            modernist: false,
+            epochExplorer: false,
+            audioLover: false,
+            negodjai: false
+        };
+        
+                        const achievementsList = [
+            { id: 'firstMask', name: 'Первая маска', icon: 'fa-star', condition: '1', type: 'mask', description: 'Первый шаг в мире НЕГОДЯЙ', requirement: 'Активировать 1 маску', special: false },
+            { id: 'threeMasks', name: 'Знакомство с городом', icon: 'fa-city', condition: '3', type: 'mask', description: 'Вы начали исследовать Калининград', requirement: 'Активировать 3 маски', special: false },
+            { id: 'fiveMasks', name: 'Любознательный турист', icon: 'fa-binoculars', condition: '5', type: 'mask', description: 'Уже полпути к первой дюжине', requirement: 'Активировать 5 масок', special: false },
+            { id: 'dozenMasks', name: 'Первая дюжина', icon: 'fa-list', condition: '12', type: 'mask', description: 'Дюжина масок собрана!', requirement: 'Активировать 12 масок', special: false },
+            { id: 'fiftyMasks', name: 'Полтинник', icon: 'fa-chart-line', condition: '50', type: 'mask', description: 'Серьёзный результат!', requirement: 'Активировать 50 масок', special: false },
+            { id: 'hundredMasks', name: 'Первая сотня', icon: 'fa-gem', condition: '100', type: 'mask', description: 'Настоящий коллекционер!', requirement: 'Активировать 100 масок', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'twoFiftyMasks', name: 'Исследователь', icon: 'fa-compass', condition: '250', type: 'mask', description: 'Вы знаете город как свои пять пальцев', requirement: 'Активировать 250 масок', special: false },
+            { id: 'fiveHundredMasks', name: 'Легенда', icon: 'fa-crown', condition: '500', type: 'mask', description: 'Все маски города покорились вам!', requirement: 'Активировать 500 масок', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'firstRoute', name: 'Первый маршрут', icon: 'fa-route', condition: '1', type: 'route', description: 'Первое путешествие завершено', requirement: 'Пройти 1 маршрут', special: false },
+            { id: 'threeRoutes', name: 'Любитель прогулок', icon: 'fa-person-walking', condition: '3', type: 'route', description: 'Вы уже профи в городских прогулках', requirement: 'Пройти 3 маршрута', special: false },
+            { id: 'sixRoutes', name: 'Опытный путешественник', icon: 'fa-map', condition: '6', type: 'route', description: 'Половина маршрутов позади', requirement: 'Пройти 6 маршрутов', special: false },
+            { id: 'tenRoutes', name: 'Мастер маршрутов', icon: 'fa-trophy', condition: '10', type: 'route', description: 'Десятка! Почти всё позади', requirement: 'Пройти 10 маршрутов', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'fifteenRoutes', name: 'Покоритель города', icon: 'fa-mountain-city', condition: '15', type: 'route', description: 'Осталось совсем немного', requirement: 'Пройти 15 маршрутов', special: false },
+            { id: 'twentyFourRoutes', name: 'Король маршрутов', icon: 'fa-crown', condition: '24', type: 'route', description: 'Все маршруты завершены!', requirement: 'Пройти 24 маршрута', special: true, reward: 'Запросить подарок-маску' },
+            { id: 'photographer', name: 'Фотограф', icon: 'fa-camera', condition: '10', type: 'photo', description: 'Вы не просто проходите, а запоминаете', requirement: 'Сделать фото 10 масок', special: false },
+            { id: 'historian', name: 'Историк', icon: 'fa-landmark', condition: 'all', type: 'past', description: 'Интерес к истории города', requirement: 'Активировать все маски категории "Прошлое"', special: false },
+            { id: 'modernist', name: 'Современник', icon: 'fa-building', condition: 'all', type: 'present', description: 'Ценитель современности', requirement: 'Активировать все маски категории "Настоящее"', special: false },
+            { id: 'epochExplorer', name: 'Исследователь эпох', icon: 'fa-clock', condition: 'both', type: 'epoch', description: 'Мастер всех времён', requirement: 'Получить достижения "Историк" и "Современник"', special: false },
+            { id: 'audioLover', name: 'Аудиолюбитель', icon: 'fa-headphones', condition: '10', type: 'audio', description: 'Любите слушать истории', requirement: 'Прослушать 10 аудиогидов', special: false },
+            { id: 'negodjai', name: 'НЕГОДЯЙ', icon: 'fa-mask', condition: 'all', type: 'final', description: 'Абсолютный чемпион!', requirement: 'Получить все достижения', special: true, reward: 'Похвастаться негодяю' }
+        ];
         
         // Функция для показа всплывающего уведомления
         let toastTimeout = null;
@@ -1330,13 +1489,15 @@
         }
         
         // Загрузка начальных данных
-        async function loadInitialData() {
+                async function loadInitialData() {
             await Promise.all([
                 loadProgress(),
                 loadMasks(),
                 loadRoutes(),
                 loadActivations()
             ]);
+            loadUserAchievements();
+            checkAchievements();
             render();
         }
         
@@ -1406,6 +1567,168 @@
             }
             renderRoutesList();
             render(); // Перерисовываем страницу
+        }
+
+                // === СИСТЕМА ДОСТИЖЕНИЙ ===
+                // === СИСТЕМА ДОСТИЖЕНИЙ ===
+        function checkAchievements() {
+            const activatedCount = appState.activations.length;
+            const completedRoutesCount = appState.progress.completedRoutes;
+            let changed = false;
+            
+            // Подсчёт масок по категориям (для историка и современника)
+            // Для демо: считаем, что маски 1-5 относятся к "Прошлому", 6-10 к "Настоящему"
+            const pastMasks = ['mask_1', 'mask_2', 'mask_3', 'mask_4', 'mask_5'];
+            const presentMasks = ['mask_6', 'mask_7', 'mask_8', 'mask_9', 'mask_10'];
+            
+            const activatedMaskIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            
+            const pastActivated = pastMasks.filter(id => activatedMaskIds.has(id)).length;
+            const presentActivated = presentMasks.filter(id => activatedMaskIds.has(id)).length;
+            const totalPast = pastMasks.length;
+            const totalPresent = presentMasks.length;
+            
+            // Фотограф: считаем, что у каждой маски есть фото (для демо)
+            const hasPhotos = activatedCount >= 10;
+            
+            // Аудиолюбитель: для демо, считаем что после 10 активаций есть аудиогиды
+            const hasAudio = activatedCount >= 10;
+            
+            // Маски
+            if (activatedCount >= 1 && !userAchievements.firstMask) { userAchievements.firstMask = true; changed = true; showAchievementToast('Первая маска'); }
+            if (activatedCount >= 3 && !userAchievements.threeMasks) { userAchievements.threeMasks = true; changed = true; showAchievementToast('Знакомство с городом'); }
+            if (activatedCount >= 5 && !userAchievements.fiveMasks) { userAchievements.fiveMasks = true; changed = true; showAchievementToast('Любознательный турист'); }
+            if (activatedCount >= 12 && !userAchievements.dozenMasks) { userAchievements.dozenMasks = true; changed = true; showAchievementToast('Первая дюжина'); }
+            if (activatedCount >= 50 && !userAchievements.fiftyMasks) { userAchievements.fiftyMasks = true; changed = true; showAchievementToast('Полтинник'); }
+            if (activatedCount >= 100 && !userAchievements.hundredMasks) { userAchievements.hundredMasks = true; changed = true; showAchievementToast('Первая сотня', true); }
+            if (activatedCount >= 250 && !userAchievements.twoFiftyMasks) { userAchievements.twoFiftyMasks = true; changed = true; showAchievementToast('Исследователь'); }
+            if (activatedCount >= 500 && !userAchievements.fiveHundredMasks) { userAchievements.fiveHundredMasks = true; changed = true; showAchievementToast('Легенда', true); }
+            
+            // Маршруты
+            if (completedRoutesCount >= 1 && !userAchievements.firstRoute) { userAchievements.firstRoute = true; changed = true; showAchievementToast('Первый маршрут'); }
+            if (completedRoutesCount >= 3 && !userAchievements.threeRoutes) { userAchievements.threeRoutes = true; changed = true; showAchievementToast('Любитель прогулок'); }
+            if (completedRoutesCount >= 6 && !userAchievements.sixRoutes) { userAchievements.sixRoutes = true; changed = true; showAchievementToast('Опытный путешественник'); }
+            if (completedRoutesCount >= 10 && !userAchievements.tenRoutes) { userAchievements.tenRoutes = true; changed = true; showAchievementToast('Мастер маршрутов', true); }
+            if (completedRoutesCount >= 15 && !userAchievements.fifteenRoutes) { userAchievements.fifteenRoutes = true; changed = true; showAchievementToast('Покоритель города'); }
+            if (completedRoutesCount >= 24 && !userAchievements.twentyFourRoutes) { userAchievements.twentyFourRoutes = true; changed = true; showAchievementToast('Король маршрутов', true); }
+            
+            // Фотограф (10 масок с фото)
+            if (hasPhotos && !userAchievements.photographer) { 
+                userAchievements.photographer = true; 
+                changed = true; 
+                showAchievementToast('Фотограф'); 
+            }
+            
+            // Историк (все маски из категории "Прошлое")
+            if (pastActivated === totalPast && totalPast > 0 && !userAchievements.historian) { 
+                userAchievements.historian = true; 
+                changed = true; 
+                showAchievementToast('Историк'); 
+            }
+            
+            // Современник (все маски из категории "Настоящее")
+            if (presentActivated === totalPresent && totalPresent > 0 && !userAchievements.modernist) { 
+                userAchievements.modernist = true; 
+                changed = true; 
+                showAchievementToast('Современник'); 
+            }
+            
+            // Исследователь эпох (есть и Историк, и Современник)
+            if (userAchievements.historian && userAchievements.modernist && !userAchievements.epochExplorer) { 
+                userAchievements.epochExplorer = true; 
+                changed = true; 
+                showAchievementToast('Исследователь эпох'); 
+            }
+            
+            // Аудиолюбитель (10 аудиогидов)
+            if (hasAudio && !userAchievements.audioLover) { 
+                userAchievements.audioLover = true; 
+                changed = true; 
+                showAchievementToast('Аудиолюбитель'); 
+            }
+            
+            // НЕГОДЯЙ (все достижения)
+            const allAchievements = Object.keys(userAchievements);
+            const allUnlocked = allAchievements.every(key => userAchievements[key] === true);
+            if (allUnlocked && allAchievements.length >= 19 && !userAchievements.negodjai) {
+                userAchievements.negodjai = true;
+                changed = true;
+                showAchievementToast('НЕГОДЯЙ', true);
+            }
+            
+            // Сохраняем достижения в localStorage
+            if (changed) {
+                localStorage.setItem(`achievements_${currentUserId}`, JSON.stringify(userAchievements));
+            }
+        }
+        
+        function showAchievementToast(achievementName, isSpecial = false) {
+            let message = `🏆 НОВОЕ ДОСТИЖЕНИЕ! 🏆\n${achievementName}`;
+            if (isSpecial) {
+                message += `\n\n✨ Нажми на достижение, чтобы похвастаться! ✨`;
+            }
+            showToast(message, 'success');
+        }
+        
+        function loadUserAchievements() {
+            const saved = localStorage.getItem(`achievements_${currentUserId}`);
+            if (saved) {
+                userAchievements = JSON.parse(saved);
+            }
+        }
+        
+                function showAchievementInfo(achievementId) {
+            const ach = achievementsList.find(a => a.id === achievementId);
+            if (!ach) return;
+            
+            const isUnlocked = userAchievements[achievementId];
+            const statusText = isUnlocked ? '✅ Получено' : '⚪ Не получено';
+            const statusColor = isUnlocked ? '#10B981' : '#64748b';
+            
+            let rewardButton = '';
+            if (isUnlocked && ach.special) {
+                rewardButton = `
+                    <button class="achievement-reward-btn" onclick="contactAdminForAchievement('${ach.name}')">
+                        <i class="fas fa-share-alt"></i> ${ach.reward}
+                    </button>
+                `;
+            }
+            
+            const modalHtml = `
+                <div id="achievement-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2><i class="fas ${ach.icon}" style="margin-right: 8px;"></i> ${ach.name}</h2>
+                            <button class="close-btn" onclick="closeAchievementModal()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">
+                                <i class="fas ${ach.icon}" style="color: ${isUnlocked ? '#F59E0B' : '#3d3d5c'}"></i>
+                            </div>
+                            <p style="color: #94a3b8; margin-bottom: 8px;">${ach.description}</p>
+                            <p style="color: #64748b; font-size: 11px; margin-bottom: 16px;">${ach.requirement}</p>
+                            <p style="color: ${statusColor}; font-weight: 600; margin-bottom: 16px;">${statusText}</p>
+                            ${rewardButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        function closeAchievementModal() {
+            const modal = document.getElementById('achievement-modal');
+            if (modal) modal.remove();
+        }
+        
+        function contactAdminForAchievement(achievementName) {
+            const message = `Я получил достижение "${achievementName}" в квесте НЕГОДЯЙ! Хочу похвастаться!`;
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.openTelegramLink(`https://t.me/undergroundmask_support?text=${encodeURIComponent(message)}`);
+            } else {
+                alert(`Поддержка: @undergroundmask_support в Telegram`);
+            }
+            closeAchievementModal();
         }
         
         // Навигация
@@ -2141,18 +2464,97 @@
             `;
         }
 
+                // Функция для получения отфильтрованных достижений
+        function getFilteredAchievements() {
+            if (currentAchievementFilter === 'all') {
+                return achievementsList;
+            } else if (currentAchievementFilter === 'unlocked') {
+                return achievementsList.filter(ach => userAchievements[ach.id] === true);
+            } else if (currentAchievementFilter === 'locked') {
+                return achievementsList.filter(ach => userAchievements[ach.id] !== true);
+            }
+            return achievementsList;
+        }
+        
+        // Функция для переключения фильтра достижений
+        function cycleAchievementFilter() {
+            if (currentAchievementFilter === 'all') {
+                currentAchievementFilter = 'unlocked';
+                showToast('Показаны полученные достижения', 'info');
+            } else if (currentAchievementFilter === 'unlocked') {
+                currentAchievementFilter = 'locked';
+                showToast('Показаны не полученные достижения', 'info');
+            } else if (currentAchievementFilter === 'locked') {
+                currentAchievementFilter = 'all';
+                showToast('Показаны все достижения', 'info');
+            }
+            renderAchievements();
+            render();
+        }
+
                 // Рендер страницы достижений (пока пустая)
-        function renderAchievements() {
+                                function renderAchievements() {
+            const filteredAchievements = getFilteredAchievements();
+            let achievementsHtml = '';
+            let unlockedCount = 0;
+            
+            // Подсчитываем общее количество полученных (для отображения на кнопке)
+            for (const ach of achievementsList) {
+                if (userAchievements[ach.id]) unlockedCount++;
+            }
+            
+            // Определяем цвет кнопки фильтра
+            let filterClass = '';
+            if (currentAchievementFilter === 'all') filterClass = 'filter-all';
+            else if (currentAchievementFilter === 'unlocked') filterClass = 'filter-completed';
+            else if (currentAchievementFilter === 'locked') filterClass = 'filter-uncompleted';
+            
+            if (filteredAchievements.length === 0) {
+                return `
+                    <div class="container">
+                        <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                        <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Достижения</h1>
+                            <button class="filter-btn ${filterClass}" onclick="cycleAchievementFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет достижений в этом разделе</p>
+                    </div>
+                `;
+            }
+            
+            for (const ach of filteredAchievements) {
+                const isUnlocked = userAchievements[ach.id];
+                
+                achievementsHtml += `
+                    <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}" onclick="showAchievementInfo('${ach.id}')">
+                        <div class="achievement-icon">
+                            <i class="fas ${ach.icon}"></i>
+                        </div>
+                        <div class="achievement-info">
+                            <div class="achievement-name">${ach.name}</div>
+                            <div class="achievement-desc">${ach.description}</div>
+                        </div>
+                        <div class="achievement-status">
+                            ${isUnlocked ? '<i class="fas fa-check-circle" style="color: #10B981;"></i>' : '<i class="fas fa-lock" style="color: #3d3d5c;"></i>'}
+                        </div>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="container">
                     <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <h1 class="page-title">Достижения</h1>
-                    <p class="page-subtitle">Ваши награды и прогресс</p>
+                    <div class="route-header-with-filter">
+                        <h1 class="page-title" style="margin: 0;">Достижения</h1>
+                        <button class="filter-btn ${filterClass}" onclick="cycleAchievementFilter()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
                     
-                    <div style="text-align: center; padding: 60px 20px;">
-                        <i class="fas fa-trophy" style="font-size: 64px; color: #3d3d5c; margin-bottom: 20px;"></i>
-                        <p style="color: #64748b;">Скоро здесь появятся достижения!</p>
-                        <p style="color: #64748b; font-size: 13px;">Активируйте больше масок, чтобы получать награды.</p>
+                    <div class="achievements-grid">
+                        ${achievementsHtml}
                     </div>
                 </div>
             `;
@@ -3524,6 +3926,10 @@ window.openYandexMaps = openYandexMaps;
         window.goToFullscreenSlideExtendedTab = goToFullscreenSlideExtendedTab;
                 window.closeSupportModal = closeSupportModal;
         window.contactAdmin = contactAdmin;
+                window.showAchievementInfo = showAchievementInfo;
+        window.closeAchievementModal = closeAchievementModal;
+        window.contactAdminForAchievement = contactAdminForAchievement;
+                window.cycleAchievementFilter = cycleAchievementFilter;
     </script>
 </body>
 </html>
