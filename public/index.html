@@ -1473,6 +1473,11 @@
                 const tg = window.Telegram.WebApp;
                 tg.ready();
                 tg.expand();
+                           
+                // Отключаем сворачивание приложения свайпом вниз
+            if (typeof tg.disableVerticalSwipes === 'function') {
+                tg.disableVerticalSwipes();
+            }
                 
                 const user = tg.initDataUnsafe?.user;
                 if (user && user.id) {
