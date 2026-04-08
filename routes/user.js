@@ -16,26 +16,26 @@ router.get('/progress', async (req, res) => {
             'SELECT COUNT(DISTINCT "maskId") as count FROM user_activations WHERE "userId" = $1',
             [userId]
         );
-        const activatedMasks = parseInt(activationsResult.rows[0].count) || 0;
+        const activatedMasks = parseInt(activationsResult.rows[0]?.count) || 0;
         
         // Общее количество масок (только опубликованные)
         const totalMasksResult = await db.query(
             'SELECT COUNT(*) as count FROM masks WHERE "isAvailable" = 1'
         );
-        const totalMasks = parseInt(totalMasksResult.rows[0].count) || 0;
+        const totalMasks = parseInt(totalMasksResult.rows[0]?.count) || 0;
         
         // Количество пройденных маршрутов
         const completedRoutesResult = await db.query(
             'SELECT COUNT(*) as count FROM user_route_progress WHERE "userId" = $1 AND "completedAt" IS NOT NULL',
             [userId]
         );
-        const completedRoutes = parseInt(completedRoutesResult.rows[0].count) || 0;
+        const completedRoutes = parseInt(completedRoutesResult.rows[0]?.count) || 0;
         
         // Общее количество маршрутов
         const totalRoutesResult = await db.query(
             'SELECT COUNT(*) as count FROM routes WHERE "isActive" = 1'
         );
-        const totalRoutes = parseInt(totalRoutesResult.rows[0].count) || 0;
+        const totalRoutes = parseInt(totalRoutesResult.rows[0]?.count) || 0;
         
         res.json({
             activatedMasks,
@@ -59,7 +59,9 @@ router.get('/activations', async (req, res) => {
     
     try {
         const result = await db.query(`
-            SELECT ua.*, m.name, m.description, m."fullDescription", m."photoHash", m."activationPhotoHash", m."audioGuideHash", m."priceAmount", m."priceCurrency", m."isAvailable"
+            SELECT ua.*, m.name, m.description, m."fullDescription", m."photoHash", 
+                   m."activationPhotoHash", m."audioGuideHash", m."priceAmount", 
+                   m."priceCurrency", m."isAvailable"
             FROM user_activations ua
             JOIN masks m ON ua."maskId" = m.id
             WHERE ua."userId" = $1
