@@ -432,8 +432,9 @@
             `).join('');
         }
         
-        function renderStats() {
+                function renderStats() {
             const stats = window.stats || {};
+            
             return `
                 <div class="stat-grid">
                     <div class="stat-card">
@@ -441,39 +442,64 @@
                         <div class="stat-label">Всего пользователей</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-value">${stats.activeUsers || 0}</div>
+                        <div class="stat-label">Активных за 7 дней</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-value">${stats.totalActivations || 0}</div>
                         <div class="stat-label">Всего активаций</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.totalMasks || 0}</div>
+                        <div class="stat-label">Всего масок</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.totalRoutes || 0}</div>
+                        <div class="stat-label">Всего маршрутов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.routeProgress?.completed || 0} / ${stats.routeProgress?.total || 0}</div>
+                        <div class="stat-label">Пройдено маршрутов</div>
                     </div>
                 </div>
                 
                 <div class="card">
                     <h3 style="margin-bottom: 12px;">🔥 Популярные маски</h3>
-                    ${(stats.popularMasks || []).map(m => `
-                        <div class="list-item">
-                            <span>${escapeHtml(m.name)}</span>
-                            <span style="color: #3B82F6;">${m.count} активаций</span>
-                        </div>
-                    `).join('') || '<p style="color: #64748b;">Нет данных</p>'}
+                    ${(stats.popularMasks || []).length > 0 ? 
+                        stats.popularMasks.map(m => `
+                            <div class="list-item">
+                                <span>${escapeHtml(m.name)}</span>
+                                <span style="color: #3B82F6;">${m.count} активаций</span>
+                            </div>
+                        `).join('') : 
+                        '<p style="color: #64748b;">Нет данных</p>'
+                    }
                 </div>
                 
                 <div class="card">
                     <h3 style="margin-bottom: 12px;">🏆 Популярные маршруты</h3>
-                    ${(stats.popularRoutes || []).map(r => `
-                        <div class="list-item">
-                            <span>${escapeHtml(r.name)}</span>
-                            <span style="color: #3B82F6;">${r.count} прохождений</span>
-                        </div>
-                    `).join('') || '<p style="color: #64748b;">Нет данных</p>'}
+                    ${(stats.popularRoutes || []).length > 0 ? 
+                        stats.popularRoutes.map(r => `
+                            <div class="list-item">
+                                <span>${escapeHtml(r.name)}</span>
+                                <span style="color: #3B82F6;">${r.count} прохождений</span>
+                            </div>
+                        `).join('') : 
+                        '<p style="color: #64748b;">Нет данных</p>'
+                    }
                 </div>
                 
                 <div class="card">
                     <h3 style="margin-bottom: 12px;">📅 Активации за 7 дней</h3>
-                    ${(stats.dailyActivations || []).map(d => `
-                        <div class="list-item">
-                            <span>${d.date}</span>
-                            <span style="color: #3B82F6;">${d.count} активаций</span>
-                        </div>
-                    `).join('') || '<p style="color: #64748b;">Нет данных</p>'}
+                    ${(stats.dailyActivations || []).length > 0 ? 
+                        stats.dailyActivations.map(d => `
+                            <div class="list-item">
+                                <span>${d.date}</span>
+                                <span style="color: #3B82F6;">${d.count} активаций</span>
+                            </div>
+                        `).join('') : 
+                        '<p style="color: #64748b;">Нет данных</p>'
+                    }
                 </div>
             `;
         }

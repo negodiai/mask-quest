@@ -156,16 +156,21 @@ router.delete('/routes/:routeId/masks/:maskId', checkAdmin, async (req, res) => 
 
 // ========== СТАТИСТИКА ==========
 
+// ========== СТАТИСТИКА ==========
+
 router.get('/stats', checkAdmin, async (req, res) => {
     try {
         const stats = {};
         
+        // Общее количество уникальных пользователей
         const totalUsersRes = await db.query('SELECT COUNT(DISTINCT "userId") as total FROM user_activations');
-        stats.totalUsers = totalUsersRes.rows[0]?.total || 0;
+        stats.totalUsers = parseInt(totalUsersRes.rows[0]?.total) || 0;
         
+        // Общее количество активаций
         const totalActivationsRes = await db.query('SELECT COUNT(*) as total FROM user_activations');
-        stats.totalActivations = totalActivationsRes.rows[0]?.total || 0;
+        stats.totalActivations = parseInt(totalActivationsRes.rows[0]?.total) || 0;
         
+        // Популярные маски (топ 10)
         const popularMasksRes = await db.query(`
             SELECT m.name, COUNT(*) as count 
             FROM user_activations ua 
@@ -174,8 +179,9 @@ router.get('/stats', checkAdmin, async (req, res) => {
             ORDER BY count DESC 
             LIMIT 10
         `);
-        stats.popularMasks = popularMasksRes.rows;
+        stats.popularMasks = popularMasksRes.rows || [];
         
+        // Популярные маршруты (топ 10)
         const popularRoutesRes = await db.query(`
             SELECT r.name, COUNT(*) as count 
             FROM user_route_progress urp 
@@ -185,19 +191,49 @@ router.get('/stats', checkAdmin, async (req, res) => {
             ORDER BY count DESC 
             LIMIT 10
         `);
-        stats.popularRoutes = popularRoutesRes.rows;
+        stats.popularRoutes = popularRoutesRes.rows || [];
         
+        // Активации за последние 7 дней
         const dailyActivationsRes = await db.query(`
             SELECT DATE("activatedAt") as date, COUNT(*) as count 
             FROM user_activations 
-            WHERE "activatedAt" >= DATE('now', '-7 days')
+            WHERE "activatedAt" >= datetime('now', '-7 days')
             GROUP BY DATE("activatedAt")
             ORDER BY date
         `);
-        stats.dailyActivations = dailyActivationsRes.rows;
+        stats.dailyActivations = dailyActivationsRes.rows || [];
+        
+        // Прогресс по маршрутам (сколько пройдено из скольки)
+        const routeProgressRes = await db.query(`
+            SELECT 
+                COUNT(CASE WHEN "completedAt" IS NOT NULL THEN 1 END) as completed,
+                COUNT(*) as total
+            FROM user_route_progress
+        `);
+        stats.routeProgress = {
+            completed: parseInt(routeProgressRes.rows[0]?.completed) || 0,
+            total: parseInt(routeProgressRes.rows[0]?.total) || 0
+        };
+        
+        // Активные пользователи за последние 7 дней
+        const activeUsersRes = await db.query(`
+            SELECT COUNT(DISTINCT "userId") as count 
+            FROM user_activations 
+            WHERE "activatedAt" >= datetime('now', '-7 days')
+        `);
+        stats.activeUsers = parseInt(activeUsersRes.rows[0]?.count) || 0;
+        
+        // Всего маршрутов
+        const totalRoutesRes = await db.query('SELECT COUNT(*) as total FROM routes WHERE "isActive" = 1');
+        stats.totalRoutes = parseInt(totalRoutesRes.rows[0]?.total) || 0;
+        
+        // Всего масок (опубликованных)
+        const totalMasksRes = await db.query('SELECT COUNT(*) as total FROM masks WHERE "isAvailable" = 1');
+        stats.totalMasks = parseInt(totalMasksRes.rows[0]?.total) || 0;
         
         res.json(stats);
     } catch (err) {
+        console.error('Stats error:', err);
         res.status(500).json({ error: err.message });
     }
 });
