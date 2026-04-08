@@ -264,4 +264,34 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     }
 });
 
+// Загрузка фото для маски
+router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Файл не загружен' });
+    }
+    
+    const photoUrl = `/uploads/${req.file.filename}`;
+    
+    await db.query(`
+        UPDATE masks SET "photoHash" = $1 WHERE id = $2
+    `, [photoUrl, req.params.id]);
+    
+    res.json({ success: true, photoUrl });
+});
+
+// Загрузка фото для маршрута
+router.post('/routes/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Файл не загружен' });
+    }
+    
+    const photoUrl = `/uploads/${req.file.filename}`;
+    
+    await db.query(`
+        UPDATE routes SET "photoHash" = $1 WHERE id = $2
+    `, [photoUrl, req.params.id]);
+    
+    res.json({ success: true, photoUrl });
+});
+
 module.exports = router;

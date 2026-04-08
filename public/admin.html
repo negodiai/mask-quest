@@ -457,7 +457,7 @@
             }, 100);
         }
         
-                function renderMasksList() {
+                        function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
             
             return masks.map(mask => `
@@ -466,10 +466,12 @@
                         <span class="card-title">${escapeHtml(mask.name)}</span>
                         <div>
                             ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
+                            <button class="btn-icon" onclick="uploadMaskPhoto('${mask.id}')" title="Загрузить фото"><i class="fas fa-camera"></i></button>
                             <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
+                    ${mask.photoHash ? `<div style="margin-bottom: 12px;"><img src="${mask.photoHash}" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover;"></div>` : '<div style="margin-bottom: 12px; background: #1a1a2e; border-radius: 12px; padding: 20px; text-align: center; color: #64748b;"><i class="fas fa-image"></i> Нет фото</div>'}
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📍 ${mask.latitude}, ${mask.longitude}</div>
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
@@ -479,7 +481,7 @@
             `).join('');
         }
         
-        function renderRoutesList() {
+                function renderRoutesList() {
             if (routes.length === 0) return '<p style="text-align: center; color: #64748b;">Нет маршрутов</p>';
             
             return routes.map(route => `
@@ -487,10 +489,12 @@
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(route.name)}</span>
                         <div>
-                            <button class="btn-icon" onclick="editRoute('${route.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon" onclick="uploadRoutePhoto('${route.id}')" title="Загрузить фото"><i class="fas fa-camera"></i></button>
+                            <button class="btn-icon" onclick="editRoute('${route.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
+                    ${route.photoHash ? `<div style="margin-bottom: 12px;"><img src="${route.photoHash}" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover;"></div>` : '<div style="margin-bottom: 12px; background: #1a1a2e; border-radius: 12px; padding: 20px; text-align: center; color: #64748b;"><i class="fas fa-image"></i> Нет фото</div>'}
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📏 ${route.distanceKm} км | ⏱️ ${route.durationMinutes} мин</div>
                         <div>📝 ${escapeHtml(route.description || 'Без описания')}</div>
@@ -946,6 +950,76 @@
             }).catch(() => {
                 showMessage('Ошибка обновления', 'error');
             });
+        }
+
+                // Загрузка фото для маски
+        async function uploadMaskPhoto(maskId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                showMessage('Загрузка фото...', 'info');
+                
+                try {
+                    const res = await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo?userId=${currentUserId}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await res.json();
+                    
+                    if (res.ok) {
+                        showMessage('Фото загружено!', 'success');
+                        loadMasks().then(() => renderAdminPanel());
+                    } else {
+                        showMessage(result.error || 'Ошибка загрузки', 'error');
+                    }
+                } catch (e) {
+                    showMessage('Ошибка сети', 'error');
+                }
+            };
+            input.click();
+        }
+        
+        // Загрузка фото для маршрута
+        async function uploadRoutePhoto(routeId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                showMessage('Загрузка фото...', 'info');
+                
+                try {
+                    const res = await fetch(`${API_BASE}/admin/routes/${routeId}/upload-photo?userId=${currentUserId}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await res.json();
+                    
+                    if (res.ok) {
+                        showMessage('Фото загружено!', 'success');
+                        loadRoutes().then(() => renderAdminPanel());
+                    } else {
+                        showMessage(result.error || 'Ошибка загрузки', 'error');
+                    }
+                } catch (e) {
+                    showMessage('Ошибка сети', 'error');
+                }
+            };
+            input.click();
         }
         
         init();

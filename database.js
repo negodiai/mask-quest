@@ -106,6 +106,7 @@ async function initDatabase() {
                 name TEXT NOT NULL,
                 description TEXT,
                 difficulty TEXT,
+                "photoHash" TEXT,
                 "durationMinutes" INTEGER,
                 "distanceKm" REAL,
                 color TEXT,
