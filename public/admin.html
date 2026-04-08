@@ -47,6 +47,15 @@
             cursor: pointer;
             font-size: 14px;
         }
+
+                .back-btn i {
+            margin-right: 6px;
+        }
+        
+        .back-btn:hover {
+            background: #3d3d5c;
+            transform: translateY(-1px);
+        }
         
         .tabs {
             display: flex;
@@ -348,11 +357,16 @@
             window.stats = await res.json();
         }
         
-        function renderAdminPanel() {
+                async function renderAdminPanel() {
             const html = `
                 <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
-                    <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="back-btn" onclick="refreshAdminPanel()" title="Обновить">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    </div>
                 </div>
                 
                 <div class="admin-id-info">
@@ -387,7 +401,60 @@
                     ${renderStats()}
                 </div>
             `;
+            
             document.getElementById('app').innerHTML = html;
+            
+            // Добавляем кнопку "Наверх"
+            setTimeout(() => {
+                if (!document.getElementById('scroll-top-admin')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.id = 'scroll-top-admin';
+                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    scrollBtn.style.cssText = `
+                        position: fixed;
+                        bottom: 30px;
+                        right: 30px;
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 25px;
+                        background: rgba(100, 116, 139, 0.5);
+                        backdrop-filter: blur(4px);
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1001;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        transition: all 0.2s ease;
+                    `;
+                    
+                    scrollBtn.onclick = () => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    
+                    scrollBtn.onmouseenter = () => {
+                        scrollBtn.style.transform = 'scale(1.05)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
+                    };
+                    scrollBtn.onmouseleave = () => {
+                        scrollBtn.style.transform = 'scale(1)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
+                    };
+                    
+                    document.body.appendChild(scrollBtn);
+                    
+                    window.addEventListener('scroll', () => {
+                        if (window.scrollY > 300) {
+                            scrollBtn.style.display = 'flex';
+                        } else {
+                            scrollBtn.style.display = 'none';
+                        }
+                    });
+                }
+            }, 100);
         }
         
                 function renderMasksList() {
@@ -862,6 +929,22 @@
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
                 return m;
+            });
+        }
+
+                function refreshAdminPanel() {
+            // Показываем уведомление
+            showMessage('Обновление данных...', 'success');
+            // Перезагружаем данные и перерисовываем админку
+            Promise.all([
+                loadMasks(),
+                loadRoutes(),
+                loadStats()
+            ]).then(() => {
+                renderAdminPanel();
+                showMessage('Данные обновлены!', 'success');
+            }).catch(() => {
+                showMessage('Ошибка обновления', 'error');
             });
         }
         
