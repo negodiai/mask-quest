@@ -284,7 +284,7 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     }
 });
 
-// Загрузка фото для маски
+// ========== ЗАГРУЗКА ФОТО ДЛЯ МАСОК (несколько фото) ==========
 router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не загружен' });
@@ -292,14 +292,34 @@ router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async
     
     const photoUrl = `/uploads/${req.file.filename}`;
     
-    await db.query(`
-        UPDATE masks SET "photoHash" = $1 WHERE id = $2
-    `, [photoUrl, req.params.id]);
-    
-    res.json({ success: true, photoUrl });
+    try {
+        // Получаем текущее значение photoHash
+        const maskResult = await db.query('SELECT "photoHash" FROM masks WHERE id = $1', [req.params.id]);
+        
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const existingPhotos = maskResult.rows[0]?.photoHash || '';
+        
+        // Добавляем новое фото к существующим
+        const newPhotos = existingPhotos ? `${existingPhotos},${photoUrl}` : photoUrl;
+        
+        // Сохраняем
+        await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2
+        `, [newPhotos, req.params.id]);
+        
+        console.log(`✅ Фото добавлено для маски ${req.params.id}: ${photoUrl}`);
+        
+        res.json({ success: true, photoUrl, allPhotos: newPhotos });
+    } catch (err) {
+        console.error('Ошибка загрузки фото:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Загрузка фото для маршрута
+// Загрузка фото для маршрута (поддержка нескольких фото)
 router.post('/routes/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не загружен' });
@@ -307,11 +327,33 @@ router.post('/routes/:id/upload-photo', checkAdmin, upload.single('photo'), asyn
     
     const photoUrl = `/uploads/${req.file.filename}`;
     
-    await db.query(`
-        UPDATE routes SET "photoHash" = $1 WHERE id = $2
-    `, [photoUrl, req.params.id]);
-    
-    res.json({ success: true, photoUrl });
+    try {
+        const routeResult = await db.query('SELECT "photoHash" FROM routes WHERE id = $1', [req.params.id]);
+        
+        if (routeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маршрут не найден' });
+        }
+        
+        const existingPhotos = routeResult.rows[0]?.photoHash || '';
+        
+        let newPhotos;
+        if (existingPhotos) {
+            newPhotos = `${existingPhotos},${photoUrl}`;
+        } else {
+            newPhotos = photoUrl;
+        }
+        
+        await db.query(`
+            UPDATE routes SET "photoHash" = $1 WHERE id = $2
+        `, [newPhotos, req.params.id]);
+        
+        console.log(`✅ Фото добавлено для маршрута ${req.params.id}: ${photoUrl}`);
+        
+        res.json({ success: true, photoUrl, allPhotos: newPhotos });
+    } catch (err) {
+        console.error('Ошибка загрузки фото:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;
