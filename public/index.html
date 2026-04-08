@@ -1516,10 +1516,12 @@
             }
         }
         
-        async function loadMasks() {
+               async function loadMasks() {
             try {
                 const res = await fetch(`${API_BASE}/masks/list`);
                 const data = await res.json();
+                console.log('Загружено масок:', data.length);
+                console.log('Первая маска:', data[0]);
                 appState.masks = data;
             } catch (e) {
                 console.error('Failed to load masks:', e);
@@ -1806,7 +1808,8 @@
                         })
                     });
                     
-                    const result = await res.json();
+                                        const result = await res.json();
+                    console.log('Результат активации:', result);
                     
                     if (result.success) {
     // Успешная активация
@@ -2050,8 +2053,11 @@
         }
 
                 // Функция для получения отфильтрованных масок
-        function getFilteredMasks() {
+               function getFilteredMasks() {
             const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            
+            console.log('Активированные ID:', activatedIds);
+            console.log('Все маски:', appState.masks.map(m => ({ id: m.id, name: m.name })));
             
             if (currentMaskFilter === 'all') {
                 return appState.masks;
