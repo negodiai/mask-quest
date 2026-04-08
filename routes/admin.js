@@ -191,11 +191,11 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.popularRoutes = popularRoutesRes.rows || [];
         
-        // Активации за последние 7 дней (исправлено: CURRENT_DATE вместо datetime)
+        // Активации за последние 7 дней (теперь TIMESTAMP, можно использовать напрямую)
         const dailyActivationsRes = await db.query(`
             SELECT DATE("activatedAt") as date, COUNT(*) as count 
             FROM user_activations 
-            WHERE "activatedAt" >= CURRENT_DATE - INTERVAL '7 days'
+            WHERE "activatedAt" >= NOW() - INTERVAL '7 days'
             GROUP BY DATE("activatedAt")
             ORDER BY date
         `);
@@ -213,11 +213,11 @@ router.get('/stats', checkAdmin, async (req, res) => {
             total: parseInt(routeProgressRes.rows[0]?.total) || 0
         };
         
-        // Активные пользователи за последние 7 дней (исправлено)
+        // Активные пользователи за последние 7 дней
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 
             FROM user_activations 
-            WHERE "activatedAt" >= CURRENT_DATE - INTERVAL '7 days'
+            WHERE "activatedAt" >= NOW() - INTERVAL '7 days'
         `);
         stats.activeUsers = parseInt(activeUsersRes.rows[0]?.count) || 0;
         
