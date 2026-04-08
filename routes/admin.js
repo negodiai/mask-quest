@@ -156,8 +156,6 @@ router.delete('/routes/:routeId/masks/:maskId', checkAdmin, async (req, res) => 
 
 // ========== СТАТИСТИКА ==========
 
-// ========== СТАТИСТИКА ==========
-
 router.get('/stats', checkAdmin, async (req, res) => {
     try {
         const stats = {};
@@ -193,17 +191,17 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.popularRoutes = popularRoutesRes.rows || [];
         
-        // Активации за последние 7 дней
+        // Активации за последние 7 дней (исправлено: CURRENT_DATE вместо datetime)
         const dailyActivationsRes = await db.query(`
             SELECT DATE("activatedAt") as date, COUNT(*) as count 
             FROM user_activations 
-            WHERE "activatedAt" >= datetime('now', '-7 days')
+            WHERE "activatedAt" >= CURRENT_DATE - INTERVAL '7 days'
             GROUP BY DATE("activatedAt")
             ORDER BY date
         `);
         stats.dailyActivations = dailyActivationsRes.rows || [];
         
-        // Прогресс по маршрутам (сколько пройдено из скольки)
+        // Прогресс по маршрутам
         const routeProgressRes = await db.query(`
             SELECT 
                 COUNT(CASE WHEN "completedAt" IS NOT NULL THEN 1 END) as completed,
@@ -215,11 +213,11 @@ router.get('/stats', checkAdmin, async (req, res) => {
             total: parseInt(routeProgressRes.rows[0]?.total) || 0
         };
         
-        // Активные пользователи за последние 7 дней
+        // Активные пользователи за последние 7 дней (исправлено)
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 
             FROM user_activations 
-            WHERE "activatedAt" >= datetime('now', '-7 days')
+            WHERE "activatedAt" >= CURRENT_DATE - INTERVAL '7 days'
         `);
         stats.activeUsers = parseInt(activeUsersRes.rows[0]?.count) || 0;
         
