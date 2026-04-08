@@ -18,7 +18,7 @@ router.get('/progress', async (req, res) => {
         );
         const activatedMasks = parseInt(activationsResult.rows[0]?.count) || 0;
         
-        // Общее количество масок (только опубликованные)
+        // Общее количество масок
         const totalMasksResult = await db.query(
             'SELECT COUNT(*) as count FROM masks WHERE "isAvailable" = 1'
         );
@@ -53,7 +53,11 @@ router.get('/progress', async (req, res) => {
 router.get('/activations', async (req, res) => {
     const { userId } = req.query;
     
+    console.log('=== /activations вызван ===');
+    console.log('userId:', userId);
+    
     if (!userId) {
+        console.log('Ошибка: нет userId');
         return res.status(400).json({ error: 'User ID required' });
     }
     
@@ -67,6 +71,8 @@ router.get('/activations', async (req, res) => {
             WHERE ua."userId" = $1
             ORDER BY ua."activatedAt" DESC
         `, [userId]);
+        
+        console.log('Найдено активаций:', result.rows.length);
         
         const activations = result.rows.map(row => ({
             id: row.id,
