@@ -71,15 +71,38 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
     }
 });
 
-router.post('/masks', checkAdmin, async (req, res) => {
-    const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink } = req.body;
-    
-    // Проверяем обязательные поля
-    if (!name || !latitude || !longitude) {
-        return res.status(400).json({ 
-            error: 'Обязательные поля: название, широта, долгота' 
-        });
+router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        
+        console.log('=== ЗАГРУЗКА ФОТО ===');
+        console.log('Mask ID:', maskId);
+        console.log('File:', req.file);
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/images/${req.file.filename}`;
+        
+        // Проверяем, существует ли маска
+        const maskCheck = await db.query('SELECT id FROM masks WHERE id = $1', [maskId]);
+        if (maskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        // Обновляем запись в БД
+        await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2
+        `, [photoUrl, maskId]);
+        
+        console.log('✅ Фото сохранено для маски:', maskId);
+        res.json({ success: true, photoUrl, message: 'Фото загружено' });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
     }
+});
     
     const id = uuidv4();
     
@@ -411,25 +434,35 @@ router.post('/masks', checkAdmin, async (req, res) => {
     }
 });
 
-// Эндпоинт для загрузки нескольких фото в галерею
-router.post('/masks/:id/upload-gallery', checkAdmin, upload.array('photos', 10), async (req, res) => {
+// Эндпоинт для загрузки главного фото маски
+router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
     try {
         const maskId = req.params.id;
         
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'Файлы не загружены' });
+        console.log('=== ЗАГРУЗКА ФОТО ===');
+        console.log('Mask ID:', maskId);
+        console.log('File:', req.file);
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
         }
         
-        const photoUrls = req.files.map(file => `/images/${file.filename}`);
+        const photoUrl = `/images/${req.file.filename}`;
+        console.log('Photo URL:', photoUrl);
         
-        // Сохраняем список фото в БД (как JSON массив)
-        await db.query(`
-            UPDATE masks SET "galleryPhotos" = $1 WHERE id = $2
-        `, [JSON.stringify(photoUrls), maskId]);
+        // Обновляем запись в БД (сохраняем ссылку на фото)
+        const result = await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2 RETURNING id
+        `, [photoUrl, maskId]);
         
-        res.json({ success: true, photoUrls, message: `${req.files.length} фото загружено` });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        console.log('✅ Фото сохранено для маски:', maskId);
+        res.json({ success: true, photoUrl, message: 'Фото загружено' });
     } catch (err) {
-        console.error('Upload gallery error:', err);
+        console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
     }
 });

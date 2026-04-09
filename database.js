@@ -12,6 +12,18 @@ const pool = new Pool({
     ssl: databaseUrl ? { rejectUnauthorized: false } : false
 });
 
+// Создаём папку для фото, если её нет
+const fs = require('fs');
+const path = require('path');
+
+const imagesDir = path.join(__dirname, 'public', 'images');
+if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+    console.log('📁 Создана папка для фото:', imagesDir);
+} else {
+    console.log('📁 Папка для фото уже существует:', imagesDir);
+}
+
 // Функция для выполнения миграций
 async function runMigrations() {
     try {
