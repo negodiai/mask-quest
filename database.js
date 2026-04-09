@@ -34,6 +34,16 @@ async function runMigrations() {
                 SET "activatedAt_new" = TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') 
                 WHERE "activatedAt" IS NOT NULL AND "activatedAt" != ''
             `);
+
+                    // Добавляем колонку updatedAt, если её нет
+        try {
+            await pool.query(`
+                ALTER TABLE masks ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            `);
+            console.log('✅ Колонка updatedAt добавлена');
+        } catch (err) {
+            console.log('Колонка updatedAt уже существует или ошибка:', err.message);
+        }
             
             // Удаляем старую колонку и переименовываем новую
             await pool.query(`ALTER TABLE user_activations DROP COLUMN "activatedAt"`);
@@ -77,7 +87,7 @@ async function initDatabase() {
     
     try {
         // Создаём таблицы с правильными типами
-        await pool.query(`
+                await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -96,7 +106,8 @@ async function initDatabase() {
                 "yandexMapLink" TEXT,
                 "googleMapLink" TEXT,
                 "twoGisLink" TEXT,
-                "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
