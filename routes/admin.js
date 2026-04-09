@@ -280,42 +280,35 @@ router.get('/masks/:maskId/photos', checkAdmin, async (req, res) => {
     }
 });
 
-// Добавить фото к маске
+// Добавить фото к маске (принимает base64)
 router.post('/masks/:maskId/photos', checkAdmin, async (req, res) => {
-    const { photoUrl, order } = req.body;
+    const { photoBase64, order } = req.body;
     
-    if (!photoUrl) {
-        return res.status(400).json({ error: 'photoUrl обязателен' });
+    if (!photoBase64) {
+        return res.status(400).json({ error: 'Фото обязательно' });
     }
     
     try {
+        // Сохраняем фото как base64 (для простоты) или можно сохранять на диск
+        // Для Railway лучше хранить base64 в БД
         const result = await db.query(`
             INSERT INTO mask_photos ("maskId", "photoUrl", "order")
             VALUES ($1, $2, $3)
-            RETURNING *
-        `, [req.params.maskId, photoUrl, order || 0]);
-        res.json({ success: true, photo: result.rows[0] });
+            RETURNING id
+        `, [req.params.maskId, photoBase64, order || 0]);
+        
+        res.json({ success: true, id: result.rows[0].id, message: 'Фото добавлено' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Удалить фото
-router.delete('/masks/photos/:photoId', checkAdmin, async (req, res) => {
+// Удалить фото маски
+router.delete('/masks/:maskId/photos/:photoId', checkAdmin, async (req, res) => {
     try {
-        await db.query('DELETE FROM mask_photos WHERE id = $1', [req.params.photoId]);
+        await db.query('DELETE FROM mask_photos WHERE id = $1 AND "maskId" = $2', 
+            [req.params.photoId, req.params.maskId]);
         res.json({ success: true, message: 'Фото удалено' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Обновить порядок фото
-router.put('/masks/photos/:photoId/order', checkAdmin, async (req, res) => {
-    const { order } = req.body;
-    try {
-        await db.query('UPDATE mask_photos SET "order" = $1 WHERE id = $2', [order, req.params.photoId]);
-        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

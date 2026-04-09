@@ -2085,12 +2085,14 @@
             render();
         }
 
-                       function getMaskImages(mask) {
-            if (mask.photos && mask.photos.length > 0) {
+                // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
+                function getMaskImages(maskId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            if (mask && mask.photos && mask.photos.length > 0) {
                 return mask.photos;
             }
-            // Если нет загруженных фото, используем заглушку
-            return [`/images/${mask.id}.jpg`];
+            // fallback на одно фото
+            return [`/images/${maskId}.jpg`];
         }
         
         let currentGalleryIndex = 0;
@@ -2098,8 +2100,8 @@
         let isFullscreen = false;
         let fullscreenCurrentIndex = 0;
         
-                 function renderGallery(mask, containerId) {
-            const images = getMaskImages(mask);
+                function renderGallery(maskId, containerId) {
+            const images = getMaskImages(maskId);
             galleryImages = images;
             
             let slidesHtml = '';

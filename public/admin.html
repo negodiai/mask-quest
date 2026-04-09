@@ -276,39 +276,63 @@
             color: #059669;
         }
 
-                .photo-item {
-            display: inline-block;
-            margin: 8px;
+                /* Стили для загрузки фото */
+        .photo-upload-area {
+            border: 2px dashed #2d2d44;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+        
+        .photo-upload-area:hover {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .photo-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .photo-item {
             position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1a1a2e;
         }
         
         .photo-item img {
-            width: 80px;
-            height: 80px;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #2d2d44;
         }
         
         .photo-delete {
             position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #EF4444;
-            color: white;
+            top: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.6);
             border: none;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
+            color: white;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
         .photo-delete:hover {
-            background: #DC2626;
+            background: #EF4444;
         }
     </style>
 </head>
@@ -499,9 +523,8 @@
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(mask.name)}</span>
-                                <div>
+                        <div>
                             ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
-                            <button class="btn-icon" onclick="showPhotoManager('${mask.id}')" title="Управление фото"><i class="fas fa-images"></i></button>
                             <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
@@ -612,7 +635,12 @@
             renderAdminPanel();
         }
         
+                let currentEditMaskId = null;
+        let currentPhotos = [];
+        
         function showAddMaskModal() {
+            currentEditMaskId = null;
+            currentPhotos = [];
             showModal('Добавить маску', `
                 <div class="form-group">
                     <label>Название *</label>
@@ -650,6 +678,16 @@
                     <label>Ссылка на Яндекс.Карты</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
+                <div class="form-group">
+                    <label>Фото для карусели</label>
+                    <div id="photo-upload-area" class="photo-upload-area" onclick="document.getElementById('photo-input').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 8px;"></i>
+                        <div>Нажмите или перетащите фото</div>
+                        <div style="font-size: 11px; color: #64748b;">PNG, JPG, до 5MB</div>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" style="display: none;" multiple>
+                    <div id="photo-list" class="photo-list"></div>
+                </div>
             `, async () => {
                 const newMask = {
                     name: document.getElementById('mask-name').value,
@@ -660,7 +698,7 @@
                     address: document.getElementById('mask-address').value,
                     qrCode: document.getElementById('mask-qrCode').value,
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
-                    isAvailable: true,
+                    isAvailable: false,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value
                 };
                 
@@ -670,13 +708,108 @@
                     body: JSON.stringify(newMask)
                 });
                 
-                if (res.ok) {
+                const result = await res.json();
+                
+                if (res.ok && result.id) {
+                    // Сохраняем фото
+                    for (let i = 0; i < currentPhotos.length; i++) {
+                        await fetch(`${API_BASE}/admin/masks/${result.id}/photos?userId=${currentUserId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ photoBase64: currentPhotos[i], order: i })
+                        });
+                    }
                     showMessage('Маска добавлена!', 'success');
                     loadMasks().then(() => renderAdminPanel());
                 } else {
-                    showMessage('Ошибка добавления', 'error');
+                    showMessage(result.error || 'Ошибка добавления', 'error');
                 }
             });
+            
+            // Настраиваем загрузку фото
+            setupPhotoUpload();
+        }
+        
+        function setupPhotoUpload() {
+            const fileInput = document.getElementById('photo-input');
+            const photoList = document.getElementById('photo-list');
+            currentPhotos = [];
+            
+            if (fileInput) {
+                fileInput.onchange = async (e) => {
+                    const files = Array.from(e.target.files);
+                    for (const file of files) {
+                        if (file.size > 5 * 1024 * 1024) {
+                            showMessage(`Файл ${file.name} слишком большой (>5MB)`, 'error');
+                            continue;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            currentPhotos.push(event.target.result);
+                            renderPhotoList();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                    fileInput.value = '';
+                };
+            }
+        }
+        
+        function renderPhotoList() {
+            const photoList = document.getElementById('photo-list');
+            if (!photoList) return;
+            
+            photoList.innerHTML = currentPhotos.map((photo, index) => `
+                <div class="photo-item">
+                    <img src="${photo}" alt="Фото ${index + 1}">
+                    <button class="photo-delete" onclick="removePhoto(${index})">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function removePhoto(index) {
+            currentPhotos.splice(index, 1);
+            renderPhotoList();
+        }
+
+                async function loadMaskPhotos(maskId) {
+            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/photos?userId=${currentUserId}`);
+            const photos = await res.json();
+            return photos.map(p => p.photoUrl);
+        }
+        
+        function setupEditPhotoUpload(maskId, existingPhotos) {
+            const fileInput = document.getElementById('photo-input');
+            currentPhotos = existingPhotos || [];
+            renderPhotoList();
+            
+            if (fileInput) {
+                fileInput.onchange = async (e) => {
+                    const files = Array.from(e.target.files);
+                    for (const file of files) {
+                        if (file.size > 5 * 1024 * 1024) {
+                            showMessage(`Файл ${file.name} слишком большой (>5MB)`, 'error');
+                            continue;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                            // Загружаем фото на сервер сразу
+                            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/photos?userId=${currentUserId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ photoBase64: event.target.result, order: currentPhotos.length })
+                            });
+                            if (res.ok) {
+                                currentPhotos.push(event.target.result);
+                                renderPhotoList();
+                                showMessage('Фото добавлено', 'success');
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                    fileInput.value = '';
+                };
+            }
         }
         
         function showAddRouteModal() {
@@ -982,101 +1115,6 @@
             }).catch(() => {
                 showMessage('Ошибка обновления', 'error');
             });
-        }
-
-                // === УПРАВЛЕНИЕ ФОТО МАСКИ ===
-        let currentPhotoMaskId = null;
-        let currentPhotos = [];
-        
-        async function loadPhotos(maskId) {
-            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/photos?userId=${currentUserId}`);
-            currentPhotos = await res.json();
-            return currentPhotos;
-        }
-        
-        async function showPhotoManager(maskId) {
-            currentPhotoMaskId = maskId;
-            await loadPhotos(maskId);
-            
-            let photosHtml = '';
-            for (let i = 0; i < currentPhotos.length; i++) {
-                const photo = currentPhotos[i];
-                photosHtml += `
-                    <div class="photo-item" data-id="${photo.id}" style="display: inline-block; margin: 8px; position: relative;">
-                        <img src="${photo.photoUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
-                        <button class="photo-delete" onclick="deletePhoto(${photo.id})" style="position: absolute; top: -8px; right: -8px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
-                    </div>
-                `;
-            }
-            
-            const modalHtml = `
-                <div id="photo-modal" class="modal-overlay">
-                    <div class="modal-container" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3>Управление фото маски</h3>
-                            <button class="btn-icon" onclick="closePhotoModal()">&times;</button>
-                        </div>
-                        <div class="modal-content">
-                            <div class="form-group">
-                                <label>Добавить фото (URL)</label>
-                                <input type="text" id="new-photo-url" placeholder="https://example.com/photo.jpg">
-                                <button class="btn-success" onclick="addPhoto()" style="margin-top: 8px; padding: 8px;">➕ Добавить</button>
-                            </div>
-                            <div id="photos-list" style="margin-top: 20px;">
-                                ${photosHtml || '<p style="color: #64748b;">Нет фото</p>'}
-                            </div>
-                            <div style="margin-top: 20px;">
-                                <p style="font-size: 12px; color: #64748b;">💡 Фото будут отображаться в карусели в указанном порядке</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        function closePhotoModal() {
-            const modal = document.getElementById('photo-modal');
-            if (modal) modal.remove();
-        }
-        
-        async function addPhoto() {
-            const url = document.getElementById('new-photo-url').value;
-            if (!url) {
-                showMessage('Введите URL фото', 'error');
-                return;
-            }
-            
-            const order = currentPhotos.length;
-            const res = await fetch(`${API_BASE}/admin/masks/${currentPhotoMaskId}/photos?userId=${currentUserId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photoUrl: url, order })
-            });
-            
-            if (res.ok) {
-                showMessage('Фото добавлено', 'success');
-                closePhotoModal();
-                showPhotoManager(currentPhotoMaskId);
-            } else {
-                showMessage('Ошибка добавления', 'error');
-            }
-        }
-        
-        async function deletePhoto(photoId) {
-            if (!confirm('Удалить фото?')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/masks/photos/${photoId}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Фото удалено', 'success');
-                closePhotoModal();
-                showPhotoManager(currentPhotoMaskId);
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
         }
         
         init();

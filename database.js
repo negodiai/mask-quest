@@ -166,7 +166,7 @@ async function initDatabase() {
             )
         `);
 
-                // Таблица для фото масок
+                // Таблица для фото масок (карусель)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS mask_photos (
                 id SERIAL PRIMARY KEY,
