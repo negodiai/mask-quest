@@ -9,6 +9,39 @@ function isAdmin(userId) {
     return userId === ADMIN_ID;
 }
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Настройка хранения файлов
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../public/images');
+        // Создаём папку, если её нет
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const maskId = req.params.id || req.body.id || 'temp';
+        const uniqueName = `${maskId}_${Date.now()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB лимит
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Только изображения'), false);
+        }
+    }
+});
+
 async function checkAdmin(req, res, next) {
     const userId = req.headers['x-user-id'] || req.query.userId;
     if (!isAdmin(userId)) {
@@ -239,75 +272,75 @@ router.get('/stats', checkAdmin, async (req, res) => {
 // Опубликовать маску (сделать isAvailable = true и перенести в каталог)
 router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     try {
+        // Проверяем, существует ли маска
         const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [req.params.id]);
         if (maskResult.rows.length === 0) {
             return res.status(404).json({ error: 'Маска не найдена' });
         }
         
-        // Обновляем статус isAvailable = 1
+        // Обновляем статус isAvailable = 1 (опубликовано)
         await db.query(`
             UPDATE masks SET "isAvailable" = 1, "updatedAt" = CURRENT_TIMESTAMP
             WHERE id = $1
         `, [req.params.id]);
         
+        // Логируем действие
         await db.query(`
             INSERT INTO admin_logs ("adminId", action, "targetId", details)
             VALUES ($1, $2, $3, $4)
         `, [req.headers['x-user-id'], 'PUBLISH_MASK', req.params.id, JSON.stringify({ maskId: req.params.id })]);
         
-        res.json({ success: true, message: 'Маска опубликована' });
+        res.json({ success: true, message: 'Маска опубликована и доступна в каталоге' });
     } catch (err) {
         console.error('Publish error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// ========== ФОТО МАСОК ==========
+// ========== ЗАГРУЗКА ФОТО ==========
 
-// Получить все фото маски
-router.get('/masks/:maskId/photos', checkAdmin, async (req, res) => {
+// Эндпоинт для загрузки главного фото маски
+router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
     try {
-        const result = await db.query(`
-            SELECT * FROM mask_photos 
-            WHERE "maskId" = $1 
-            ORDER BY "order" ASC
-        `, [req.params.maskId]);
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Добавить фото к маске (принимает base64)
-router.post('/masks/:maskId/photos', checkAdmin, async (req, res) => {
-    const { photoBase64, order } = req.body;
-    
-    if (!photoBase64) {
-        return res.status(400).json({ error: 'Фото обязательно' });
-    }
-    
-    try {
-        // Сохраняем фото как base64 (для простоты) или можно сохранять на диск
-        // Для Railway лучше хранить base64 в БД
-        const result = await db.query(`
-            INSERT INTO mask_photos ("maskId", "photoUrl", "order")
-            VALUES ($1, $2, $3)
-            RETURNING id
-        `, [req.params.maskId, photoBase64, order || 0]);
+        const maskId = req.params.id;
         
-        res.json({ success: true, id: result.rows[0].id, message: 'Фото добавлено' });
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/images/${req.file.filename}`;
+        
+        // Обновляем запись в БД (сохраняем ссылку на фото)
+        await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2
+        `, [photoUrl, maskId]);
+        
+        res.json({ success: true, photoUrl, message: 'Фото загружено' });
     } catch (err) {
+        console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Удалить фото маски
-router.delete('/masks/:maskId/photos/:photoId', checkAdmin, async (req, res) => {
+// Эндпоинт для загрузки нескольких фото в галерею
+router.post('/masks/:id/upload-gallery', checkAdmin, upload.array('photos', 10), async (req, res) => {
     try {
-        await db.query('DELETE FROM mask_photos WHERE id = $1 AND "maskId" = $2', 
-            [req.params.photoId, req.params.maskId]);
-        res.json({ success: true, message: 'Фото удалено' });
+        const maskId = req.params.id;
+        
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'Файлы не загружены' });
+        }
+        
+        const photoUrls = req.files.map(file => `/images/${file.filename}`);
+        
+        // Сохраняем список фото в БД (как JSON массив)
+        await db.query(`
+            UPDATE masks SET "galleryPhotos" = $1 WHERE id = $2
+        `, [JSON.stringify(photoUrls), maskId]);
+        
+        res.json({ success: true, photoUrls, message: `${req.files.length} фото загружено` });
     } catch (err) {
+        console.error('Upload gallery error:', err);
         res.status(500).json({ error: err.message });
     }
 });

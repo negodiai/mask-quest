@@ -16,6 +16,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 const ACTIVATION_RADIUS_METERS = 50;
 
+// GET /api/masks/list - список всех опубликованных масок
 router.get('/list', async (req, res) => {
     try {
         const result = await db.query(`
@@ -26,30 +27,19 @@ router.get('/list', async (req, res) => {
             ORDER BY name
         `);
         
-        const safeMasks = [];
-        for (const m of result.rows) {
-            // Получаем фото для маски
-            const photosRes = await db.query(`
-                SELECT "photoUrl" FROM mask_photos 
-                WHERE "maskId" = $1 
-                ORDER BY "order" ASC
-            `, [m.id]);
-            
-            safeMasks.push({
-                id: m.id,
-                name: m.name,
-                description: m.description,
-                latitude: m.latitude,
-                longitude: m.longitude,
-                photoHash: m.photoHash,
-                isAvailable: m.isAvailable === 1,
-                price: { amount: m.priceAmount, currency: m.priceCurrency || 'RUB' },
-                yandexMapLink: m.yandexMapLink,
-                googleMapLink: m.googleMapLink,
-                twoGisLink: m.twoGisLink,
-                photos: photosRes.rows.map(p => p.photoUrl)
-            });
-        }
+        const safeMasks = result.rows.map(m => ({
+            id: m.id,
+            name: m.name,
+            description: m.description,
+            latitude: m.latitude,
+            longitude: m.longitude,
+            photoHash: m.photoHash,
+            isAvailable: m.isAvailable === 1,
+            price: { amount: m.priceAmount, currency: m.priceCurrency || 'RUB' },
+            yandexMapLink: m.yandexMapLink,
+            googleMapLink: m.googleMapLink,
+            twoGisLink: m.twoGisLink
+        }));
         
         res.json(safeMasks);
     } catch (err) {

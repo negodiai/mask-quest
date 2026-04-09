@@ -2086,13 +2086,15 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-                function getMaskImages(maskId) {
-            const mask = appState.masks.find(m => m.id === maskId);
-            if (mask && mask.photos && mask.photos.length > 0) {
-                return mask.photos;
-            }
-            // fallback на одно фото
-            return [`/images/${maskId}.jpg`];
+        function getMaskImages(maskId) {
+            // Первое фото из папки images
+            const firstImage = `/images/${maskId}.jpg`;
+            // Второе фото (заглушка)
+            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
+            // Третье фото (заглушка)
+            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+            
+            return [firstImage, secondImage, thirdImage];
         }
         
         let currentGalleryIndex = 0;
