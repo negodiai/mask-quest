@@ -6,10 +6,6 @@ require('dotenv').config();
 // Подключаем базу данных PostgreSQL
 const db = require('./database');
 
-// Настройка загрузки файлов
-const multer = require('multer');
-const fs = require('fs');
-
 // Импортируем наши маршруты (API)
 const masksRoutes = require('./routes/masks');
 const activateByQrRoutes = require('./routes/activate-by-qr');
@@ -22,28 +18,10 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Настройка хранения файлов для загрузки фото
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'public', 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
-
 // Настройки сервера
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Подключаем наши API
 app.use('/api/masks', masksRoutes);

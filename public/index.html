@@ -2085,16 +2085,12 @@
             render();
         }
 
-                // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-        function getMaskImages(maskId) {
-            // Первое фото из папки images
-            const firstImage = `/images/${maskId}.jpg`;
-            // Второе фото (заглушка)
-            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
-            // Третье фото (заглушка)
-            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
-            
-            return [firstImage, secondImage, thirdImage];
+                       function getMaskImages(mask) {
+            if (mask.photos && mask.photos.length > 0) {
+                return mask.photos;
+            }
+            // Если нет загруженных фото, используем заглушку
+            return [`/images/${mask.id}.jpg`];
         }
         
         let currentGalleryIndex = 0;
@@ -2102,8 +2098,8 @@
         let isFullscreen = false;
         let fullscreenCurrentIndex = 0;
         
-                function renderGallery(maskId, containerId) {
-            const images = getMaskImages(maskId);
+                 function renderGallery(mask, containerId) {
+            const images = getMaskImages(mask);
             galleryImages = images;
             
             let slidesHtml = '';

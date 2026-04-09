@@ -275,6 +275,41 @@
         .btn-publish:hover {
             color: #059669;
         }
+
+                .photo-item {
+            display: inline-block;
+            margin: 8px;
+            position: relative;
+        }
+        
+        .photo-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #2d2d44;
+        }
+        
+        .photo-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .photo-delete:hover {
+            background: #DC2626;
+        }
     </style>
 </head>
 <body>
@@ -457,21 +492,20 @@
             }, 100);
         }
         
-                        function renderMasksList() {
+                function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
             
             return masks.map(mask => `
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(mask.name)}</span>
-                        <div>
+                                <div>
                             ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
-                            <button class="btn-icon" onclick="uploadMaskPhoto('${mask.id}')" title="Загрузить фото"><i class="fas fa-camera"></i></button>
+                            <button class="btn-icon" onclick="showPhotoManager('${mask.id}')" title="Управление фото"><i class="fas fa-images"></i></button>
                             <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    ${mask.photoHash ? `<div style="margin-bottom: 12px;"><img src="${mask.photoHash}" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover;"></div>` : '<div style="margin-bottom: 12px; background: #1a1a2e; border-radius: 12px; padding: 20px; text-align: center; color: #64748b;"><i class="fas fa-image"></i> Нет фото</div>'}
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📍 ${mask.latitude}, ${mask.longitude}</div>
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
@@ -481,7 +515,7 @@
             `).join('');
         }
         
-                function renderRoutesList() {
+        function renderRoutesList() {
             if (routes.length === 0) return '<p style="text-align: center; color: #64748b;">Нет маршрутов</p>';
             
             return routes.map(route => `
@@ -489,12 +523,10 @@
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(route.name)}</span>
                         <div>
-                            <button class="btn-icon" onclick="uploadRoutePhoto('${route.id}')" title="Загрузить фото"><i class="fas fa-camera"></i></button>
-                            <button class="btn-icon" onclick="editRoute('${route.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon" onclick="editRoute('${route.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    ${route.photoHash ? `<div style="margin-bottom: 12px;"><img src="${route.photoHash}" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover;"></div>` : '<div style="margin-bottom: 12px; background: #1a1a2e; border-radius: 12px; padding: 20px; text-align: center; color: #64748b;"><i class="fas fa-image"></i> Нет фото</div>'}
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📏 ${route.distanceKm} км | ⏱️ ${route.durationMinutes} мин</div>
                         <div>📝 ${escapeHtml(route.description || 'Без описания')}</div>
@@ -580,298 +612,138 @@
             renderAdminPanel();
         }
         
-                let currentMaskPhotos = [];
-        
         function showAddMaskModal() {
-            currentMaskPhotos = [];
-            
-            const modalHtml = `
-                <div id="admin-modal" class="modal-overlay">
-                    <div class="modal-container" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3>Добавить маску</h3>
-                            <button class="btn-icon" onclick="closeModal()">&times;</button>
-                        </div>
-                        <div class="modal-content">
-                            <div class="form-group">
-                                <label>Название *</label>
-                                <input type="text" id="mask-name" placeholder="Например: Берёзовая">
-                            </div>
-                            <div class="form-group">
-                                <label>Краткое описание</label>
-                                <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Полное описание</label>
-                                <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Широта *</label>
-                                <input type="text" id="mask-latitude" placeholder="54.679629">
-                            </div>
-                            <div class="form-group">
-                                <label>Долгота *</label>
-                                <input type="text" id="mask-longitude" placeholder="20.463649">
-                            </div>
-                            <div class="form-group">
-                                <label>Адрес</label>
-                                <input type="text" id="mask-address" placeholder="ул. Берёзовая">
-                            </div>
-                            <div class="form-group">
-                                <label>QR-код (уникальный)</label>
-                                <input type="text" id="mask-qrCode" placeholder="MASK_001">
-                            </div>
-                            <div class="form-group">
-                                <label>Цена (₽)</label>
-                                <input type="number" id="mask-priceAmount" placeholder="15000">
-                            </div>
-                            <div class="form-group">
-                                <label>Ссылка на Яндекс.Карты</label>
-                                <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
-                            </div>
-                            
-                            <!-- Блок загрузки фото -->
-                            <div class="form-group">
-                                <label>Фотографии</label>
-                                <div id="mask-photos-preview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;"></div>
-                                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px;" onclick="addMaskPhoto()">
-                                    <i class="fas fa-plus"></i> Добавить фото
-                                </button>
-                                <p style="font-size: 11px; color: #64748b; margin-top: 5px;">Можно добавить несколько фото (JPG, PNG, до 5MB каждое)</p>
-                            </div>
-                            
-                            <button class="btn-success" onclick="saveMaskWithPhotos()" style="margin-top: 16px;">Сохранить маску</button>
-                        </div>
-                    </div>
+            showModal('Добавить маску', `
+                <div class="form-group">
+                    <label>Название *</label>
+                    <input type="text" id="mask-name" placeholder="Например: Берёзовая">
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        async function addMaskPhoto() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                // Показываем превью
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    const previewDiv = document.getElementById('mask-photos-preview');
-                    const photoDiv = document.createElement('div');
-                    photoDiv.style.position = 'relative';
-                    photoDiv.style.width = '80px';
-                    photoDiv.style.height = '80px';
-                    photoDiv.innerHTML = `
-                        <img src="${ev.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
-                        <button type="button" style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #EF4444; color: white; border: none; cursor: pointer; font-size: 12px;" onclick="this.parentElement.remove()">×</button>
-                    `;
-                    previewDiv.appendChild(photoDiv);
+                <div class="form-group">
+                    <label>Краткое описание</label>
+                    <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Полное описание</label>
+                    <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Широта *</label>
+                    <input type="text" id="mask-latitude" placeholder="54.679629">
+                </div>
+                <div class="form-group">
+                    <label>Долгота *</label>
+                    <input type="text" id="mask-longitude" placeholder="20.463649">
+                </div>
+                <div class="form-group">
+                    <label>Адрес</label>
+                    <input type="text" id="mask-address" placeholder="ул. Берёзовая">
+                </div>
+                <div class="form-group">
+                    <label>QR-код (уникальный)</label>
+                    <input type="text" id="mask-qrCode" placeholder="MASK_001">
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="mask-priceAmount" placeholder="15000">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на Яндекс.Карты</label>
+                    <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
+                </div>
+            `, async () => {
+                const newMask = {
+                    name: document.getElementById('mask-name').value,
+                    description: document.getElementById('mask-description').value,
+                    fullDescription: document.getElementById('mask-fullDescription').value,
+                    latitude: parseFloat(document.getElementById('mask-latitude').value),
+                    longitude: parseFloat(document.getElementById('mask-longitude').value),
+                    address: document.getElementById('mask-address').value,
+                    qrCode: document.getElementById('mask-qrCode').value,
+                    priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
+                    isAvailable: true,
+                    yandexMapLink: document.getElementById('mask-yandexMapLink').value
                 };
-                reader.readAsDataURL(file);
                 
-                // Сохраняем файл
-                currentMaskPhotos.push(file);
-            };
-            input.click();
-        }
-        
-        async function saveMaskWithPhotos() {
-            const maskData = {
-                name: document.getElementById('mask-name').value,
-                description: document.getElementById('mask-description').value,
-                fullDescription: document.getElementById('mask-fullDescription').value,
-                latitude: parseFloat(document.getElementById('mask-latitude').value),
-                longitude: parseFloat(document.getElementById('mask-longitude').value),
-                address: document.getElementById('mask-address').value,
-                qrCode: document.getElementById('mask-qrCode').value,
-                priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
-                isAvailable: true,
-                yandexMapLink: document.getElementById('mask-yandexMapLink').value
-            };
-            
-            if (!maskData.name || !maskData.latitude || !maskData.longitude) {
-                showMessage('Заполните обязательные поля (Название, Широта, Долгота)', 'error');
-                return;
-            }
-            
-            try {
-                // Сначала создаём маску
                 const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(maskData)
+                    body: JSON.stringify(newMask)
                 });
                 
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.error);
-                
-                const maskId = result.id;
-                
-                // Загружаем фото
-                for (const photo of currentMaskPhotos) {
-                    const formData = new FormData();
-                    formData.append('photo', photo);
-                    
-                    await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo?userId=${currentUserId}`, {
-                        method: 'POST',
-                        body: formData
-                    });
+                if (res.ok) {
+                    showMessage('Маска добавлена!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                } else {
+                    showMessage('Ошибка добавления', 'error');
                 }
-                
-                showMessage('Маска создана!', 'success');
-                closeModal();
-                loadMasks().then(() => renderAdminPanel());
-            } catch (e) {
-                showMessage('Ошибка: ' + e.message, 'error');
-            }
+            });
         }
-        
-                let currentRoutePhotos = [];
         
         function showAddRouteModal() {
-            currentRoutePhotos = [];
-            
-            const modalHtml = `
-                <div id="admin-modal" class="modal-overlay">
-                    <div class="modal-container" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3>Добавить маршрут</h3>
-                            <button class="btn-icon" onclick="closeModal()">&times;</button>
-                        </div>
-                        <div class="modal-content">
-                            <div class="form-group">
-                                <label>Название *</label>
-                                <input type="text" id="route-name" placeholder="Например: Исторический центр">
-                            </div>
-                            <div class="form-group">
-                                <label>Описание</label>
-                                <textarea id="route-description" placeholder="Описание маршрута"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Сложность</label>
-                                <select id="route-difficulty">
-                                    <option value="easy">Лёгкий</option>
-                                    <option value="medium">Средний</option>
-                                    <option value="hard">Сложный</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Длительность (минут)</label>
-                                <input type="number" id="route-durationMinutes" placeholder="60">
-                            </div>
-                            <div class="form-group">
-                                <label>Дистанция (км)</label>
-                                <input type="text" id="route-distanceKm" placeholder="2.5">
-                            </div>
-                            <div class="form-group">
-                                <label>Цвет (HEX)</label>
-                                <input type="text" id="route-color" placeholder="#3B82F6">
-                            </div>
-                            <div class="form-group">
-                                <label>Центр маршрута (широта)</label>
-                                <input type="text" id="route-centerLat" placeholder="54.679629">
-                            </div>
-                            <div class="form-group">
-                                <label>Центр маршрута (долгота)</label>
-                                <input type="text" id="route-centerLng" placeholder="20.463649">
-                            </div>
-                            
-                            <!-- Блок загрузки фото -->
-                            <div class="form-group">
-                                <label>Фотографии маршрута</label>
-                                <div id="route-photos-preview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;"></div>
-                                <button type="button" class="btn-secondary" style="width: auto; padding: 8px 16px;" onclick="addRoutePhoto()">
-                                    <i class="fas fa-plus"></i> Добавить фото
-                                </button>
-                                <p style="font-size: 11px; color: #64748b; margin-top: 5px;">Можно добавить несколько фото (JPG, PNG, до 5MB каждое)</p>
-                            </div>
-                            
-                            <button class="btn-success" onclick="saveRouteWithPhotos()" style="margin-top: 16px;">Сохранить маршрут</button>
-                        </div>
-                    </div>
+            showModal('Добавить маршрут', `
+                <div class="form-group">
+                    <label>Название *</label>
+                    <input type="text" id="route-name" placeholder="Например: Исторический центр">
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        async function addRoutePhoto() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    const previewDiv = document.getElementById('route-photos-preview');
-                    const photoDiv = document.createElement('div');
-                    photoDiv.style.position = 'relative';
-                    photoDiv.style.width = '80px';
-                    photoDiv.style.height = '80px';
-                    photoDiv.innerHTML = `
-                        <img src="${ev.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
-                        <button type="button" style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #EF4444; color: white; border: none; cursor: pointer; font-size: 12px;" onclick="this.parentElement.remove()">×</button>
-                    `;
-                    previewDiv.appendChild(photoDiv);
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="route-description" placeholder="Описание маршрута"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Сложность</label>
+                    <select id="route-difficulty">
+                        <option value="easy">Лёгкий</option>
+                        <option value="medium">Средний</option>
+                        <option value="hard">Сложный</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Длительность (минут)</label>
+                    <input type="number" id="route-durationMinutes" placeholder="60">
+                </div>
+                <div class="form-group">
+                    <label>Дистанция (км)</label>
+                    <input type="text" id="route-distanceKm" placeholder="2.5">
+                </div>
+                <div class="form-group">
+                    <label>Цвет (HEX)</label>
+                    <input type="text" id="route-color" placeholder="#3B82F6">
+                </div>
+                <div class="form-group">
+                    <label>Центр маршрута (широта)</label>
+                    <input type="text" id="route-centerLat" placeholder="54.679629">
+                </div>
+                <div class="form-group">
+                    <label>Центр маршрута (долгота)</label>
+                    <input type="text" id="route-centerLng" placeholder="20.463649">
+                </div>
+            `, async () => {
+                const newRoute = {
+                    name: document.getElementById('route-name').value,
+                    description: document.getElementById('route-description').value,
+                    difficulty: document.getElementById('route-difficulty').value,
+                    durationMinutes: parseInt(document.getElementById('route-durationMinutes').value) || 60,
+                    distanceKm: parseFloat(document.getElementById('route-distanceKm').value) || 1,
+                    color: document.getElementById('route-color').value || '#3B82F6',
+                    centerLat: parseFloat(document.getElementById('route-centerLat').value) || 54.679629,
+                    centerLng: parseFloat(document.getElementById('route-centerLng').value) || 20.463649,
+                    zoom: 14,
+                    isActive: true
                 };
-                reader.readAsDataURL(file);
                 
-                currentRoutePhotos.push(file);
-            };
-            input.click();
-        }
-        
-        async function saveRouteWithPhotos() {
-            const routeData = {
-                name: document.getElementById('route-name').value,
-                description: document.getElementById('route-description').value,
-                difficulty: document.getElementById('route-difficulty').value,
-                durationMinutes: parseInt(document.getElementById('route-durationMinutes').value) || 60,
-                distanceKm: parseFloat(document.getElementById('route-distanceKm').value) || 1,
-                color: document.getElementById('route-color').value || '#3B82F6',
-                centerLat: parseFloat(document.getElementById('route-centerLat').value) || 54.679629,
-                centerLng: parseFloat(document.getElementById('route-centerLng').value) || 20.463649,
-                zoom: 14,
-                isActive: true
-            };
-            
-            if (!routeData.name) {
-                showMessage('Заполните название маршрута', 'error');
-                return;
-            }
-            
-            try {
                 const res = await fetch(`${API_BASE}/admin/routes?userId=${currentUserId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(routeData)
+                    body: JSON.stringify(newRoute)
                 });
                 
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.error);
-                
-                const routeId = result.id;
-                
-                for (const photo of currentRoutePhotos) {
-                    const formData = new FormData();
-                    formData.append('photo', photo);
-                    
-                    await fetch(`${API_BASE}/admin/routes/${routeId}/upload-photo?userId=${currentUserId}`, {
-                        method: 'POST',
-                        body: formData
-                    });
+                if (res.ok) {
+                    showMessage('Маршрут добавлен!', 'success');
+                    loadRoutes().then(() => renderAdminPanel());
+                } else {
+                    showMessage('Ошибка добавления', 'error');
                 }
-                
-                showMessage('Маршрут создан!', 'success');
-                closeModal();
-                loadRoutes().then(() => renderAdminPanel());
-            } catch (e) {
-                showMessage('Ошибка: ' + e.message, 'error');
-            }
+            });
         }
         
         async function deleteMask(id) {
@@ -1112,74 +984,99 @@
             });
         }
 
-                // Загрузка фото для маски
-        async function uploadMaskPhoto(maskId) {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const formData = new FormData();
-                formData.append('photo', file);
-                
-                showMessage('Загрузка фото...', 'info');
-                
-                try {
-                    const res = await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo?userId=${currentUserId}`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await res.json();
-                    
-                    if (res.ok) {
-                        showMessage('Фото загружено!', 'success');
-                        loadMasks().then(() => renderAdminPanel());
-                    } else {
-                        showMessage(result.error || 'Ошибка загрузки', 'error');
-                    }
-                } catch (e) {
-                    showMessage('Ошибка сети', 'error');
-                }
-            };
-            input.click();
+                // === УПРАВЛЕНИЕ ФОТО МАСКИ ===
+        let currentPhotoMaskId = null;
+        let currentPhotos = [];
+        
+        async function loadPhotos(maskId) {
+            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/photos?userId=${currentUserId}`);
+            currentPhotos = await res.json();
+            return currentPhotos;
         }
         
-        // Загрузка фото для маршрута
-        async function uploadRoutePhoto(routeId) {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const formData = new FormData();
-                formData.append('photo', file);
-                
-                showMessage('Загрузка фото...', 'info');
-                
-                try {
-                    const res = await fetch(`${API_BASE}/admin/routes/${routeId}/upload-photo?userId=${currentUserId}`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await res.json();
-                    
-                    if (res.ok) {
-                        showMessage('Фото загружено!', 'success');
-                        loadRoutes().then(() => renderAdminPanel());
-                    } else {
-                        showMessage(result.error || 'Ошибка загрузки', 'error');
-                    }
-                } catch (e) {
-                    showMessage('Ошибка сети', 'error');
-                }
-            };
-            input.click();
+        async function showPhotoManager(maskId) {
+            currentPhotoMaskId = maskId;
+            await loadPhotos(maskId);
+            
+            let photosHtml = '';
+            for (let i = 0; i < currentPhotos.length; i++) {
+                const photo = currentPhotos[i];
+                photosHtml += `
+                    <div class="photo-item" data-id="${photo.id}" style="display: inline-block; margin: 8px; position: relative;">
+                        <img src="${photo.photoUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                        <button class="photo-delete" onclick="deletePhoto(${photo.id})" style="position: absolute; top: -8px; right: -8px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
+                    </div>
+                `;
+            }
+            
+            const modalHtml = `
+                <div id="photo-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3>Управление фото маски</h3>
+                            <button class="btn-icon" onclick="closePhotoModal()">&times;</button>
+                        </div>
+                        <div class="modal-content">
+                            <div class="form-group">
+                                <label>Добавить фото (URL)</label>
+                                <input type="text" id="new-photo-url" placeholder="https://example.com/photo.jpg">
+                                <button class="btn-success" onclick="addPhoto()" style="margin-top: 8px; padding: 8px;">➕ Добавить</button>
+                            </div>
+                            <div id="photos-list" style="margin-top: 20px;">
+                                ${photosHtml || '<p style="color: #64748b;">Нет фото</p>'}
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <p style="font-size: 12px; color: #64748b;">💡 Фото будут отображаться в карусели в указанном порядке</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        function closePhotoModal() {
+            const modal = document.getElementById('photo-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function addPhoto() {
+            const url = document.getElementById('new-photo-url').value;
+            if (!url) {
+                showMessage('Введите URL фото', 'error');
+                return;
+            }
+            
+            const order = currentPhotos.length;
+            const res = await fetch(`${API_BASE}/admin/masks/${currentPhotoMaskId}/photos?userId=${currentUserId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photoUrl: url, order })
+            });
+            
+            if (res.ok) {
+                showMessage('Фото добавлено', 'success');
+                closePhotoModal();
+                showPhotoManager(currentPhotoMaskId);
+            } else {
+                showMessage('Ошибка добавления', 'error');
+            }
+        }
+        
+        async function deletePhoto(photoId) {
+            if (!confirm('Удалить фото?')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/masks/photos/${photoId}?userId=${currentUserId}`, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                showMessage('Фото удалено', 'success');
+                closePhotoModal();
+                showPhotoManager(currentPhotoMaskId);
+            } else {
+                showMessage('Ошибка удаления', 'error');
+            }
         }
         
         init();

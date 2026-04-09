@@ -106,7 +106,6 @@ async function initDatabase() {
                 name TEXT NOT NULL,
                 description TEXT,
                 difficulty TEXT,
-                "photoHash" TEXT,
                 "durationMinutes" INTEGER,
                 "distanceKm" REAL,
                 color TEXT,
@@ -164,6 +163,18 @@ async function initDatabase() {
                 "targetId" TEXT,
                 details TEXT,
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+                // Таблица для фото масок
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS mask_photos (
+                id SERIAL PRIMARY KEY,
+                "maskId" TEXT NOT NULL,
+                "photoUrl" TEXT NOT NULL,
+                "order" INTEGER DEFAULT 0,
+                "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY ("maskId") REFERENCES masks(id) ON DELETE CASCADE
             )
         `);
         

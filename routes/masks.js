@@ -87,6 +87,49 @@ router.get('/detail', async (req, res) => {
     }
 });
 
+// GET /api/masks/list - список всех опубликованных масок с фото
+router.get('/list', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT id, name, description, latitude, longitude, "photoHash", "isAvailable", 
+                   "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink"
+            FROM masks 
+            WHERE "isAvailable" = 1
+            ORDER BY name
+        `);
+        
+        const masks = [];
+        for (const mask of result.rows) {
+            // Получаем фото для маски
+            const photosResult = await db.query(`
+                SELECT "photoUrl" FROM mask_photos 
+                WHERE "maskId" = $1 
+                ORDER BY "order" ASC
+            `, [mask.id]);
+            
+            masks.push({
+                id: mask.id,
+                name: mask.name,
+                description: mask.description,
+                latitude: mask.latitude,
+                longitude: mask.longitude,
+                photoHash: mask.photoHash,
+                isAvailable: mask.isAvailable === 1,
+                price: { amount: mask.priceAmount, currency: mask.priceCurrency || 'RUB' },
+                yandexMapLink: mask.yandexMapLink,
+                googleMapLink: mask.googleMapLink,
+                twoGisLink: mask.twoGisLink,
+                photos: photosResult.rows.map(p => p.photoUrl)
+            });
+        }
+        
+        res.json(masks);
+    } catch (err) {
+        console.error('Error in /list:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/masks/nearby - маски рядом с точкой
 router.get('/nearby', async (req, res) => {
     const { lat, lng, radius = 1000 } = req.query;
