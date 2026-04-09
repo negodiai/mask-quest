@@ -90,14 +90,21 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink } = req.body;
     
     try {
+        // Получаем текущую маску, чтобы сохранить photoHash, если он не передан
+        const currentMask = await db.query('SELECT "photoHash" FROM masks WHERE id = $1', [req.params.id]);
+        const currentPhotoHash = currentMask.rows[0]?.photoHash;
+        
         await db.query(`
             UPDATE masks SET 
                 name = $1, description = $2, "fullDescription" = $3, latitude = $4, longitude = $5, 
-                address = $6, "qrCode" = $7, "priceAmount" = $8, "isAvailable" = $9, "yandexMapLink" = $10
-            WHERE id = $11
-        `, [name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink, req.params.id]);
+                address = $6, "qrCode" = $7, "priceAmount" = $8, "isAvailable" = $9, "yandexMapLink" = $10,
+                "photoHash" = $11
+            WHERE id = $12
+        `, [name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink, currentPhotoHash, req.params.id]);
+        
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
+        console.error('Update mask error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -272,20 +279,25 @@ router.get('/stats', checkAdmin, async (req, res) => {
 // Опубликовать маску (сделать isAvailable = true и перенести в каталог)
 router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     try {
-        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [req.params.id]);
+        const maskId = req.params.id;
+        const adminId = req.headers['x-user-id'] || 'admin';
+        
+        // Проверяем, существует ли маска
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
         if (maskResult.rows.length === 0) {
             return res.status(404).json({ error: 'Маска не найдена' });
         }
         
-        // Убираем updatedAt, так как его нет в таблице
+        // Публикуем маску
         await db.query(`
             UPDATE masks SET "isAvailable" = 1 WHERE id = $1
-        `, [req.params.id]);
+        `, [maskId]);
         
+        // Добавляем запись в лог (с adminId)
         await db.query(`
-            INSERT INTO admin_logs ("adminId", action, "targetId", details)
-            VALUES ($1, $2, $3, $4)
-        `, [req.headers['x-user-id'], 'PUBLISH_MASK', req.params.id, JSON.stringify({ maskId: req.params.id })]);
+            INSERT INTO admin_logs ("adminId", action, "targetId", details, "createdAt")
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `, [adminId, 'PUBLISH_MASK', maskId, JSON.stringify({ maskId: maskId })]);
         
         res.json({ success: true, message: 'Маска опубликована и доступна в каталоге' });
     } catch (err) {
@@ -297,24 +309,31 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
 // ========== ЗАГРУЗКА ФОТО ==========
 
 // Эндпоинт для загрузки главного фото маски
-router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
+router.post('/masks', checkAdmin, async (req, res) => {
+    const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink } = req.body;
+    const id = uuidv4();
+    const uniqueQrCode = qrCode || `MASK_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    
     try {
-        const maskId = req.params.id;
-        
-        if (!req.file) {
-            return res.status(400).json({ error: 'Файл не загружен' });
+        // Проверяем, не существует ли уже такой QR-код
+        const existingQr = await db.query('SELECT id FROM masks WHERE "qrCode" = $1', [uniqueQrCode]);
+        if (existingQr.rows.length > 0) {
+            // Если QR-код уже существует, генерируем уникальный
+            const newQrCode = `MASK_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            await db.query(`
+                INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, address, "qrCode", "priceAmount", "isAvailable", "yandexMapLink")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            `, [id, name, description, fullDescription, latitude, longitude, address, newQrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink]);
+        } else {
+            await db.query(`
+                INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, address, "qrCode", "priceAmount", "isAvailable", "yandexMapLink")
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            `, [id, name, description, fullDescription, latitude, longitude, address, uniqueQrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink]);
         }
         
-        const photoUrl = `/images/${req.file.filename}`;
-        
-        // Обновляем запись в БД (сохраняем ссылку на фото)
-        await db.query(`
-            UPDATE masks SET "photoHash" = $1 WHERE id = $2
-        `, [photoUrl, maskId]);
-        
-        res.json({ success: true, photoUrl, message: 'Фото загружено' });
+        res.json({ success: true, id, message: 'Маска добавлена' });
     } catch (err) {
-        console.error('Upload error:', err);
+        console.error('Add mask error:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -165,6 +165,15 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        try {
+    await pool.query(`
+        ALTER TABLE admin_logs ALTER COLUMN "adminId" DROP NOT NULL
+    `);
+} catch (err) {
+    // Колонка уже не имеет NOT NULL или её нет
+    console.log('Admin logs fix:', err.message);
+}
         
         // Запускаем миграции для преобразования существующих данных
         await runMigrations();
