@@ -73,15 +73,53 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
 
 router.post('/masks', checkAdmin, async (req, res) => {
     const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink } = req.body;
+    
+    // Проверяем обязательные поля
+    if (!name || !latitude || !longitude) {
+        return res.status(400).json({ 
+            error: 'Обязательные поля: название, широта, долгота' 
+        });
+    }
+    
     const id = uuidv4();
     
+    // Генерируем уникальный QR-код, если не передан или уже существует
+    let finalQrCode = qrCode;
+    if (!finalQrCode) {
+        finalQrCode = `MASK_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    }
+    
     try {
+        // Проверяем, не существует ли уже такой QR-код
+        const existingQr = await db.query('SELECT id FROM masks WHERE "qrCode" = $1', [finalQrCode]);
+        if (existingQr.rows.length > 0) {
+            // Если QR-код уже существует, генерируем новый уникальный
+            finalQrCode = `MASK_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+        }
+        
         await db.query(`
-            INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, address, "qrCode", "priceAmount", "isAvailable", "yandexMapLink")
+            INSERT INTO masks (
+                id, name, description, "fullDescription", latitude, longitude, 
+                address, "qrCode", "priceAmount", "isAvailable", "yandexMapLink"
+            )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        `, [id, name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink]);
+        `, [
+            id, 
+            name || 'Без названия', 
+            description || '', 
+            fullDescription || '', 
+            parseFloat(latitude), 
+            parseFloat(longitude), 
+            address || '', 
+            finalQrCode, 
+            priceAmount || 0, 
+            isAvailable ? 1 : 0, 
+            yandexMapLink || ''
+        ]);
+        
         res.json({ success: true, id, message: 'Маска добавлена' });
     } catch (err) {
+        console.error('Add mask error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -96,11 +134,26 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
         
         await db.query(`
             UPDATE masks SET 
-                name = $1, description = $2, "fullDescription" = $3, latitude = $4, longitude = $5, 
-                address = $6, "qrCode" = $7, "priceAmount" = $8, "isAvailable" = $9, "yandexMapLink" = $10,
-                "photoHash" = $11
+                name = COALESCE($1, name),
+                description = COALESCE($2, description),
+                "fullDescription" = COALESCE($3, "fullDescription"),
+                latitude = COALESCE($4, latitude),
+                longitude = COALESCE($5, longitude),
+                address = COALESCE($6, address),
+                "qrCode" = COALESCE($7, "qrCode"),
+                "priceAmount" = COALESCE($8, "priceAmount"),
+                "isAvailable" = COALESCE($9, "isAvailable"),
+                "yandexMapLink" = COALESCE($10, "yandexMapLink"),
+                "photoHash" = COALESCE($11, "photoHash")
             WHERE id = $12
-        `, [name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink, currentPhotoHash, req.params.id]);
+        `, [
+            name, description, fullDescription, 
+            latitude ? parseFloat(latitude) : null, 
+            longitude ? parseFloat(longitude) : null, 
+            address, qrCode, priceAmount, 
+            isAvailable ? 1 : 0, yandexMapLink, 
+            currentPhotoHash, req.params.id
+        ]);
         
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
@@ -129,17 +182,37 @@ router.get('/routes', checkAdmin, async (req, res) => {
     }
 });
 
-router.post('/routes', checkAdmin, async (req, res) => {
-    const { name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom } = req.body;
-    const id = uuidv4();
-    
+router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     try {
+        const maskId = req.params.id;
+        const adminId = req.headers['x-user-id'] || 'admin';
+        
+        // Проверяем, существует ли маска
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        // Проверяем, что координаты заполнены
+        const mask = maskResult.rows[0];
+        if (!mask.latitude || !mask.longitude) {
+            return res.status(400).json({ error: 'У маски не указаны координаты. Сначала отредактируйте маску и добавьте широту/долготу.' });
+        }
+        
+        // Публикуем маску
         await db.query(`
-            INSERT INTO routes (id, name, description, difficulty, "durationMinutes", "distanceKm", color, "centerLat", "centerLng", zoom, "isActive")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
-        `, [id, name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom]);
-        res.json({ success: true, id, message: 'Маршрут добавлен' });
+            UPDATE masks SET "isAvailable" = 1 WHERE id = $1
+        `, [maskId]);
+        
+        // Добавляем запись в лог
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details, "createdAt")
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `, [adminId, 'PUBLISH_MASK', maskId, JSON.stringify({ maskId: maskId })]);
+        
+        res.json({ success: true, message: 'Маска опубликована и доступна в каталоге' });
     } catch (err) {
+        console.error('Publish error:', err);
         res.status(500).json({ error: err.message });
     }
 });
