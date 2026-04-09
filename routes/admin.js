@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const maskId = req.params.id || req.body.id || 'temp';
+        const maskId = req.params.id;
         const uniqueName = `${maskId}_${Date.now()}${path.extname(file.originalname)}`;
         cb(null, uniqueName);
     }
@@ -143,31 +143,33 @@ router.delete('/masks/:id', checkAdmin, async (req, res) => {
 });
 
 // ПУБЛИКАЦИЯ МАСКИ
-router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
+router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
     try {
         const maskId = req.params.id;
-        const adminId = req.headers['x-user-id'] || 'admin';
         
-        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
-        if (maskResult.rows.length === 0) {
+        console.log('=== ЗАГРУЗКА ФОТО ===');
+        console.log('Mask ID:', maskId);
+        console.log('File:', req.file);
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/images/${req.file.filename}`;
+        
+        // Обновляем запись в БД
+        const result = await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2 RETURNING id
+        `, [photoUrl, maskId]);
+        
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Маска не найдена' });
         }
         
-        const mask = maskResult.rows[0];
-        if (!mask.latitude || !mask.longitude) {
-            return res.status(400).json({ error: 'У маски не указаны координаты. Сначала отредактируйте маску и добавьте широту/долготу.' });
-        }
-        
-        await db.query('UPDATE masks SET "isAvailable" = 1 WHERE id = $1', [maskId]);
-        
-        await db.query(`
-            INSERT INTO admin_logs ("adminId", action, "targetId", details, "createdAt")
-            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-        `, [adminId, 'PUBLISH_MASK', maskId, JSON.stringify({ maskId: maskId })]);
-        
-        res.json({ success: true, message: 'Маска опубликована и доступна в каталоге' });
+        console.log('✅ Фото сохранено для маски:', maskId);
+        res.json({ success: true, photoUrl, message: 'Фото загружено' });
     } catch (err) {
-        console.error('Publish error:', err);
+        console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
     }
 });

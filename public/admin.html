@@ -866,16 +866,20 @@
                 });
                 
                 if (res.ok) {
-                    // Загружаем новое главное фото, если выбрано
-                    const mainPhotoFile = document.getElementById('mask-main-photo').files[0];
-                    if (mainPhotoFile) {
-                        const formData = new FormData();
-                        formData.append('photo', mainPhotoFile);
-                        await fetch(`${API_BASE}/admin/masks/${id}/upload?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
+                    // Загружаем главное фото ПОСЛЕ создания маски
+const mainPhotoFile = document.getElementById('mask-main-photo').files[0];
+if (mainPhotoFile) {
+    const formData = new FormData();
+    formData.append('photo', mainPhotoFile);
+    
+    const uploadRes = await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
+        method: 'POST',
+        body: formData  // НЕ ставьте Content-Type, браузер сам установит multipart/form-data
+    });
+    
+    const uploadResult = await uploadRes.json();
+    console.log('Upload result:', uploadResult);
+}
                     
                     // Загружаем дополнительные фото
                     const galleryFiles = document.getElementById('mask-gallery-photos').files;
