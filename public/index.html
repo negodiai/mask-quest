@@ -2086,13 +2086,10 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-                function getMaskImages(maskId) {
+                        function getMaskImages(maskId) {
             const images = [];
             
-            // Главное фото
-            images.push(`/images/${maskId}.jpg`);
-            
-            // Фото галереи (до 5 штук)
+            // Только фото галереи для карусели (без главного фото)
             for (let i = 0; i < 5; i++) {
                 images.push(`/images/${maskId}_gallery_${i}.jpg`);
             }
@@ -2918,12 +2915,12 @@
             };
             
             // Функция для создания карусели с полнофункциональными фото
-            function createGalleryForTab(tabName) {
+                        function createGalleryForTab(tabName) {
                 let slidesHtml = '';
                 let dotsHtml = '';
-                for (let i = 1; i <= 5; i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
-                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
+                for (let i = 0; i < 5; i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}_gallery_${i}.jpg');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i})"></div>`;
                 }
                 
                 return `
@@ -2948,10 +2945,13 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <!-- Главное фото (без onclick) -->
-                            <div class="main-photo">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
-                            </div>
+                            <!-- Главное фото -->
+<div class="main-photo">
+    <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
+</div>
+
+<!-- Карусель из фото галереи -->
+<div id="present-gallery-container">${getGalleryForTab('present')}</div>
                             
                             <!-- Описание -->
                             <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
@@ -3161,18 +3161,18 @@
         }
         
         // Функция для открытия полноэкранного режима из карусели
-                function openFullscreenForTab(tab, startIndex) {
+                        function openFullscreenForTab(tab, startIndex) {
             const maskId = window.currentFullscreenMaskId;
             const currentIndex = window[`currentIndex_${tab}`] || startIndex;
             
             let fullscreenSlides = '';
-            for (let i = 1; i <= 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            for (let i = 0; i < 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}_gallery_${i}.jpg');"></div>`;
             }
             
             let fullscreenDots = '';
-            for (let i = 1; i <= 5; i++) {
-                fullscreenDots += `<div class="fullscreen-dot ${i === currentIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i - 1})"></div>`;
+            for (let i = 0; i < 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === currentIndex ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i})"></div>`;
             }
             
             const fullscreenHtml = `
