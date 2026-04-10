@@ -76,7 +76,9 @@ async function initDatabase() {
     }
     
     try {
-        // Создаём таблицы с правильными типами
+        // ===== СОЗДАНИЕ ТАБЛИЦ =====
+        
+        // Таблица масок
         await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
@@ -100,6 +102,7 @@ async function initDatabase() {
             )
         `);
         
+        // Таблица маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS routes (
                 id TEXT PRIMARY KEY,
@@ -117,6 +120,7 @@ async function initDatabase() {
             )
         `);
         
+        // Таблица связи масок и маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS route_masks (
                 id SERIAL PRIMARY KEY,
@@ -129,6 +133,7 @@ async function initDatabase() {
             )
         `);
         
+        // Таблица активаций пользователей
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_activations (
                 id TEXT PRIMARY KEY,
@@ -142,6 +147,7 @@ async function initDatabase() {
             )
         `);
         
+        // Таблица прогресса маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_route_progress (
                 id TEXT PRIMARY KEY,
@@ -155,6 +161,7 @@ async function initDatabase() {
             )
         `);
         
+        // Таблица логов админа
         await pool.query(`
             CREATE TABLE IF NOT EXISTS admin_logs (
                 id SERIAL PRIMARY KEY,
@@ -166,8 +173,29 @@ async function initDatabase() {
             )
         `);
         
-        // Запускаем миграции для преобразования существующих данных
-        await runMigrations();
+        // ===== МИГРАЦИИ (ДОБАВЛЕНИЕ НЕДОСТАЮЩИХ КОЛОНОК) =====
+        
+        // 1. Добавляем колонку updatedAt в таблицу masks (если её нет)
+        try {
+            await pool.query(`
+                ALTER TABLE masks 
+                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            `);
+            console.log('✅ Колонка updatedAt добавлена в таблицу masks');
+        } catch (err) {
+            console.log('⚠️ Колонка updatedAt уже существует или ошибка:', err.message);
+        }
+        
+        // 2. Добавляем колонку updatedAt в таблицу routes (если нужно)
+        try {
+            await pool.query(`
+                ALTER TABLE routes 
+                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            `);
+            console.log('✅ Колонка updatedAt добавлена в таблицу routes');
+        } catch (err) {
+            console.log('⚠️ Колонка updatedAt в routes уже существует или ошибка:', err.message);
+        }
         
         console.log('✅ База данных PostgreSQL инициализирована');
     } catch (error) {

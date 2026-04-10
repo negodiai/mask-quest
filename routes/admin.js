@@ -399,7 +399,7 @@ router.get('/stats', checkAdmin, async (req, res) => {
     }
 });
 
-// Опубликовать маску (сделать isAvailable = true и перенести в каталог)
+// Опубликовать маску (сделать isAvailable = true)
 router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     try {
         // Проверяем, существует ли маска
@@ -408,9 +408,9 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Маска не найдена' });
         }
         
-        // Обновляем статус isAvailable = 1 (опубликовано)
+        // Обновляем статус isAvailable = 1 (опубликовано) - БЕЗ updatedAt
         await db.query(`
-            UPDATE masks SET "isAvailable" = 1, "updatedAt" = CURRENT_TIMESTAMP
+            UPDATE masks SET "isAvailable" = 1
             WHERE id = $1
         `, [req.params.id]);
         
