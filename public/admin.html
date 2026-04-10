@@ -576,21 +576,7 @@
             renderAdminPanel();
         }
         
-                                               function showAddMaskModal() {
-            // Создаём поле для фото отдельно
-            const photoHtml = `
-                <div class="form-group">
-                    <label>Главное фото</label>
-                    <input type="file" id="mask-main-photo" accept="image/*">
-                    <small style="color: #64748b;">Рекомендуемый размер: 800x600px</small>
-                </div>
-                <div class="form-group">
-                    <label>Дополнительные фото (до 10 шт)</label>
-                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
-                    <small style="color: #64748b;">Для галереи. Можно выбрать несколько файлов</small>
-                </div>
-            `;
-            
+                function showAddMaskModal() {
             const modalContent = `
                 <div class="form-group">
                     <label>Название *</label>
@@ -628,28 +614,25 @@
                     <label>Ссылка на Яндекс.Карты</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
-                ${photoHtml}
+                <div class="form-group">
+                    <label>Главное фото</label>
+                    <input type="file" id="mask-main-photo" accept="image/*">
+                    <small style="color: #64748b;">Рекомендуемый размер: 800x600px</small>
+                </div>
+                <div class="form-group">
+                    <label>Дополнительные фото (до 10 шт)</label>
+                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
+                    <small style="color: #64748b;">Для галереи. Можно выбрать несколько файлов</small>
+                </div>
             `;
             
             showModal('Добавить маску', modalContent, async () => {
-                // ... остальной код
-            });
-        }
-                const nameInput = document.getElementById('mask-name');
-                const latInput = document.getElementById('mask-latitude');
-                const lngInput = document.getElementById('mask-longitude');
-                
-                if (!nameInput || !latInput || !lngInput) {
-                    showMessage('Ошибка: не найдены поля формы', 'error');
-                    return;
-                }
-                
-                const name = nameInput.value;
-                const latitude = latInput.value;
-                const longitude = lngInput.value;
+                const name = document.getElementById('mask-name')?.value;
+                const latitude = document.getElementById('mask-latitude')?.value;
+                const longitude = document.getElementById('mask-longitude')?.value;
                 
                 if (!name || !latitude || !longitude) {
-                    showMessage('Заполните обязательные поля: название, широта, долгота', 'error');
+                    showMessage('Заполните обязательные поля', 'error');
                     return;
                 }
                 
@@ -667,7 +650,6 @@
                 };
                 
                 try {
-                    console.log('1. Создаём маску...');
                     const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -675,38 +657,18 @@
                     });
                     
                     const result = await res.json();
-                    console.log('2. Результат создания маски:', result);
                     
                     if (res.ok && result.id) {
                         const maskId = result.id;
-                        console.log('3. ID новой маски:', maskId);
                         
-                        // Загружаем главное фото
-                        const mainPhotoInput = document.getElementById('mask-main-photo');
-                        console.log('4. Поле фото:', mainPhotoInput);
-                        console.log('5. Выбран файл:', mainPhotoInput?.files[0]?.name);
-                        
-                        if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
+                        const mainPhoto = document.getElementById('mask-main-photo')?.files[0];
+                        if (mainPhoto) {
                             const formData = new FormData();
-                            formData.append('photo', mainPhotoInput.files[0]);
-                            
-                            console.log('6. Отправляем фото на сервер...');
-                            const uploadRes = await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
+                            formData.append('photo', mainPhoto);
+                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
                                 method: 'POST',
                                 body: formData
                             });
-                            
-                            const uploadResult = await uploadRes.json();
-                            console.log('7. Результат загрузки фото:', uploadResult);
-                            
-                            if (!uploadRes.ok) {
-                                console.error('Ошибка загрузки фото:', uploadResult);
-                                showMessage('Маска создана, но фото не загрузилось: ' + (uploadResult.error || 'неизвестная ошибка'), 'error');
-                            } else {
-                                console.log('✅ Фото успешно загружено!');
-                            }
-                        } else {
-                            console.log('Фото не выбрано, пропускаем загрузку');
                         }
                         
                         showMessage('Маска добавлена!', 'success');
@@ -715,9 +677,11 @@
                         showMessage(result.error || 'Ошибка добавления', 'error');
                     }
                 } catch (err) {
-                    console.error('Ошибка:', err);
-                    showMessage('Ошибка при добавлении маски: ' + err.message, 'error');
+                    console.error(err);
+                    showMessage('Ошибка при добавлении маски', 'error');
                 }
+            });
+        }
         
         function showAddRouteModal() {
             showModal('Добавить маршрут', `
