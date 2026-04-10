@@ -576,7 +576,7 @@
             renderAdminPanel();
         }
         
-                               function showAddMaskModal() {
+                                       function showAddMaskModal() {
             const modalContent = `
                 <div class="form-group">
                     <label>Название *</label>
@@ -627,7 +627,6 @@
             `;
             
             showModal('Добавить маску', modalContent, async () => {
-                // Получаем значения полей с проверкой существования
                 const nameInput = document.getElementById('mask-name');
                 const latInput = document.getElementById('mask-latitude');
                 const lngInput = document.getElementById('mask-longitude');
@@ -660,6 +659,7 @@
                 };
                 
                 try {
+                    console.log('1. Создаём маску...');
                     const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -667,37 +667,38 @@
                     });
                     
                     const result = await res.json();
+                    console.log('2. Результат создания маски:', result);
                     
                     if (res.ok && result.id) {
                         const maskId = result.id;
+                        console.log('3. ID новой маски:', maskId);
                         
-                        // Загружаем главное фото (с проверкой)
+                        // Загружаем главное фото
                         const mainPhotoInput = document.getElementById('mask-main-photo');
+                        console.log('4. Поле фото:', mainPhotoInput);
+                        console.log('5. Выбран файл:', mainPhotoInput?.files[0]?.name);
+                        
                         if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
                             const formData = new FormData();
                             formData.append('photo', mainPhotoInput.files[0]);
                             
+                            console.log('6. Отправляем фото на сервер...');
                             const uploadRes = await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
                                 method: 'POST',
                                 body: formData
                             });
                             
                             const uploadResult = await uploadRes.json();
-                            console.log('Upload result:', uploadResult);
-                        }
-                        
-                        // Загружаем дополнительные фото
-                        const galleryInput = document.getElementById('mask-gallery-photos');
-                        if (galleryInput && galleryInput.files && galleryInput.files.length > 0) {
-                            const formData = new FormData();
-                            for (let i = 0; i < galleryInput.files.length; i++) {
-                                formData.append('photos', galleryInput.files[i]);
-                            }
+                            console.log('7. Результат загрузки фото:', uploadResult);
                             
-                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload-gallery?userId=${currentUserId}`, {
-                                method: 'POST',
-                                body: formData
-                            });
+                            if (!uploadRes.ok) {
+                                console.error('Ошибка загрузки фото:', uploadResult);
+                                showMessage('Маска создана, но фото не загрузилось: ' + (uploadResult.error || 'неизвестная ошибка'), 'error');
+                            } else {
+                                console.log('✅ Фото успешно загружено!');
+                            }
+                        } else {
+                            console.log('Фото не выбрано, пропускаем загрузку');
                         }
                         
                         showMessage('Маска добавлена!', 'success');
@@ -706,8 +707,8 @@
                         showMessage(result.error || 'Ошибка добавления', 'error');
                     }
                 } catch (err) {
-                    console.error('Add mask error:', err);
-                    showMessage('Ошибка при добавлении маски', 'error');
+                    console.error('Ошибка:', err);
+                    showMessage('Ошибка при добавлении маски: ' + err.message, 'error');
                 }
             });
         }
