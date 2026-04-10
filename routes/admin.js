@@ -100,6 +100,72 @@ router.delete('/masks/:id/photo', checkAdmin, async (req, res) => {
     }
 });
 
+// Эндпоинт для загрузки главного фото маски
+router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const photoType = req.body.type || 'main';
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const imagesDir = path.join(__dirname, '../public/images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+        
+        // Сохраняем главное фото
+        const targetPath = path.join(imagesDir, `${maskId}.jpg`);
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path);
+        
+        await db.query(`UPDATE masks SET "photoHash" = $1 WHERE id = $2`, [`${maskId}.jpg`, maskId]);
+        
+        res.json({ success: true, message: 'Главное фото загружено', url: `/images/${maskId}.jpg` });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Эндпоинт для загрузки фото галереи
+router.post('/masks/:id/upload-gallery', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const index = req.body.index || 0;
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const imagesDir = path.join(__dirname, '../public/images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+        
+        // Сохраняем фото галереи с индексом
+        const targetPath = path.join(imagesDir, `${maskId}_gallery_${index}.jpg`);
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path);
+        
+        res.json({ success: true, message: 'Фото галереи загружено', url: `/images/${maskId}_gallery_${index}.jpg` });
+    } catch (err) {
+        console.error('Gallery upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const ADMIN_ID = '359839365';
 
 function isAdmin(userId) {
