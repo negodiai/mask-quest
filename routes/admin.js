@@ -149,15 +149,16 @@ router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req,
         
         console.log('=== ЗАГРУЗКА ФОТО ===');
         console.log('Mask ID:', maskId);
-        console.log('File:', req.file);
         
         if (!req.file) {
+            console.log('Файл не загружен');
             return res.status(400).json({ error: 'Файл не загружен' });
         }
         
+        console.log('Файл:', req.file.filename);
+        
         const photoUrl = `/images/${req.file.filename}`;
         
-        // Обновляем запись в БД
         const result = await db.query(`
             UPDATE masks SET "photoHash" = $1 WHERE id = $2 RETURNING id
         `, [photoUrl, maskId]);

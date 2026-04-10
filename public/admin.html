@@ -899,17 +899,28 @@
                 });
                 
                 if (res.ok) {
-                    // Загружаем главное фото (если выбрано)
-                    const mainPhotoInput = document.getElementById('mask-main-photo');
-                    if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
-                        const formData = new FormData();
-                        formData.append('photo', mainPhotoInput.files[0]);
-                        
-                        await fetch(`${API_BASE}/admin/masks/${id}/upload?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
+                    // Загружаем главное фото
+const mainPhotoInput = document.getElementById('mask-main-photo');
+if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
+    console.log('Есть фото для загрузки:', mainPhotoInput.files[0].name);
+    
+    const formData = new FormData();
+    formData.append('photo', mainPhotoInput.files[0]);
+    
+    const uploadRes = await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
+        method: 'POST',
+        body: formData
+    });
+    
+    const uploadResult = await uploadRes.json();
+    console.log('Результат загрузки фото:', uploadResult);
+    
+    if (!uploadRes.ok) {
+        console.error('Ошибка загрузки фото:', uploadResult);
+    }
+} else {
+    console.log('Фото не выбрано');
+}
                     
                     // Загружаем дополнительные фото
                     const galleryInput = document.getElementById('mask-gallery-photos');
