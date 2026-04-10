@@ -197,6 +197,40 @@ router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req,
     }
 });
 
+router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const adminId = req.headers['x-user-id'] || req.query.userId || 'admin';
+        
+        console.log('Публикация маски:', maskId, 'Админ:', adminId);
+        
+        // Проверяем, существует ли маска
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const mask = maskResult.rows[0];
+        if (!mask.latitude || !mask.longitude) {
+            return res.status(400).json({ error: 'У маски не указаны координаты' });
+        }
+        
+        // Публикуем маску
+        await db.query('UPDATE masks SET "isAvailable" = 1 WHERE id = $1', [maskId]);
+        
+        // Добавляем запись в лог
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details)
+            VALUES ($1, $2, $3, $4)
+        `, [adminId, 'PUBLISH_MASK', maskId, JSON.stringify({ maskId: maskId })]);
+        
+        res.json({ success: true, message: 'Маска опубликована' });
+    } catch (err) {
+        console.error('Publish error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ========== МАРШРУТЫ (CRUD) ==========
 
 router.get('/routes', checkAdmin, async (req, res) => {

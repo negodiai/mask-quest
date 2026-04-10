@@ -794,16 +794,20 @@
             }
         }
 
-                async function publishMask(id) {
+                        async function publishMask(id) {
             if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
             
             try {
+                console.log('Публикуем маску:', id);
+                
                 const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 
+                console.log('Ответ сервера:', res.status);
                 const result = await res.json();
+                console.log('Результат:', result);
                 
                 if (res.ok) {
                     showMessage(result.message || 'Маска опубликована!', 'success');
@@ -812,7 +816,8 @@
                     showMessage(result.error || 'Ошибка публикации', 'error');
                 }
             } catch (e) {
-                showMessage('Ошибка сети', 'error');
+                console.error('Ошибка публикации:', e);
+                showMessage('Ошибка сети: ' + e.message, 'error');
             }
         }
         
