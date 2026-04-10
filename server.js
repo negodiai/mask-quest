@@ -33,7 +33,6 @@ app.use('/scan', redirectRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Для загрузки файлов
-const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Главная страница
