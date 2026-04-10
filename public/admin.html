@@ -457,7 +457,7 @@
             }, 100);
         }
         
-                function renderMasksList() {
+                        function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
             
             return masks.map(mask => `
@@ -466,6 +466,7 @@
                         <span class="card-title">${escapeHtml(mask.name)}</span>
                         <div>
                             ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
+                            <button class="btn-icon" onclick="uploadPhoto('${mask.id}')" title="Загрузить фото"><i class="fas fa-camera"></i></button>
                             <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
@@ -474,6 +475,7 @@
                         <div>📍 ${mask.latitude}, ${mask.longitude}</div>
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
                         <div>${mask.isAvailable ? '<span style="color: #10B981;">✅ Опубликована</span>' : '<span style="color: #F59E0B;">⏳ Черновик</span>'}</div>
+                        <div>${mask.photoHash ? '<span style="color: #10B981;">📸 Фото есть</span>' : '<span style="color: #EF4444;">📸 Нет фото</span>'}</div>
                     </div>
                 </div>
             `).join('');
@@ -576,8 +578,8 @@
             renderAdminPanel();
         }
         
-                function showAddMaskModal() {
-            const modalContent = `
+        function showAddMaskModal() {
+            showModal('Добавить маску', `
                 <div class="form-group">
                     <label>Название *</label>
                     <input type="text" id="mask-name" placeholder="Например: Берёзовая">
@@ -614,71 +616,31 @@
                     <label>Ссылка на Яндекс.Карты</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
-                <div class="form-group">
-                    <label>Главное фото</label>
-                    <input type="file" id="mask-main-photo" accept="image/*">
-                    <small style="color: #64748b;">Рекомендуемый размер: 800x600px</small>
-                </div>
-                <div class="form-group">
-                    <label>Дополнительные фото (до 10 шт)</label>
-                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
-                    <small style="color: #64748b;">Для галереи. Можно выбрать несколько файлов</small>
-                </div>
-            `;
-            
-            showModal('Добавить маску', modalContent, async () => {
-                const name = document.getElementById('mask-name')?.value;
-                const latitude = document.getElementById('mask-latitude')?.value;
-                const longitude = document.getElementById('mask-longitude')?.value;
-                
-                if (!name || !latitude || !longitude) {
-                    showMessage('Заполните обязательные поля', 'error');
-                    return;
-                }
-                
+            `, async () => {
                 const newMask = {
-                    name: name,
-                    description: document.getElementById('mask-description')?.value || '',
-                    fullDescription: document.getElementById('mask-fullDescription')?.value || '',
-                    latitude: parseFloat(latitude),
-                    longitude: parseFloat(longitude),
-                    address: document.getElementById('mask-address')?.value || '',
-                    qrCode: document.getElementById('mask-qrCode')?.value || '',
-                    priceAmount: parseInt(document.getElementById('mask-priceAmount')?.value) || 15000,
-                    isAvailable: false,
-                    yandexMapLink: document.getElementById('mask-yandexMapLink')?.value || ''
+                    name: document.getElementById('mask-name').value,
+                    description: document.getElementById('mask-description').value,
+                    fullDescription: document.getElementById('mask-fullDescription').value,
+                    latitude: parseFloat(document.getElementById('mask-latitude').value),
+                    longitude: parseFloat(document.getElementById('mask-longitude').value),
+                    address: document.getElementById('mask-address').value,
+                    qrCode: document.getElementById('mask-qrCode').value,
+                    priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
+                    isAvailable: true,
+                    yandexMapLink: document.getElementById('mask-yandexMapLink').value
                 };
                 
-                try {
-                    const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newMask)
-                    });
-                    
-                    const result = await res.json();
-                    
-                    if (res.ok && result.id) {
-                        const maskId = result.id;
-                        
-                        const mainPhoto = document.getElementById('mask-main-photo')?.files[0];
-                        if (mainPhoto) {
-                            const formData = new FormData();
-                            formData.append('photo', mainPhoto);
-                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
-                                method: 'POST',
-                                body: formData
-                            });
-                        }
-                        
-                        showMessage('Маска добавлена!', 'success');
-                        loadMasks().then(() => renderAdminPanel());
-                    } else {
-                        showMessage(result.error || 'Ошибка добавления', 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showMessage('Ошибка при добавлении маски', 'error');
+                const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newMask)
+                });
+                
+                if (res.ok) {
+                    showMessage('Маска добавлена!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                } else {
+                    showMessage('Ошибка добавления', 'error');
                 }
             });
         }
@@ -765,20 +727,16 @@
             }
         }
 
-                        async function publishMask(id) {
+                async function publishMask(id) {
             if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
             
             try {
-                console.log('Публикуем маску:', id);
-                
                 const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 
-                console.log('Ответ сервера:', res.status);
                 const result = await res.json();
-                console.log('Результат:', result);
                 
                 if (res.ok) {
                     showMessage(result.message || 'Маска опубликована!', 'success');
@@ -787,8 +745,7 @@
                     showMessage(result.error || 'Ошибка публикации', 'error');
                 }
             } catch (e) {
-                console.error('Ошибка публикации:', e);
-                showMessage('Ошибка сети: ' + e.message, 'error');
+                showMessage('Ошибка сети', 'error');
             }
         }
         
@@ -807,7 +764,7 @@
             }
         }
         
-                        function editMask(id) {
+        function editMask(id) {
             const mask = masks.find(m => m.id === id);
             if (!mask) return;
             
@@ -843,14 +800,6 @@
                         <option value="0" ${!mask.isAvailable ? 'selected' : ''}>Нет</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Главное фото (новое)</label>
-                    <small style="color: #64748b;">${mask.photoHash ? 'Текущее фото: есть' : 'Нет фото'}</small>
-                </div>
-                <div class="form-group">
-                    <label>Дополнительные фото (до 10 шт)</label>
-                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
-                </div>
             `, async () => {
                 const updatedMask = {
                     name: document.getElementById('mask-name').value,
@@ -869,42 +818,6 @@
                 });
                 
                 if (res.ok) {
-                    // Загружаем главное фото
-const mainPhotoInput = document.getElementById('mask-main-photo');
-if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
-    console.log('Есть фото для загрузки:', mainPhotoInput.files[0].name);
-    
-    const formData = new FormData();
-    formData.append('photo', mainPhotoInput.files[0]);
-    
-    const uploadRes = await fetch(`${API_BASE}/admin/masks/${maskId}/upload?userId=${currentUserId}`, {
-        method: 'POST',
-        body: formData
-    });
-    
-    const uploadResult = await uploadRes.json();
-    console.log('Результат загрузки фото:', uploadResult);
-    
-    if (!uploadRes.ok) {
-        console.error('Ошибка загрузки фото:', uploadResult);
-    }
-} else {
-    console.log('Фото не выбрано');
-}
-                    
-                    // Загружаем дополнительные фото
-                    const galleryInput = document.getElementById('mask-gallery-photos');
-                    if (galleryInput && galleryInput.files && galleryInput.files.length > 0) {
-                        const formData = new FormData();
-                        for (let i = 0; i < galleryInput.files.length; i++) {
-                            formData.append('photos', galleryInput.files[i]);
-                        }
-                        await fetch(`${API_BASE}/admin/masks/${id}/upload-gallery?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
-                    
                     showMessage('Маска обновлена!', 'success');
                     loadMasks().then(() => renderAdminPanel());
                 } else {
@@ -967,11 +880,7 @@ if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
         
         let activeModal = null;
         
-                function showModal(title, content, onSave) {
-            // Закрываем старое окно, если оно есть
-            const oldModal = document.getElementById('admin-modal');
-            if (oldModal) oldModal.remove();
-            
+        function showModal(title, content, onSave) {
             const modalHtml = `
                 <div id="admin-modal" class="modal-overlay">
                     <div class="modal-container">
@@ -1039,6 +948,43 @@ if (mainPhotoInput && mainPhotoInput.files && mainPhotoInput.files[0]) {
             }).catch(() => {
                 showMessage('Ошибка обновления', 'error');
             });
+        }
+
+                async function uploadPhoto(maskId) {
+            // Создаём скрытый input для выбора файла
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png,image/jpg,image/webp';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                showMessage('Загрузка фото...', 'info');
+                
+                try {
+                    const res = await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo?userId=${currentUserId}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await res.json();
+                    
+                    if (res.ok) {
+                        showMessage('Фото загружено!', 'success');
+                        loadMasks().then(() => renderAdminPanel());
+                    } else {
+                        showMessage(result.error || 'Ошибка загрузки', 'error');
+                    }
+                } catch (e) {
+                    showMessage('Ошибка сети', 'error');
+                }
+            };
+            
+            input.click();
         }
         
         init();
