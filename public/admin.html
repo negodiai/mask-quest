@@ -576,7 +576,21 @@
             renderAdminPanel();
         }
         
-                                       function showAddMaskModal() {
+                                               function showAddMaskModal() {
+            // Создаём поле для фото отдельно
+            const photoHtml = `
+                <div class="form-group">
+                    <label>Главное фото</label>
+                    <input type="file" id="mask-main-photo" accept="image/*">
+                    <small style="color: #64748b;">Рекомендуемый размер: 800x600px</small>
+                </div>
+                <div class="form-group">
+                    <label>Дополнительные фото (до 10 шт)</label>
+                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
+                    <small style="color: #64748b;">Для галереи. Можно выбрать несколько файлов</small>
+                </div>
+            `;
+            
             const modalContent = `
                 <div class="form-group">
                     <label>Название *</label>
@@ -614,19 +628,13 @@
                     <label>Ссылка на Яндекс.Карты</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
-                <div class="form-group">
-                    <label>Главное фото</label>
-                    <input type="file" id="mask-main-photo" accept="image/*">
-                    <small style="color: #64748b;">Рекомендуемый размер: 800x600px</small>
-                </div>
-                <div class="form-group">
-                    <label>Дополнительные фото (до 10 шт)</label>
-                    <input type="file" id="mask-gallery-photos" accept="image/*" multiple>
-                    <small style="color: #64748b;">Для галереи. Можно выбрать несколько файлов</small>
-                </div>
+                ${photoHtml}
             `;
             
             showModal('Добавить маску', modalContent, async () => {
+                // ... остальной код
+            });
+        }
                 const nameInput = document.getElementById('mask-name');
                 const latInput = document.getElementById('mask-latitude');
                 const lngInput = document.getElementById('mask-longitude');
@@ -710,8 +718,6 @@
                     console.error('Ошибка:', err);
                     showMessage('Ошибка при добавлении маски: ' + err.message, 'error');
                 }
-            });
-        }
         
         function showAddRouteModal() {
             showModal('Добавить маршрут', `
