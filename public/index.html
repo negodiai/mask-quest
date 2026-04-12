@@ -2088,12 +2088,10 @@
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
                         function getMaskImages(maskId) {
             const images = [];
-            
-            // Только фото галереи для карусели (без главного фото)
+            // Только фото галереи (для карусели)
             for (let i = 0; i < 5; i++) {
                 images.push(`/images/${maskId}_gallery_${i}.jpg`);
             }
-            
             return images;
         }
         
@@ -2362,10 +2360,10 @@
                 masksHtml += `
                     <div class="card clickable-card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px;">
-                            <div class="mask-image">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
-                            </div>
+                                                    <div class="mask-image">
+                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
+                        </div>
                             <div style="flex: 1;">
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
                                 <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
@@ -2415,9 +2413,9 @@
                 const formattedDate = date.toLocaleDateString('ru-RU');
                 historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
-                        <div class="history-icon-new">
+                                                <div class="history-icon">
                             <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
+                            <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
                         </div>
                         <div class="history-content-new">
                             <h4 class="history-name-new">${escapeHtml(mask.name)}</h4>
@@ -2914,24 +2912,39 @@
                 past: `Кёнигсберг (1333-1945)`
             };
             
-            // Функция для создания карусели с полнофункциональными фото
-                        function createGalleryForTab(tabName) {
-                let slidesHtml = '';
-                let dotsHtml = '';
+                        // Функция для создания галереи (только фото из галереи, без главного)
+            function getGalleryForTab(tabName) {
+                let gallerySlides = '';
+                let galleryDots = '';
+                
+                // Создаём 5 слайдов для галереи (используем только фото с суффиксом _gallery_)
                 for (let i = 0; i < 5; i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}_gallery_${i}.jpg');"></div>`;
-                    dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i})"></div>`;
+                    const galleryImageUrl = `/images/${mask.id}_gallery_${i}.jpg`;
+                    
+                    // Добавляем слайд с фото (или пустой, если фото нет)
+                    gallerySlides += `
+                        <div class="gallery-slide" style="background-image: url('${galleryImageUrl}'); background-size: cover; background-position: center;">
+                        </div>
+                    `;
+                    
+                    // Добавляем точку-индикатор
+                    galleryDots += `
+                        <div class="gallery-dot ${i === 0 ? 'active' : ''}" 
+                             onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i})">
+                        </div>
+                    `;
                 }
                 
+                // Возвращаем HTML карусели
                 return `
                     <div class="gallery-container" id="gallery-container-${tabName}">
                         <div class="gallery-slides" id="gallery-slides-${tabName}" style="transform: translateX(0%);">
-                            ${slidesHtml}
+                            ${gallerySlides}
                         </div>
                         <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlideExtendedTab('${tabName}')">‹</div>
                         <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlideExtendedTab('${tabName}')">›</div>
                         <div class="gallery-nav" id="gallery-nav-${tabName}">
-                            ${dotsHtml}
+                            ${galleryDots}
                         </div>
                     </div>
                 `;
@@ -2945,13 +2958,10 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <!-- Главное фото -->
-<div class="main-photo">
-    <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
-</div>
-
-<!-- Карусель из фото галереи -->
-<div id="present-gallery-container">${getGalleryForTab('present')}</div>
+                            <!-- Главное фото (без onclick) -->
+                                                        <div class="main-photo">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
+                            </div>
                             
                             <!-- Описание -->
                             <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
@@ -3161,18 +3171,18 @@
         }
         
         // Функция для открытия полноэкранного режима из карусели
-                        function openFullscreenForTab(tab, startIndex) {
+                function openFullscreenForTab(tab, startIndex) {
             const maskId = window.currentFullscreenMaskId;
             const currentIndex = window[`currentIndex_${tab}`] || startIndex;
             
             let fullscreenSlides = '';
-            for (let i = 0; i < 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}_gallery_${i}.jpg');"></div>`;
+            for (let i = 1; i <= 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
             }
             
             let fullscreenDots = '';
-            for (let i = 0; i < 5; i++) {
-                fullscreenDots += `<div class="fullscreen-dot ${i === currentIndex ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i})"></div>`;
+            for (let i = 1; i <= 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === currentIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i - 1})"></div>`;
             }
             
             const fullscreenHtml = `
@@ -3322,8 +3332,8 @@
             window[`currentIndex_${tab}`] = startIndex;
             
             let fullscreenSlides = '';
-            for (let i = 1; i <= 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            for (let i = 0; i < 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}_gallery_${i}.jpg'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div>`;
             }
             
             let fullscreenDots = '';
