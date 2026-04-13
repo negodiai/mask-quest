@@ -32,6 +32,9 @@ app.use('/api/seed', seedRoutes);
 app.use('/scan', redirectRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Для загрузки файлов
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Главная страница
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

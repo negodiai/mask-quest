@@ -2086,15 +2086,18 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-        function getMaskImages(maskId) {
-            // Первое фото из папки images
-            const firstImage = `/images/${maskId}.jpg`;
-            // Второе фото (заглушка)
-            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
-            // Третье фото (заглушка)
-            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+                function getMaskImages(maskId) {
+            const images = [];
             
-            return [firstImage, secondImage, thirdImage];
+            // Главное фото
+            images.push(`/images/${maskId}.jpg`);
+            
+            // Фото галереи (до 5 штук)
+            for (let i = 0; i < 5; i++) {
+                images.push(`/images/${maskId}_gallery_${i}.jpg`);
+            }
+            
+            return images;
         }
         
         let currentGalleryIndex = 0;

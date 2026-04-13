@@ -2,6 +2,169 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Настройка хранения файлов
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Только изображения!'));
+        }
+    }
+});
+
+// Эндпоинт для загрузки фото маски
+router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        // Проверяем, существует ли маска
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        // Создаём папку public/images если её нет
+        const imagesDir = path.join(__dirname, '../public/images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+        
+        // Копируем файл в public/images с именем maskId.jpg
+        const targetPath = path.join(imagesDir, `${maskId}.jpg`);
+        fs.copyFileSync(req.file.path, targetPath);
+        
+        // Удаляем временный файл
+        fs.unlinkSync(req.file.path);
+        
+        // Обновляем запись в БД (сохраняем хеш фото)
+        await db.query(`
+            UPDATE masks SET "photoHash" = $1, "activationPhotoHash" = $1
+            WHERE id = $2
+        `, [`${maskId}.jpg`, maskId]);
+        
+        res.json({ 
+            success: true, 
+            message: 'Фото загружено', 
+            url: `/images/${maskId}.jpg` 
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Эндпоинт для удаления фото маски
+router.delete('/masks/:id/photo', checkAdmin, async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const imagePath = path.join(__dirname, '../public/images', `${maskId}.jpg`);
+        
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+        }
+        
+        await db.query(`UPDATE masks SET "photoHash" = NULL, "activationPhotoHash" = NULL WHERE id = $1`, [maskId]);
+        
+        res.json({ success: true, message: 'Фото удалено' });
+    } catch (err) {
+        console.error('Delete photo error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Эндпоинт для загрузки главного фото маски
+router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const photoType = req.body.type || 'main';
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const imagesDir = path.join(__dirname, '../public/images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+        
+        // Сохраняем главное фото
+        const targetPath = path.join(imagesDir, `${maskId}.jpg`);
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path);
+        
+        await db.query(`UPDATE masks SET "photoHash" = $1 WHERE id = $2`, [`${maskId}.jpg`, maskId]);
+        
+        res.json({ success: true, message: 'Главное фото загружено', url: `/images/${maskId}.jpg` });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Эндпоинт для загрузки фото галереи
+router.post('/masks/:id/upload-gallery', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        const index = req.body.index || 0;
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        const imagesDir = path.join(__dirname, '../public/images');
+        if (!fs.existsSync(imagesDir)) {
+            fs.mkdirSync(imagesDir, { recursive: true });
+        }
+        
+        // Сохраняем фото галереи с индексом
+        const targetPath = path.join(imagesDir, `${maskId}_gallery_${index}.jpg`);
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path);
+        
+        res.json({ success: true, message: 'Фото галереи загружено', url: `/images/${maskId}_gallery_${index}.jpg` });
+    } catch (err) {
+        console.error('Gallery upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 const ADMIN_ID = '359839365';
 
@@ -236,7 +399,7 @@ router.get('/stats', checkAdmin, async (req, res) => {
     }
 });
 
-// Опубликовать маску (сделать isAvailable = true и перенести в каталог)
+// Опубликовать маску (сделать isAvailable = true)
 router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     try {
         // Проверяем, существует ли маска
@@ -245,9 +408,9 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Маска не найдена' });
         }
         
-        // Обновляем статус isAvailable = 1 (опубликовано)
+        // Обновляем статус isAvailable = 1 (опубликовано) - БЕЗ updatedAt
         await db.query(`
-            UPDATE masks SET "isAvailable" = 1, "updatedAt" = CURRENT_TIMESTAMP
+            UPDATE masks SET "isAvailable" = 1
             WHERE id = $1
         `, [req.params.id]);
         
