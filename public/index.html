@@ -1920,7 +1920,7 @@
             }
         }
 
-                // === АКТИВАЦИЯ МАСКИ ПО QR-КОДУ (СКАНЕР В ПРИЛОЖЕНИИ) ===
+                        // === АКТИВАЦИЯ МАСКИ ПО QR-КОДУ ===
         async function activateMaskByQR(maskIdFromQR) {
             console.log('=== АКТИВАЦИЯ ПО QR ===');
             console.log('Получен ID маски:', maskIdFromQR);
@@ -1935,6 +1935,10 @@
             try {
                 const tg = window.Telegram?.WebApp;
                 const user = tg?.initDataUnsafe?.user || {};
+
+                console.log('Отправка запроса на /api/masks/activate-by-qr');
+                console.log('userId:', currentUserId);
+                console.log('maskId:', maskIdFromQR);
 
                 const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
                     method: 'POST',
@@ -1958,9 +1962,7 @@
                     if (window.Telegram?.WebApp?.HapticFeedback) {
                         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
                     }
-                    // Показываем контент активированной маски
                     showActivatedMask(result.mask);
-                    // Обновляем данные пользователя
                     await loadInitialData();
                 } else {
                     showToast(result.message, 'error');
@@ -1974,27 +1976,53 @@
             }
         }
 
-                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
-            showToast('Запуск сканера...', 'info');
-
-            // Проверяем, поддерживает ли платформа сканер QR
-            if (!window.Telegram?.WebApp?.showScanQrPopup) {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов. Пожалуйста, обновите приложение.', 'error');
+            console.log('=== ЗАПУСК СКАНЕРА ===');
+            
+            // Проверяем, что мы в Telegram
+            if (!window.Telegram || !window.Telegram.WebApp) {
+                showToast('Это приложение работает только в Telegram', 'error');
                 return;
             }
-
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Проверяем, поддерживает ли платформа сканер QR
+            if (typeof tg.showScanQrPopup !== 'function') {
+                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов. Пожалуйста, обновите приложение.', 'error');
+                console.error('showScanQrPopup не поддерживается');
+                return;
+            }
+            
+            showToast('Наведите камеру на QR-код маски', 'info');
+            
             // Запускаем нативный сканер Telegram
-            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
-                // Эта функция сработает, когда пользователь отсканирует QR-код
+            tg.showScanQrPopup((scannedText) => {
+                console.log('Сканер вернул текст:', scannedText);
+                
                 if (!scannedText) {
                     showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
                     return;
                 }
                 
-                console.log('Отсканирован QR-код с текстом:', scannedText);
-                activateMaskByQR(scannedText);
+                // Извлекаем ID маски из ссылки или直接用 текст
+                let maskId = scannedText;
+                
+                // Если отсканирована полная ссылка, извлекаем mask_X из конца
+                if (scannedText.includes('/scan/')) {
+                    const match = scannedText.match(/\/scan\/(mask_\d+)/);
+                    if (match) {
+                        maskId = match[1];
+                    }
+                }
+                
+                console.log('ID маски для активации:', maskId);
+                activateMaskByQR(maskId);
                 return true;
+            }, (error) => {
+                console.error('Ошибка сканера:', error);
+                showToast('Ошибка запуска сканера', 'error');
             });
         }
         

@@ -64,7 +64,7 @@ const getPlatformPage = (maskId) => `
         .platform-icon i { font-size: 24px; }
         .telegram-icon { color: #26A5E4; }
         .vk-icon { color: #0077FF; }
-        .web-icon { color: #3B82F6; }
+        .max-icon { color: #FF5E00; }
         .platform-info { flex: 1; text-align: left; }
         .platform-name { font-size: 16px; font-weight: 600; }
         .platform-desc { font-size: 12px; color: #64748b; }
@@ -78,7 +78,7 @@ const getPlatformPage = (maskId) => `
         <p class="subtitle">Туристический квест по Калининграду</p>
         
         <div class="platform-buttons">
-            <a href="https://t.me/negodiai_bot?start=${maskId}" class="platform-btn">
+            <a href="https://t.me/negodiai_quest_bot?start=${maskId}" class="platform-btn">
                 <div class="platform-icon"><i class="fab fa-telegram telegram-icon"></i></div>
                 <div class="platform-info">
                     <div class="platform-name">Telegram</div>
@@ -96,11 +96,11 @@ const getPlatformPage = (maskId) => `
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
             
-            <a href="https://taplink.cc/negodiai" class="platform-btn">
-                <div class="platform-icon"><i class="fas fa-globe web-icon"></i></div>
+            <a href="https://max.ru" class="platform-btn">
+                <div class="platform-icon"><i class="fas fa-star max-icon"></i></div>
                 <div class="platform-info">
-                    <div class="platform-name">Веб-версия</div>
-                    <div class="platform-desc">Открыть в браузере</div>
+                    <div class="platform-name">MAX</div>
+                    <div class="platform-desc">Открыть в MAX</div>
                 </div>
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
@@ -117,11 +117,15 @@ const getPlatformPage = (maskId) => `
             const userAgent = navigator.userAgent || '';
             // Автоматическое перенаправление, если открыто в Telegram WebView
             if (userAgent.includes('Telegram') && window.TelegramWebApp) {
-                window.location.href = 'https://t.me/negodiai_bot?start=${maskId}';
+                window.location.href = 'https://t.me/negodiai_quest_bot?start=${maskId}';
             }
             // Автоматическое перенаправление, если открыто в VK
             else if (userAgent.includes('VK')) {
                 window.location.href = 'https://vk.com/negodiai';
+            }
+            // Автоматическое перенаправление, если открыто в MAX (если есть определение)
+            else if (userAgent.includes('MAX')) {
+                window.location.href = 'https://max.ru';
             }
         })();
     </script>
