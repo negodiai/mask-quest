@@ -41,29 +41,6 @@ async function runMigrations() {
             
             console.log('✅ Миграция activatedAt завершена');
         }
-
-        await pool.query(`
-    CREATE TABLE IF NOT EXISTS activated_cards (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        "fullDescription" TEXT,
-        latitude REAL,
-        longitude REAL,
-        address TEXT,
-        "qrCode" TEXT UNIQUE,
-        "photoHash" TEXT,
-        "activationPhotoHash" TEXT,
-        "audioGuideHash" TEXT,
-        "priceAmount" INTEGER,
-        "priceCurrency" TEXT DEFAULT 'RUB',
-        "isAvailable" INTEGER DEFAULT 1,
-        "yandexMapLink" TEXT,
-        "googleMapLink" TEXT,
-        "twoGisLink" TEXT,
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-`);
         
         // Аналогично для completedAt в user_route_progress
         const columnCheck2 = await pool.query(`
