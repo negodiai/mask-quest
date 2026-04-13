@@ -1864,29 +1864,31 @@
                         // === ЗАПУСК СКАНЕРА QR (РАБОЧАЯ ВЕРСИЯ) ===
         let html5QrCode = null;
         
-                // === ЗАПУСК НАТИВНОГО СКАНЕРА TELEGRAM ===
+                        // === ЗАПУСК СКАНЕРА TELEGRAM ===
         function startQRScan() {
-            // Проверяем, что мы в Telegram
             if (!window.Telegram || !window.Telegram.WebApp) {
                 showToast('Это приложение работает только в Telegram', 'error');
                 return;
             }
             
             const tg = window.Telegram.WebApp;
+            const version = tg.version || '0';
             
-            // ПРОВЕРКА: есть ли функция showScanQrPopup
+            console.log('Telegram WebApp version:', version);
+            
+            // Проверяем поддержку сканера (нужна версия 6.4+)
             if (typeof tg.showScanQrPopup !== 'function') {
-                showToast('Обновите Telegram до последней версии', 'error');
-                console.error('showScanQrPopup not available');
+                console.error('showScanQrPopup not supported in version', version);
+                showToast('Функция сканера недоступна. Пожалуйста, обновите Telegram или используйте мобильное приложение.', 'error');
+                // Предлагаем ручной ввод
+                manualActivate();
                 return;
             }
             
             showToast('Наведите камеру на QR-код', 'info');
             
-            // ЗАПУСКАЕМ СКАНЕР
             tg.showScanQrPopup(
                 (scannedText) => {
-                    // СКАНИРОВАНИЕ УСПЕШНО!
                     console.log('ОТСКАНИРОВАНО:', scannedText);
                     tg.HapticFeedback?.notificationOccurred('success');
                     
@@ -1895,16 +1897,22 @@
                         return;
                     }
                     
-                    // Активируем маску
                     activateMaskByQR(scannedText);
-                    return true; // закрываем сканер
+                    return true;
                 },
                 (error) => {
-                    // ПОЛЬЗОВАТЕЛЬ ЗАКРЫЛ СКАНЕР
                     console.log('Сканер закрыт:', error);
                     showToast('Сканирование отменено', 'info');
                 }
             );
+        }
+        
+        // Ручной ввод кода (для десктопа)
+        function manualActivate() {
+            const code = prompt('Введите код с маски (например, mask_1):');
+            if (code && code.trim()) {
+                activateMaskByQR(code.trim());
+            }
         }
         
         function resetActivation() {
@@ -2500,6 +2508,9 @@
                             <h4 id="activated-mask-name" style="font-size: 20px; margin: 0 0 12px 0;"></h4>
                             <p id="activated-mask-description" style="font-size: 14px; color: #94a3b8; line-height: 1.6;"></p>
                             <button class="btn btn-secondary" onclick="resetActivation(); loadInitialData();" style="margin-top: 16px;">Продолжить</button>
+                            <button class="btn btn-secondary" onclick="manualActivate()" style="margin-top: 10px;">
+    <i class="fas fa-keyboard"></i> Ввести код маски вручную
+</button>
                         </div>
                     </div>
                     
@@ -4099,7 +4110,6 @@
         
         // Делаем функции глобальными
         window.navigate = navigate;
-        window.activateMask = activateMask;
         window.resetActivation = resetActivation;
         window.openLocation = openLocation;
         window.openMapForRoute = openMapForRoute;
@@ -4177,6 +4187,9 @@ window.openYandexMaps = openYandexMaps;
         window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
                 window.startQRScan = startQRScan;
+        window.activateMaskByQR = activateMaskByQR;
+                window.startQRScan = startQRScan;
+        window.manualActivate = manualActivate;
         window.activateMaskByQR = activateMaskByQR;
     </script>
 
