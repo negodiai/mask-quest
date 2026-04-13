@@ -41,6 +41,29 @@ async function runMigrations() {
             
             console.log('✅ Миграция activatedAt завершена');
         }
+
+        await pool.query(`
+    CREATE TABLE IF NOT EXISTS activated_cards (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        "fullDescription" TEXT,
+        latitude REAL,
+        longitude REAL,
+        address TEXT,
+        "qrCode" TEXT UNIQUE,
+        "photoHash" TEXT,
+        "activationPhotoHash" TEXT,
+        "audioGuideHash" TEXT,
+        "priceAmount" INTEGER,
+        "priceCurrency" TEXT DEFAULT 'RUB',
+        "isAvailable" INTEGER DEFAULT 1,
+        "yandexMapLink" TEXT,
+        "googleMapLink" TEXT,
+        "twoGisLink" TEXT,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+`);
         
         // Аналогично для completedAt в user_route_progress
         const columnCheck2 = await pool.query(`
@@ -76,9 +99,7 @@ async function initDatabase() {
     }
     
     try {
-        // ===== СОЗДАНИЕ ТАБЛИЦ =====
-        
-        // Таблица масок
+        // Создаём таблицы с правильными типами
         await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
@@ -102,7 +123,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS routes (
                 id TEXT PRIMARY KEY,
@@ -120,7 +140,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица связи масок и маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS route_masks (
                 id SERIAL PRIMARY KEY,
@@ -133,7 +152,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица активаций пользователей
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_activations (
                 id TEXT PRIMARY KEY,
@@ -147,7 +165,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица прогресса маршрутов
         await pool.query(`
             CREATE TABLE IF NOT EXISTS user_route_progress (
                 id TEXT PRIMARY KEY,
@@ -161,7 +178,6 @@ async function initDatabase() {
             )
         `);
         
-        // Таблица логов админа
         await pool.query(`
             CREATE TABLE IF NOT EXISTS admin_logs (
                 id SERIAL PRIMARY KEY,
@@ -173,29 +189,8 @@ async function initDatabase() {
             )
         `);
         
-        // ===== МИГРАЦИИ (ДОБАВЛЕНИЕ НЕДОСТАЮЩИХ КОЛОНОК) =====
-        
-        // 1. Добавляем колонку updatedAt в таблицу masks (если её нет)
-        try {
-            await pool.query(`
-                ALTER TABLE masks 
-                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            `);
-            console.log('✅ Колонка updatedAt добавлена в таблицу masks');
-        } catch (err) {
-            console.log('⚠️ Колонка updatedAt уже существует или ошибка:', err.message);
-        }
-        
-        // 2. Добавляем колонку updatedAt в таблицу routes (если нужно)
-        try {
-            await pool.query(`
-                ALTER TABLE routes 
-                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            `);
-            console.log('✅ Колонка updatedAt добавлена в таблицу routes');
-        } catch (err) {
-            console.log('⚠️ Колонка updatedAt в routes уже существует или ошибка:', err.message);
-        }
+        // Запускаем миграции для преобразования существующих данных
+        await runMigrations();
         
         console.log('✅ База данных PostgreSQL инициализирована');
     } catch (error) {
