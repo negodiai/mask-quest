@@ -1976,9 +1976,10 @@
             }
         }
 
-                                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                                        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
             console.log('=== ЗАПУСК СКАНЕРА ===');
+            console.log('Telegram WebApp доступен:', !!window.Telegram?.WebApp);
             
             // Проверяем, что мы в Telegram
             if (!window.Telegram || !window.Telegram.WebApp) {
@@ -1988,52 +1989,76 @@
             
             const tg = window.Telegram.WebApp;
             
-            // Показываем уведомление о запуске
-            showToast('Запуск сканера...', 'info');
+            // Проверяем доступные методы
+            console.log('Доступные методы:', {
+                showScanQrPopup: typeof tg.showScanQrPopup,
+                openScanQrPopup: typeof tg.openScanQrPopup
+            });
             
-            // Метод 1: showScanQrPopup (современный)
+            // Метод 1: showScanQrPopup
             if (typeof tg.showScanQrPopup === 'function') {
                 console.log('Используем showScanQrPopup');
-                tg.showScanQrPopup((scannedText) => {
-                    console.log('Сканер вернул текст:', scannedText);
-                    handleScannedText(scannedText);
-                    return true;
-                }, (error) => {
-                    console.error('Ошибка showScanQrPopup:', error);
-                    // Пробуем альтернативный метод
-                    tryAlternativeScan(tg);
-                });
+                showToast('Наведите камеру на QR-код', 'info');
+                
+                try {
+                    tg.showScanQrPopup((scannedText) => {
+                        console.log('Результат сканирования:', scannedText);
+                        if (scannedText) {
+                            handleScannedText(scannedText);
+                        } else {
+                            showToast('Не удалось распознать код', 'error');
+                        }
+                        return true;
+                    });
+                } catch (err) {
+                    console.error('Ошибка при вызове showScanQrPopup:', err);
+                    showToast('Ошибка сканера', 'error');
+                }
                 return;
             }
             
-            // Метод 2: openScanQrPopup (старый)
+            // Метод 2: openScanQrPopup (старый, но может работать)
             if (typeof tg.openScanQrPopup === 'function') {
                 console.log('Используем openScanQrPopup');
-                tg.openScanQrPopup({
-                    text: 'Наведите камеру на QR-код маски'
-                }, (scannedText) => {
-                    console.log('Сканер вернул текст:', scannedText);
-                    handleScannedText(scannedText);
-                });
+                showToast('Наведите камеру на QR-код', 'info');
+                
+                try {
+                    tg.openScanQrPopup({
+                        text: 'Наведите камеру на QR-код маски'
+                    }, (scannedText) => {
+                        console.log('Результат сканирования:', scannedText);
+                        if (scannedText) {
+                            handleScannedText(scannedText);
+                        } else {
+                            showToast('Не удалось распознать код', 'error');
+                        }
+                    });
+                } catch (err) {
+                    console.error('Ошибка при вызове openScanQrPopup:', err);
+                    showToast('Ошибка сканера', 'error');
+                }
                 return;
             }
             
             // Если ничего не работает
-            showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
+            console.error('Сканер не поддерживается');
+            showToast('Сканер не поддерживается. Используйте ручной ввод.', 'warning');
             manualCodeInput();
         }
         
         // Обработка отсканированного текста
         function handleScannedText(scannedText) {
+            console.log('Обработка текста:', scannedText);
+            
             if (!scannedText) {
-                showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
+                showToast('Не удалось распознать код', 'error');
                 return;
             }
             
             // Извлекаем ID маски
             let maskId = scannedText;
             
-            // Если отсканирована полная ссылка, извлекаем mask_X из конца
+            // Если отсканирована полная ссылка вида https://.../scan/mask_1
             if (scannedText.includes('/scan/')) {
                 const match = scannedText.match(/\/scan\/(mask_\d+)/);
                 if (match) {
@@ -2041,7 +2066,7 @@
                 }
             }
             
-            // Если ссылка на бота
+            // Если ссылка на бота t.me/...?start=mask_1
             if (scannedText.includes('t.me/') && scannedText.includes('start=')) {
                 const match = scannedText.match(/start=(mask_\d+)/);
                 if (match) {
@@ -2050,30 +2075,21 @@
             }
             
             console.log('ID маски для активации:', maskId);
-            activateMaskByQR(maskId);
-        }
-        
-        // Альтернативный метод сканирования
-        function tryAlternativeScan(tg) {
-            if (typeof tg.openScanQrPopup === 'function') {
-                console.log('Пробуем openScanQrPopup');
-                tg.openScanQrPopup({
-                    text: 'Наведите камеру на QR-код маски'
-                }, (scannedText) => {
-                    console.log('Сканер вернул текст:', scannedText);
-                    handleScannedText(scannedText);
-                });
+            
+            if (maskId && maskId.startsWith('mask_')) {
+                activateMaskByQR(maskId);
             } else {
-                showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
-                manualCodeInput();
+                showToast('Неверный формат QR-кода', 'error');
             }
         }
         
         // Ручной ввод кода маски
         function manualCodeInput() {
             const code = prompt('Введите код с маски (например, mask_1):');
-            if (code) {
+            if (code && code.startsWith('mask_')) {
                 activateMaskByQR(code);
+            } else if (code) {
+                showToast('Неверный формат кода. Используйте mask_1, mask_2 и т.д.', 'error');
             }
         }
         
