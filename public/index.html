@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Яндекс.Карты API -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=5f1366e2-a11d-413e-b05a-165bce31ed4a&lang=ru_RU"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1800,7 +1801,7 @@
             render();
         }
         
-                // === АКТИВАЦИЯ ПО QR-КОДУ ===
+                        // === АКТИВАЦИЯ ПО QR-КОДУ ===
         async function activateMaskByQR(maskIdFromQR) {
             showToast('Проверка маски...', 'info');
 
@@ -1862,24 +1863,89 @@
             }
         }
 
-                // === ЗАПУСК СКАНЕРА QR ===
-        function startQRScan() {
-            if (!window.Telegram?.WebApp?.showScanQrPopup) {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
+                        // === ЗАПУСК СКАНЕРА QR (РАБОЧАЯ ВЕРСИЯ) ===
+        let html5QrCode = null;
+        
+        async function startQRScan() {
+            // Показываем контейнер с камерой
+            const readerContainer = document.getElementById('qr-reader');
+            if (!readerContainer) {
+                showToast('Ошибка: контейнер не найден', 'error');
                 return;
             }
-
-            showToast('Наведите камеру на QR-код маски', 'info');
-
-            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
-                if (!scannedText) {
-                    showToast('Не удалось распознать код', 'error');
-                    return;
+            
+            readerContainer.style.display = 'block';
+            
+            // Добавляем кнопку закрытия
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '✕ Закрыть';
+            closeBtn.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 10001;
+                background: #EF4444;
+                color: white;
+                border: none;
+                border-radius: 30px;
+                padding: 10px 20px;
+                font-size: 14px;
+                cursor: pointer;
+            `;
+            closeBtn.onclick = () => {
+                if (html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        readerContainer.style.display = 'none';
+                        readerContainer.innerHTML = '';
+                    }).catch(() => {});
                 }
-                console.log('Отсканирован QR-код:', scannedText);
-                activateMaskByQR(scannedText);
-                return true;
-            });
+                readerContainer.style.display = 'none';
+                readerContainer.innerHTML = '';
+                if (closeBtn) closeBtn.remove();
+            };
+            readerContainer.appendChild(closeBtn);
+            
+            try {
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                await html5QrCode.start(
+                    { facingMode: "environment" }, // задняя камера
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 }
+                    },
+                    (decodedText, decodedResult) => {
+                        // УСПЕШНО ОТСКАНИРОВАНО!
+                        console.log('Отсканирован QR-код:', decodedText);
+                        showToast('QR-код распознан!', 'success');
+                        
+                        // Останавливаем сканер
+                        if (html5QrCode) {
+                            html5QrCode.stop().then(() => {
+                                readerContainer.style.display = 'none';
+                                readerContainer.innerHTML = '';
+                            }).catch(() => {});
+                        }
+                        
+                        // Активируем маску
+                        activateMaskByQR(decodedText);
+                    },
+                    (errorMessage) => {
+                        // Ошибки сканирования (игнорируем, просто логируем)
+                        // console.log('Ошибка сканирования:', errorMessage);
+                    }
+                ).catch((err) => {
+                    console.error('Ошибка запуска камеры:', err);
+                    showToast('Не удалось запустить камеру. Проверьте разрешения.', 'error');
+                    readerContainer.style.display = 'none';
+                    readerContainer.innerHTML = '';
+                });
+            } catch (err) {
+                console.error('Ошибка:', err);
+                showToast('Ошибка запуска сканера', 'error');
+                readerContainer.style.display = 'none';
+                readerContainer.innerHTML = '';
+            }
         }
         
         function resetActivation() {
@@ -2462,8 +2528,8 @@
                         
                         <div id="activation-form">
                             <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
-                                <i class="fas fa-qrcode"></i> Сканировать QR-код
-                            </button>
+    <i class="fas fa-qrcode"></i> Сканировать QR-код
+</button>
                         </div>
                         
                         <div id="activation-success" class="hidden" style="background: #252542; border-radius: 20px; padding: 24px; text-align: left;">
@@ -4154,5 +4220,8 @@ window.openYandexMaps = openYandexMaps;
                 window.startQRScan = startQRScan;
         window.activateMaskByQR = activateMaskByQR;
     </script>
+
+        <!-- Контейнер для камеры (скрыт по умолчанию) -->
+    <div id="qr-reader" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: black; z-index: 10000; padding-top: 60px;"></div>
 </body>
 </html>
