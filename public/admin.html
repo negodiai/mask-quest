@@ -345,9 +345,16 @@
         
         function renderAdminPanel() {
             const html = `
-                <div class="header">
+                                <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
-                    <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="back-btn" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <button class="back-btn" onclick="location.href='/'">
+                            <i class="fas fa-home"></i> На главную
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="admin-id-info">
@@ -787,7 +794,42 @@
             });
         }
         
-        init();
+                init();
     </script>
+
+    <!-- Кнопка "Наверх" -->
+    <button id="scrollTopBtn" onclick="scrollToTop()" style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 25px; background: rgba(100, 116, 139, 0.5); backdrop-filter: blur(4px); border: none; color: white; font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: all 0.2s ease;">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Кнопка "Наверх"
+        const scrollBtn = document.getElementById('scrollTopBtn');
+        
+        function checkScroll() {
+            if (window.scrollY > 300) {
+                scrollBtn.style.display = 'flex';
+            } else {
+                scrollBtn.style.display = 'none';
+            }
+        }
+        
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('load', checkScroll);
+        
+        // Обновляем проверку при переключении вкладок
+        const originalSwitchTab = window.switchTab;
+        if (originalSwitchTab) {
+            window.switchTab = function(tab) {
+                originalSwitchTab(tab);
+                setTimeout(checkScroll, 100);
+            };
+        }
+    </script>
+
 </body>
 </html>
