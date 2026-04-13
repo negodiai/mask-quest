@@ -18,8 +18,6 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const botRoutes = require('./bot');
-
 // Настройки сервера
 app.use(cors());
 app.use(express.json());
@@ -33,7 +31,6 @@ app.use('/api/user', userRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/scan', redirectRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/bot', botRoutes);
 
 // Главная страница
 app.get('/', (req, res) => {

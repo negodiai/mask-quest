@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Страница для выбора платформы (если сканируют камерой телефона)
+// Страница выбора платформы (для обычных сканеров)
 const getPlatformPage = (maskId) => `
 <!DOCTYPE html>
 <html lang="ru">
@@ -64,21 +64,23 @@ const getPlatformPage = (maskId) => `
         .platform-icon i { font-size: 24px; }
         .telegram-icon { color: #26A5E4; }
         .vk-icon { color: #0077FF; }
-        .max-icon { color: #FF5E00; }
+        .max-icon { color: #FF5A5F; }
         .platform-info { flex: 1; text-align: left; }
         .platform-name { font-size: 16px; font-weight: 600; }
         .platform-desc { font-size: 12px; color: #64748b; }
-        .footer { font-size: 12px; color: #3d3d5c; margin-top: 32px; }
+        .mask-id { font-size: 12px; color: #3d3d5c; margin-top: 32px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo"><i class="fas fa-mask"></i></div>
+        <div class="logo">
+            <i class="fas fa-mask"></i>
+        </div>
         <h1>НЕГОДЯЙ</h1>
         <p class="subtitle">Туристический квест по Калининграду</p>
         
         <div class="platform-buttons">
-            <a href="https://t.me/negodiai_quest_bot/${maskId}" class="platform-btn">
+            <a href="https://t.me/negodiai_quest_bot?start=${maskId}" class="platform-btn">
                 <div class="platform-icon"><i class="fab fa-telegram telegram-icon"></i></div>
                 <div class="platform-info">
                     <div class="platform-name">Telegram</div>
@@ -96,8 +98,8 @@ const getPlatformPage = (maskId) => `
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
             
-            <a href="https://max.ru" class="platform-btn">
-                <div class="platform-icon"><i class="fas fa-star max-icon"></i></div>
+            <a href="https://max.ru/negodiai" class="platform-btn">
+                <div class="platform-icon"><i class="fas fa-mask max-icon"></i></div>
                 <div class="platform-info">
                     <div class="platform-name">MAX</div>
                     <div class="platform-desc">Открыть в MAX</div>
@@ -106,22 +108,15 @@ const getPlatformPage = (maskId) => `
             </a>
         </div>
         
-        <div class="footer">
-            <p>Маска: ${maskId}</p>
-            <p style="margin-top: 8px;">Сканируйте QR-код камерой телефона</p>
-        </div>
+        <div class="mask-id">Маска: ${maskId}</div>
     </div>
     
     <script>
+        // Автоматическое перенаправление для Telegram
         (function() {
             const userAgent = navigator.userAgent || '';
-            // Если открыто в Telegram WebView — сразу открываем мини-приложение
             if (userAgent.includes('Telegram') && window.TelegramWebApp) {
-                window.location.href = 'https://t.me/negodiai_quest_bot/${maskId}';
-            }
-            // Если открыто в VK
-            else if (userAgent.includes('VK')) {
-                window.location.href = 'https://vk.com/negodiai';
+                window.location.href = 'https://t.me/negodiai_quest_bot?start=${maskId}';
             }
         })();
     </script>
@@ -143,21 +138,13 @@ router.get('/:maskId', (req, res) => {
                        userAgent.includes('TelegramBot') ||
                        userAgent.includes('Telegram-Web');
     
-    // Проверяем, идёт ли запрос из VK
-    const isVK = userAgent.includes('VK') || 
-                 userAgent.includes('VKAndroidApp') ||
-                 userAgent.includes('VKWebApp');
-    
     if (isTelegram) {
-    const appUrl = `https://mask-quest-production-7ba7.up.railway.app//bot/webapp/${maskId}`;
-    console.log(`→ Открываем мини-приложение: ${appUrl}`);
-    res.redirect(appUrl);
-}
-    else if (isVK) {
-        console.log(`→ Перенаправление в VK`);
-        res.redirect('https://vk.com/negodiai');
-    }
-    else {
+        // Перенаправляем в Telegram бота с параметром маски
+        const botUsername = 'negodiai_quest_bot';
+        const redirectUrl = `https://t.me/${botUsername}?start=${maskId}`;
+        console.log(`→ Перенаправление в Telegram: ${redirectUrl}`);
+        res.redirect(redirectUrl);
+    } else {
         // Показываем страницу выбора платформы
         console.log(`→ Показываем страницу выбора платформы`);
         res.send(getPlatformPage(maskId));

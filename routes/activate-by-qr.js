@@ -7,10 +7,6 @@ const { v4: uuidv4 } = require('uuid');
 router.post('/activate-by-qr', async (req, res) => {
     const { userId, maskId, telegramData } = req.body;
     
-    console.log('=== АКТИВАЦИЯ ПО QR (API) ===');
-    console.log('userId:', userId);
-    console.log('maskId:', maskId);
-    
     if (!userId || !maskId) {
         return res.status(400).json({ 
             success: false, 
@@ -19,7 +15,7 @@ router.post('/activate-by-qr', async (req, res) => {
     }
     
     try {
-        // Находим маску по ID
+        // Находим маску по ID из QR-кода
         const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
         
         if (maskResult.rows.length === 0) {
@@ -48,9 +44,9 @@ router.post('/activate-by-qr', async (req, res) => {
         // Создаём активацию
         const activationId = uuidv4();
         await db.query(`
-            INSERT INTO user_activations (id, "userId", "maskId", "telegramData")
-            VALUES ($1, $2, $3, $4)
-        `, [activationId, userId, mask.id, JSON.stringify(telegramData || {})]);
+            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData")
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [activationId, userId, mask.id, null, null, JSON.stringify(telegramData || {})]);
         
         res.json({
             success: true,
