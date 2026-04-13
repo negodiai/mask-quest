@@ -1800,85 +1800,47 @@
             render();
         }
         
-        // Активация маски с новыми уведомлениями
-        async function activateMask() {
-            if (!navigator.geolocation) {
-                showToast('Геолокация не поддерживается', 'error');
-                return;
+                // === АКТИВАЦИЯ ПО QR-КОДУ ===
+        async function activateMaskByQR(maskIdFromQR) {
+            showToast('Проверка маски...', 'info');
+
+            try {
+                const tg = window.Telegram?.WebApp;
+                const user = tg?.initDataUnsafe?.user || {};
+
+                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        maskId: maskIdFromQR,
+                        telegramData: {
+                            chatId: user.id,
+                            username: user.username,
+                            firstName: user.first_name
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    showActivatedMask(result.mask);
+                    await loadInitialData();
+                } else {
+                    showToast(result.message, 'error');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    }
+                }
+            } catch (error) {
+                console.error('Activation error:', error);
+                showToast('Ошибка активации. Попробуйте снова.', 'error');
             }
-            
-            showToast('Определение местоположения...', 'info');
-            
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                try {
-                    const tg = window.Telegram?.WebApp;
-                    const user = tg?.initDataUnsafe?.user || {};
-                    
-                    const res = await fetch(`${API_BASE}/masks/activate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: currentUserId,
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            telegramData: {
-                                chatId: user.id,
-                                username: user.username,
-                                firstName: user.first_name
-                            }
-                        })
-                    });
-                    
-                                        const result = await res.json();
-                    console.log('Результат активации:', result);
-                    
-                    if (result.success) {
-    // Успешная активация
-    showToast(`Вы успешно активировали маску!`, 'success');
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-    }
-    // Показываем контент маски
-    showActivatedMask(result.mask);
-    await loadInitialData();
-} else if (result.error === 'already_activated') {
-    // Уже активирована
-    showToast(`Вы уже активировали эту маску!`, 'warning');
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
-    }
-} else if (result.error === 'too_far') {
-    // Слишком далеко
-    showToast(`Вы слишком далеко (${result.distance}м). Подойдите ближе (в радиусе 30м)`, 'error');
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-    }
-} else if (result.error === 'no_mask_nearby') {
-    // Нет маски рядом
-    showToast(`Рядом нет масок!`, 'error');
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-    }
-} else {
-    showToast(result.message || 'Ошибка активации', 'error');
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-    }
-}
-                } catch (e) {
-                    console.error('Activation error:', e);
-                    showToast('Ошибка активации. Попробуйте еще раз.', 'error');
-                }
-            }, (error) => {
-                let message = 'Не удалось определить местоположение';
-                if (error.code === error.PERMISSION_DENIED) {
-                    message = 'Разрешите доступ к геолокации в настройках';
-                }
-                showToast(message, 'error');
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000
-            });
         }
         
         let lastActivatedMask = null;
@@ -1898,6 +1860,26 @@
                 const photoContainer = document.getElementById('activated-mask-photo');
                 if (photoContainer) photoContainer.innerHTML = imgHtml;
             }
+        }
+
+                // === ЗАПУСК СКАНЕРА QR ===
+        function startQRScan() {
+            if (!window.Telegram?.WebApp?.showScanQrPopup) {
+                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
+                return;
+            }
+
+            showToast('Наведите камеру на QR-код маски', 'info');
+
+            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
+                if (!scannedText) {
+                    showToast('Не удалось распознать код', 'error');
+                    return;
+                }
+                console.log('Отсканирован QR-код:', scannedText);
+                activateMaskByQR(scannedText);
+                return true;
+            });
         }
         
         function resetActivation() {
@@ -2479,8 +2461,8 @@
                         </div>
                         
                         <div id="activation-form">
-                            <button class="btn btn-primary" onclick="activateMask()" style="margin-bottom: 20px;">
-                                <i class="fas fa-location-arrow"></i> Отправить геолокацию
+                            <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
+                                <i class="fas fa-qrcode"></i> Сканировать QR-код
                             </button>
                         </div>
                         
@@ -4169,6 +4151,8 @@ window.openYandexMaps = openYandexMaps;
         window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
         window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
+                window.startQRScan = startQRScan;
+        window.activateMaskByQR = activateMaskByQR;
     </script>
 </body>
 </html>
