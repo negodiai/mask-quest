@@ -149,11 +149,10 @@ router.get('/:maskId', (req, res) => {
                  userAgent.includes('VKWebApp');
     
     if (isTelegram) {
-        // Открываем мини-приложение напрямую с параметром маски
-        const appUrl = `https://t.me/negodiai_quest_bot/${maskId}`;
-        console.log(`→ Открываем мини-приложение: ${appUrl}`);
-        res.redirect(appUrl);
-    } 
+    const appUrl = `https://mask-quest-production-7ba7.up.railway.app//bot/webapp/${maskId}`;
+    console.log(`→ Открываем мини-приложение: ${appUrl}`);
+    res.redirect(appUrl);
+}
     else if (isVK) {
         console.log(`→ Перенаправление в VK`);
         res.redirect('https://vk.com/negodiai');
