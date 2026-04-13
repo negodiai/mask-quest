@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Страница для выбора платформы (если сканируют обычным сканером)
+// Страница для выбора платформы (если не Telegram)
 const getPlatformPage = (maskId) => `
 <!DOCTYPE html>
 <html lang="ru">
@@ -68,6 +68,7 @@ const getPlatformPage = (maskId) => `
         .platform-info { flex: 1; text-align: left; }
         .platform-name { font-size: 16px; font-weight: 600; }
         .platform-desc { font-size: 12px; color: #64748b; }
+        .footer { font-size: 12px; color: #3d3d5c; margin-top: 32px; }
     </style>
 </head>
 <body>
@@ -75,6 +76,7 @@ const getPlatformPage = (maskId) => `
         <div class="logo"><i class="fas fa-mask"></i></div>
         <h1>НЕГОДЯЙ</h1>
         <p class="subtitle">Туристический квест по Калининграду</p>
+        
         <div class="platform-buttons">
             <a href="https://t.me/negodiai_bot?start=${maskId}" class="platform-btn">
                 <div class="platform-icon"><i class="fab fa-telegram telegram-icon"></i></div>
@@ -84,6 +86,7 @@ const getPlatformPage = (maskId) => `
                 </div>
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
+            
             <a href="https://vk.com/negodiai" class="platform-btn">
                 <div class="platform-icon"><i class="fab fa-vk vk-icon"></i></div>
                 <div class="platform-info">
@@ -92,6 +95,7 @@ const getPlatformPage = (maskId) => `
                 </div>
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
+            
             <a href="https://taplink.cc/negodiai" class="platform-btn">
                 <div class="platform-icon"><i class="fas fa-globe web-icon"></i></div>
                 <div class="platform-info">
@@ -101,8 +105,26 @@ const getPlatformPage = (maskId) => `
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
         </div>
-        <p style="font-size: 12px; color: #3d3d5c; margin-top: 32px;">Маска: ${maskId}</p>
+        
+        <div class="footer">
+            <p>Маска: ${maskId}</p>
+            <p style="margin-top: 8px;">Сканируйте этот QR-код через камеру телефона<br>или через сканер в Telegram</p>
+        </div>
     </div>
+    
+    <script>
+        (function() {
+            const userAgent = navigator.userAgent || '';
+            // Автоматическое перенаправление, если открыто в Telegram WebView
+            if (userAgent.includes('Telegram') && window.TelegramWebApp) {
+                window.location.href = 'https://t.me/negodiai_bot?start=${maskId}';
+            }
+            // Автоматическое перенаправление, если открыто в VK
+            else if (userAgent.includes('VK')) {
+                window.location.href = 'https://vk.com/negodiai';
+            }
+        })();
+    </script>
 </body>
 </html>
 `;
@@ -116,18 +138,29 @@ router.get('/:maskId', (req, res) => {
     console.log(`Маска: ${maskId}`);
     console.log(`User-Agent: ${userAgent}`);
     
-    // Проверяем, идёт ли запрос из Telegram WebView
+    // Проверяем, идёт ли запрос из Telegram
     const isTelegram = userAgent.includes('Telegram') || 
                        userAgent.includes('TelegramBot') ||
                        userAgent.includes('Telegram-Web');
     
+    // Проверяем, идёт ли запрос из VK
+    const isVK = userAgent.includes('VK') || 
+                 userAgent.includes('VKAndroidApp') ||
+                 userAgent.includes('VKWebApp');
+    
     if (isTelegram) {
-        // ⚠️ ЗАМЕНИТЕ negodiai_bot НА ИМЯ ВАШЕГО БОТА
-        const botUsername = 'negodiai_quest_bot';
+        // Перенаправляем в Telegram бота с параметром маски
+        const botUsername = 'negodiai_quest_bot'; // ⚠️ ЗАМЕНИТЕ НА ИМЯ ВАШЕГО БОТА
         const redirectUrl = `https://t.me/${botUsername}?start=${maskId}`;
         console.log(`→ Перенаправление в Telegram: ${redirectUrl}`);
         res.redirect(redirectUrl);
-    } else {
+    } 
+    else if (isVK) {
+        console.log(`→ Перенаправление в VK`);
+        res.redirect('https://vk.com/negodiai');
+    }
+    else {
+        // Показываем страницу выбора платформы
         console.log(`→ Показываем страницу выбора платформы`);
         res.send(getPlatformPage(maskId));
     }
