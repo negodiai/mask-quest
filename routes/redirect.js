@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Страница для выбора платформы (если не Telegram)
+// Страница для выбора платформы (если сканируют камерой телефона)
 const getPlatformPage = (maskId) => `
 <!DOCTYPE html>
 <html lang="ru">
@@ -108,18 +108,18 @@ const getPlatformPage = (maskId) => `
         
         <div class="footer">
             <p>Маска: ${maskId}</p>
-            <p style="margin-top: 8px;">Сканируйте этот QR-код через камеру телефона</p>
+            <p style="margin-top: 8px;">Сканируйте QR-код камерой телефона</p>
         </div>
     </div>
     
     <script>
         (function() {
             const userAgent = navigator.userAgent || '';
-            // Автоматическое перенаправление, если открыто в Telegram WebView
+            // Если открыто в Telegram WebView — сразу открываем мини-приложение
             if (userAgent.includes('Telegram') && window.TelegramWebApp) {
                 window.location.href = 'https://t.me/negodiai_quest_bot/${maskId}';
             }
-            // Автоматическое перенаправление, если открыто в VK
+            // Если открыто в VK
             else if (userAgent.includes('VK')) {
                 window.location.href = 'https://vk.com/negodiai';
             }
