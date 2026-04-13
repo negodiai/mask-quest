@@ -78,7 +78,7 @@ const getPlatformPage = (maskId) => `
         <p class="subtitle">Туристический квест по Калининграду</p>
         
         <div class="platform-buttons">
-            <a href="https://t.me/negodiai_quest_bot?start=${maskId}" class="platform-btn">
+            <a href="https://t.me/negodiai_quest_bot/${maskId}" class="platform-btn">
                 <div class="platform-icon"><i class="fab fa-telegram telegram-icon"></i></div>
                 <div class="platform-info">
                     <div class="platform-name">Telegram</div>
@@ -108,7 +108,7 @@ const getPlatformPage = (maskId) => `
         
         <div class="footer">
             <p>Маска: ${maskId}</p>
-            <p style="margin-top: 8px;">Сканируйте этот QR-код через камеру телефона<br>или через сканер в Telegram</p>
+            <p style="margin-top: 8px;">Сканируйте этот QR-код через камеру телефона</p>
         </div>
     </div>
     
@@ -117,15 +117,11 @@ const getPlatformPage = (maskId) => `
             const userAgent = navigator.userAgent || '';
             // Автоматическое перенаправление, если открыто в Telegram WebView
             if (userAgent.includes('Telegram') && window.TelegramWebApp) {
-                window.location.href = 'https://t.me/negodiai_quest_bot?start=${maskId}';
+                window.location.href = 'https://t.me/negodiai_quest_bot/${maskId}';
             }
             // Автоматическое перенаправление, если открыто в VK
             else if (userAgent.includes('VK')) {
                 window.location.href = 'https://vk.com/negodiai';
-            }
-            // Автоматическое перенаправление, если открыто в MAX (если есть определение)
-            else if (userAgent.includes('MAX')) {
-                window.location.href = 'https://max.ru';
             }
         })();
     </script>
@@ -153,11 +149,10 @@ router.get('/:maskId', (req, res) => {
                  userAgent.includes('VKWebApp');
     
     if (isTelegram) {
-        // Перенаправляем в Telegram бота с параметром маски
-        const botUsername = 'negodiai_quest_bot'; // ⚠️ ЗАМЕНИТЕ НА ИМЯ ВАШЕГО БОТА
-        const redirectUrl = `https://t.me/${botUsername}?start=${maskId}`;
-        console.log(`→ Перенаправление в Telegram: ${redirectUrl}`);
-        res.redirect(redirectUrl);
+        // Открываем мини-приложение напрямую с параметром маски
+        const appUrl = `https://t.me/negodiai_quest_bot/${maskId}`;
+        console.log(`→ Открываем мини-приложение: ${appUrl}`);
+        res.redirect(appUrl);
     } 
     else if (isVK) {
         console.log(`→ Перенаправление в VK`);
