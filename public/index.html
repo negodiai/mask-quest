@@ -1976,7 +1976,7 @@
             }
         }
 
-                        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
             console.log('=== ЗАПУСК СКАНЕРА ===');
             
@@ -1988,42 +1988,93 @@
             
             const tg = window.Telegram.WebApp;
             
-            // Проверяем, поддерживает ли платформа сканер QR
-            if (typeof tg.showScanQrPopup !== 'function') {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов. Пожалуйста, обновите приложение.', 'error');
-                console.error('showScanQrPopup не поддерживается');
+            // Показываем уведомление о запуске
+            showToast('Запуск сканера...', 'info');
+            
+            // Метод 1: showScanQrPopup (современный)
+            if (typeof tg.showScanQrPopup === 'function') {
+                console.log('Используем showScanQrPopup');
+                tg.showScanQrPopup((scannedText) => {
+                    console.log('Сканер вернул текст:', scannedText);
+                    handleScannedText(scannedText);
+                    return true;
+                }, (error) => {
+                    console.error('Ошибка showScanQrPopup:', error);
+                    // Пробуем альтернативный метод
+                    tryAlternativeScan(tg);
+                });
                 return;
             }
             
-            showToast('Наведите камеру на QR-код маски', 'info');
+            // Метод 2: openScanQrPopup (старый)
+            if (typeof tg.openScanQrPopup === 'function') {
+                console.log('Используем openScanQrPopup');
+                tg.openScanQrPopup({
+                    text: 'Наведите камеру на QR-код маски'
+                }, (scannedText) => {
+                    console.log('Сканер вернул текст:', scannedText);
+                    handleScannedText(scannedText);
+                });
+                return;
+            }
             
-            // Запускаем нативный сканер Telegram
-            tg.showScanQrPopup((scannedText) => {
-                console.log('Сканер вернул текст:', scannedText);
-                
-                if (!scannedText) {
-                    showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
-                    return;
+            // Если ничего не работает
+            showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
+            manualCodeInput();
+        }
+        
+        // Обработка отсканированного текста
+        function handleScannedText(scannedText) {
+            if (!scannedText) {
+                showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
+                return;
+            }
+            
+            // Извлекаем ID маски
+            let maskId = scannedText;
+            
+            // Если отсканирована полная ссылка, извлекаем mask_X из конца
+            if (scannedText.includes('/scan/')) {
+                const match = scannedText.match(/\/scan\/(mask_\d+)/);
+                if (match) {
+                    maskId = match[1];
                 }
-                
-                // Извлекаем ID маски из ссылки или直接用 текст
-                let maskId = scannedText;
-                
-                // Если отсканирована полная ссылка, извлекаем mask_X из конца
-                if (scannedText.includes('/scan/')) {
-                    const match = scannedText.match(/\/scan\/(mask_\d+)/);
-                    if (match) {
-                        maskId = match[1];
-                    }
+            }
+            
+            // Если ссылка на бота
+            if (scannedText.includes('t.me/') && scannedText.includes('start=')) {
+                const match = scannedText.match(/start=(mask_\d+)/);
+                if (match) {
+                    maskId = match[1];
                 }
-                
-                console.log('ID маски для активации:', maskId);
-                activateMaskByQR(maskId);
-                return true;
-            }, (error) => {
-                console.error('Ошибка сканера:', error);
-                showToast('Ошибка запуска сканера', 'error');
-            });
+            }
+            
+            console.log('ID маски для активации:', maskId);
+            activateMaskByQR(maskId);
+        }
+        
+        // Альтернативный метод сканирования
+        function tryAlternativeScan(tg) {
+            if (typeof tg.openScanQrPopup === 'function') {
+                console.log('Пробуем openScanQrPopup');
+                tg.openScanQrPopup({
+                    text: 'Наведите камеру на QR-код маски'
+                }, (scannedText) => {
+                    console.log('Сканер вернул текст:', scannedText);
+                    handleScannedText(scannedText);
+                });
+            } else {
+                showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
+                manualCodeInput();
+            }
+        }
+        
+        // Ручной ввод кода маски
+        function manualCodeInput() {
+            const code = prompt('Введите код с маски (например, mask_1):');
+            if (code) {
+                activateMaskByQR(code);
+            }
         }
         
         // Рендер главного меню
@@ -2595,21 +2646,13 @@
                         </div>
                         
                         <div id="activation-form">
-                            <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
-    <i class="fas fa-qrcode"></i> Отсканировать QR-код
-</button>
-                        </div>
-                        
-                        <div id="activation-success" class="hidden" style="background: #252542; border-radius: 20px; padding: 24px; text-align: left;">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-                                <i class="fas fa-check-circle" style="font-size: 28px; color: #10B981;"></i>
-                                <h3 style="margin: 0;">Маска активирована!</h3>
-                            </div>
-                            <div id="activated-mask-photo"></div>
-                            <h4 id="activated-mask-name" style="font-size: 20px; margin: 0 0 12px 0;"></h4>
-                            <p id="activated-mask-description" style="font-size: 14px; color: #94a3b8; line-height: 1.6;"></p>
-                            <button class="btn btn-secondary" onclick="resetActivation(); loadInitialData();" style="margin-top: 16px;">Продолжить</button>
-                        </div>
+    <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
+        <i class="fas fa-qrcode"></i> Отсканировать QR-код
+    </button>
+    <button class="btn btn-secondary" onclick="manualCodeInput()" style="margin-bottom: 20px;">
+        <i class="fas fa-keyboard"></i> Ввести код маски вручную
+    </button>
+</div>
                     </div>
                     
                     <h2 class="section-title" style="margin-top: 16px; margin-bottom: 4px;">История активаций</h2>
@@ -4287,6 +4330,7 @@ window.openYandexMaps = openYandexMaps;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
                 window.startQRScan = startQRScan;
         window.activateMaskByQR = activateMaskByQR;
+                window.manualCodeInput = manualCodeInput;
     </script>
 </body>
 </html>
