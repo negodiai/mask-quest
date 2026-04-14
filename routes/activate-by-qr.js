@@ -5,36 +5,29 @@ const { v4: uuidv4 } = require('uuid');
 
 // POST /api/masks/activate-by-qr - активация маски по QR-коду
 router.post('/activate-by-qr', async (req, res) => {
-    const { userId, qrCode, telegramData } = req.body;
+    const { userId, maskId, telegramData } = req.body;
     
-    console.log('=== АКТИВАЦИЯ ПО QR ===');
-    console.log('userId:', userId);
-    console.log('qrCode:', qrCode);
-    
-    if (!userId || !qrCode) {
+    if (!userId || !maskId) {
         return res.status(400).json({ 
             success: false, 
-            message: 'Не хватает данных: userId и qrCode обязательны' 
+            message: 'Не хватает данных: userId и maskId обязательны' 
         });
     }
     
     try {
-        // Ищем маску по QR-коду
-        const maskResult = await db.query(
-            'SELECT * FROM masks WHERE "qrCode" = $1 AND "isAvailable" = 1',
-            [qrCode]
-        );
+        // Находим маску по ID из QR-кода
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [maskId]);
         
         if (maskResult.rows.length === 0) {
             return res.status(404).json({ 
                 success: false, 
-                message: 'Маска с таким QR-кодом не найдена или ещё не опубликована' 
+                message: 'Маска с таким QR-кодом не найдена' 
             });
         }
         
         const mask = maskResult.rows[0];
         
-        // Проверяем, не активирована ли уже эта маска пользователем
+        // Проверяем, не активирована ли уже
         const existingResult = await db.query(
             'SELECT * FROM user_activations WHERE "userId" = $1 AND "maskId" = $2',
             [userId, mask.id]
@@ -51,12 +44,9 @@ router.post('/activate-by-qr', async (req, res) => {
         // Создаём активацию
         const activationId = uuidv4();
         await db.query(`
-            INSERT INTO user_activations (id, "userId", "maskId", "telegramData")
-            VALUES ($1, $2, $3, $4)
-        `, [activationId, userId, mask.id, JSON.stringify(telegramData || {})]);
-        
-        // Обновляем прогресс маршрутов (если нужно)
-        // Это можно добавить позже
+            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData")
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [activationId, userId, mask.id, null, null, JSON.stringify(telegramData || {})]);
         
         res.json({
             success: true,
@@ -69,7 +59,8 @@ router.post('/activate-by-qr', async (req, res) => {
                 audioGuideHash: mask.audioGuideHash,
                 price: { amount: mask.priceAmount, currency: mask.priceCurrency || 'RUB' },
                 isAvailable: mask.isAvailable === 1
-            }
+            },
+            activation: { id: activationId }
         });
     } catch (error) {
         console.error('Activation error:', error);

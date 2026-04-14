@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Яндекс.Карты API -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=5f1366e2-a11d-413e-b05a-165bce31ed4a&lang=ru_RU"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1085,6 +1086,35 @@
             z-index: 2010;
         }
 
+                /* Стили для сканера */
+        #qr-reader {
+            border: none !important;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        #qr-reader video {
+            width: 100%;
+            border-radius: 16px;
+        }
+        
+        #qr-reader__scan_region {
+            background: #1a1a2e;
+        }
+        
+        #qr-reader__dashboard {
+            background: #252542;
+            color: white;
+        }
+        
+        #qr-reader__dashboard button {
+            background: #3B82F6 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 8px 16px !important;
+        }
+
                 /* Новые стили для карточек истории активаций (как в локациях) */
         .history-item-new {
             display: flex;
@@ -1354,6 +1384,21 @@
 </head>
 <body>
         <div id="app">
+
+                <!-- Модальное окно сканера -->
+    <div id="scanner-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-container" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Сканируйте QR-код</h2>
+                <button class="close-btn" onclick="closeScanner()">&times;</button>
+            </div>
+            <div class="modal-content" style="padding: 20px;">
+                <div id="qr-reader" style="width: 100%;"></div>
+                <div id="qr-reader-results" style="text-align: center; margin-top: 16px; color: #64748b;"></div>
+                <button class="btn btn-secondary" onclick="closeScanner()" style="margin-top: 16px;">Отмена</button>
+            </div>
+        </div>
+    </div>
         <div class="spinner"></div>
     </div>
     
@@ -1886,117 +1931,6 @@
             if (successDiv && formDiv) {
                 successDiv.classList.add('hidden');
                 formDiv.classList.remove('hidden');
-            }
-        }
-
-                // === АКТИВАЦИЯ ПО QR-КОДУ ===
-        
-        // Запуск сканера QR-кода
-        function startQRScan() {
-            // Проверяем, что мы в Telegram
-            if (!window.Telegram || !window.Telegram.WebApp) {
-                showToast('Это приложение работает только в Telegram', 'error');
-                return;
-            }
-            
-            const tg = window.Telegram.WebApp;
-            
-            // Способ 1: showScanQrPopup (современный метод)
-            if (typeof tg.showScanQrPopup === 'function') {
-                showToast('Наведите камеру на QR-код маски', 'info');
-                
-                tg.showScanQrPopup((scannedText) => {
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код', 'error');
-                        return;
-                    }
-                    console.log('Отсканировано:', scannedText);
-                    activateMaskByQR(scannedText);
-                    return true;
-                }, (error) => {
-                    console.error('Ошибка сканера:', error);
-                    showToast('Ошибка запуска сканера', 'error');
-                });
-                return;
-            }
-            
-            // Способ 2: openScanQrPopup (старый метод)
-            if (typeof tg.openScanQrPopup === 'function') {
-                showToast('Наведите камеру на QR-код маски', 'info');
-                
-                tg.openScanQrPopup({
-                    text: 'Наведите камеру на QR-код маски'
-                }, (scannedText) => {
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код', 'error');
-                        return;
-                    }
-                    console.log('Отсканировано:', scannedText);
-                    activateMaskByQR(scannedText);
-                });
-                return;
-            }
-            
-            // Способ 3: если сканер не поддерживается — предлагаем ввести код вручную
-            showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
-            
-            const manualCode = prompt('Введите код с маски (например, mask_1):');
-            if (manualCode) {
-                activateMaskByQR(manualCode);
-            }
-        }
-        
-        // Активация маски по QR-коду
-        async function activateMaskByQR(qrCode) {
-            console.log('=== АКТИВАЦИЯ ПО QR ===');
-            console.log('Получен QR-код:', qrCode);
-            
-            if (!qrCode) {
-                showToast('Не удалось получить код маски', 'error');
-                return;
-            }
-            
-            showToast('Проверка маски...', 'info');
-            
-            try {
-                const tg = window.Telegram?.WebApp;
-                const user = tg?.initDataUnsafe?.user || {};
-                
-                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: currentUserId,
-                        qrCode: qrCode,
-                        telegramData: {
-                            chatId: user.id,
-                            username: user.username,
-                            firstName: user.first_name
-                        }
-                    })
-                });
-                
-                const result = await response.json();
-                console.log('Результат активации:', result);
-                
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    }
-                    // Показываем контент активированной маски
-                    showActivatedMask(result.mask);
-                    // Обновляем данные пользователя
-                    await loadInitialData();
-                } else {
-                    showToast(result.message, 'error');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-                    }
-                }
-            } catch (error) {
-                console.error('Activation error:', error);
-                showToast('Ошибка активации. Попробуйте снова.', 'error');
             }
         }
         
@@ -2569,9 +2503,9 @@
                         </div>
                         
                         <div id="activation-form">
-                            <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
-                                <i class="fas fa-qrcode"></i> Отсканировать QR-код
-                            </button>
+                            <button class="btn btn-primary" onclick="openScanner()" style="margin-bottom: 20px;">
+    <i class="fas fa-qrcode"></i> Отсканировать QR-код
+</button>
                         </div>
                         
                         <div id="activation-success" class="hidden" style="background: #252542; border-radius: 20px; padding: 24px; text-align: left;">
@@ -4176,6 +4110,127 @@
                 counter.textContent = `${currentIndex + 1} / ${extendedImagesCount}`;
             }
         }
+
+                // === СКАНЕР QR-КОДОВ ===
+        
+        let html5QrCode = null;
+        let scannerActive = false;
+        
+        // Открыть сканер
+        function openScanner() {
+            const modal = document.getElementById('scanner-modal');
+            if (!modal) return;
+            
+            modal.style.display = 'flex';
+            
+            // Запускаем сканер
+            startScanner();
+        }
+        
+        // Закрыть сканер
+        function closeScanner() {
+            const modal = document.getElementById('scanner-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            stopScanner();
+        }
+        
+        // Запустить сканер
+        async function startScanner() {
+            if (scannerActive) return;
+            
+            const resultContainer = document.getElementById('qr-reader-results');
+            if (resultContainer) {
+                resultContainer.innerHTML = '';
+            }
+            
+            html5QrCode = new Html5Qrcode("qr-reader");
+            
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                console.log('Отсканировано:', decodedText);
+                // Останавливаем сканер
+                stopScanner();
+                // Закрываем окно
+                closeScanner();
+                // Активируем маску
+                activateMaskByQR(decodedText);
+            };
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, // Используем заднюю камеру
+                    config,
+                    qrCodeSuccessCallback
+                );
+                scannerActive = true;
+            } catch (err) {
+                console.error('Ошибка запуска сканера:', err);
+                if (resultContainer) {
+                    resultContainer.innerHTML = '<span style="color: #EF4444;">Не удалось запустить камеру. Проверьте разрешения.</span>';
+                }
+            }
+        }
+        
+        // Остановить сканер
+        function stopScanner() {
+            if (html5QrCode && scannerActive) {
+                html5QrCode.stop().catch(err => {
+                    console.error('Ошибка остановки сканера:', err);
+                });
+                scannerActive = false;
+            }
+        }
+        
+        // Активация маски по QR-коду (отправка ID на сервер)
+        async function activateMaskByQR(maskIdFromQR) {
+            showToast('Проверка маски...', 'info');
+            
+            try {
+                const tg = window.Telegram?.WebApp;
+                const user = tg?.initDataUnsafe?.user || {};
+                
+                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        maskId: maskIdFromQR,
+                        telegramData: {
+                            chatId: user.id,
+                            username: user.username,
+                            firstName: user.first_name
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    // Показываем контент маски
+                    showActivatedMask(result.mask);
+                    await loadInitialData();
+                } else {
+                    showToast(result.message, 'error');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    }
+                }
+            } catch (error) {
+                console.error('Activation error:', error);
+                showToast('Ошибка активации. Попробуйте снова.', 'error');
+            }
+        }
         
         // Запускаем приложение
         initTelegram();
@@ -4259,8 +4314,8 @@ window.openYandexMaps = openYandexMaps;
         window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
         window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
-                window.startQRScan = startQRScan;
-        window.activateMaskByQR = activateMaskByQR;
+                window.openScanner = openScanner;
+        window.closeScanner = closeScanner;
     </script>
 </body>
 </html>

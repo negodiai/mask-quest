@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Генератор QR-кодов</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <h1>Генератор QR-кодов для масок</h1>
+    <select id="maskSelect">
+        <option value="mask_1">Маска 1 (Берёзовая)</option>
+        <option value="mask_2">Маска 2 (ВБ наш)</option>
+        <option value="mask_3">Маска 3 (Вход спар)</option>
+        <option value="mask_4">Маска 4 (Почта)</option>
+        <option value="mask_5">Маска 5 (Цветы Голландии)</option>
+        <option value="mask_6">Маска 6 (Калитка церковь)</option>
+        <option value="mask_7">Маска 7 (Вход киноленд)</option>
+        <option value="mask_8">Маска 8 (Кофейня на летнем)</option>
+        <option value="mask_9">Маска 9 (Мост на летнем)</option>
+        <option value="mask_10">Маска 10 (Еще кофейня летнее)</option>
+    </select>
+    <button onclick="generateQR()">Создать QR-код</button>
+    <div id="qrcode"></div>
+    <script>
+        function generateQR() {
+            const maskId = document.getElementById('maskSelect').value;
+            document.getElementById('qrcode').innerHTML = '';
+            new QRCode(document.getElementById('qrcode'), {
+                text: maskId,
+                width: 300,
+                height: 300
+            });
+        }
+        generateQR();
+    </script>
+</body>
+</html>
