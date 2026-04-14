@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-// Страница выбора платформы (для обычного сканирования камерой)
-function getPlatformPage(maskId, maskName) {
-    return `
+// Страница для выбора платформы (если не Telegram)
+const getPlatformPage = (maskId) => `
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>НЕГОДЯЙ | Выберите платформу</title>
+    <title>Выберите платформу | НЕГОДЯЙ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <style>
         * {
@@ -61,16 +60,6 @@ function getPlatformPage(maskId, maskName) {
             margin-bottom: 32px;
         }
         
-        .mask-name {
-            background: #252542;
-            border-radius: 20px;
-            padding: 8px 16px;
-            display: inline-block;
-            margin-bottom: 24px;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        
         .platform-buttons {
             display: flex;
             flex-direction: column;
@@ -115,7 +104,7 @@ function getPlatformPage(maskId, maskName) {
         
         .telegram-icon { color: #26A5E4; }
         .vk-icon { color: #0077FF; }
-        .max-icon { color: #FF5A5F; }
+        .web-icon { color: #3B82F6; }
         
         .platform-info {
             flex: 1;
@@ -141,12 +130,8 @@ function getPlatformPage(maskId, maskName) {
         <h1>НЕГОДЯЙ</h1>
         <p class="subtitle">Туристический квест по Калининграду</p>
         
-        <div class="mask-name">
-            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(maskName || 'Маска')}
-        </div>
-        
         <div class="platform-buttons">
-            <a href="https://t.me/negodiai_quest_bot?start=${maskId}" class="platform-btn" id="telegram-btn">
+            <a href="https://t.me/negodiai_bot?start=${maskId}" class="platform-btn">
                 <div class="platform-icon">
                     <i class="fab fa-telegram telegram-icon"></i>
                 </div>
@@ -157,7 +142,7 @@ function getPlatformPage(maskId, maskName) {
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
             
-            <a href="https://vk.com/negodiai" class="platform-btn" id="vk-btn">
+            <a href="https://vk.com/negodiai" class="platform-btn">
                 <div class="platform-icon">
                     <i class="fab fa-vk vk-icon"></i>
                 </div>
@@ -168,80 +153,46 @@ function getPlatformPage(maskId, maskName) {
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
             
-            <a href="https://max.ru" class="platform-btn" id="max-btn">
+            <a href="https://taplink.cc/negodiai" class="platform-btn">
                 <div class="platform-icon">
-                    <i class="fas fa-star max-icon"></i>
+                    <i class="fas fa-globe web-icon"></i>
                 </div>
                 <div class="platform-info">
-                    <div class="platform-name">MAX</div>
-                    <div class="platform-desc">Открыть в MAX</div>
+                    <div class="platform-name">Веб-версия</div>
+                    <div class="platform-desc">Открыть в браузере</div>
                 </div>
                 <i class="fas fa-chevron-right" style="color: #64748b;"></i>
             </a>
         </div>
         
         <p style="font-size: 12px; color: #3d3d5c; margin-top: 32px;">
-            ID маски: ${maskId}
+            Маска: ${maskId}
         </p>
     </div>
     
     <script>
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-        
-        // Автоматическое перенаправление для Telegram
         (function() {
             const userAgent = navigator.userAgent || '';
-            
             if (userAgent.includes('Telegram') && window.TelegramWebApp) {
-                window.location.href = 'https://t.me/negodiai_quest_bot?start=${maskId}';
+                window.location.href = 'https://t.me/negodiai_bot?start=${maskId}';
             }
             else if (userAgent.includes('VK')) {
                 window.location.href = 'https://vk.com/negodiai';
-            }
-            else if (userAgent.includes('MAX')) {
-                window.location.href = 'https://max.ru';
             }
         })();
     </script>
 </body>
 </html>
-    `;
-}
-
-// Функция для получения названия маски из базы данных
-async function getMaskName(maskId, db) {
-    try {
-        const result = await db.query('SELECT name FROM masks WHERE id = $1', [maskId]);
-        if (result.rows.length > 0) {
-            return result.rows[0].name;
-        }
-        return null;
-    } catch (err) {
-        console.error('Error getting mask name:', err);
-        return null;
-    }
-}
+`;
 
 // Маршрут для умного редиректа
-router.get('/:maskId', async (req, res) => {
+router.get('/:maskId', (req, res) => {
     const maskId = req.params.maskId;
     const userAgent = req.headers['user-agent'] || '';
-    const db = require('../database');
     
     console.log(`=== УМНЫЙ QR ===`);
     console.log(`Маска: ${maskId}`);
     console.log(`User-Agent: ${userAgent}`);
-    
-    // Получаем название маски для отображения
-    const maskName = await getMaskName(maskId, db);
     
     // Проверяем, идёт ли запрос из Telegram
     const isTelegram = userAgent.includes('Telegram') || 
@@ -253,13 +204,8 @@ router.get('/:maskId', async (req, res) => {
                  userAgent.includes('VKAndroidApp') ||
                  userAgent.includes('VKWebApp');
     
-    // Проверяем, идёт ли запрос из MAX
-    const isMAX = userAgent.includes('MAX') || 
-                  userAgent.includes('MaxApp');
-    
     if (isTelegram) {
-        // Перенаправляем в Telegram бота с параметром маски
-        const botUsername = 'negodiai_quest_bot';
+        const botUsername = 'negodiai_bot';
         const redirectUrl = `https://t.me/${botUsername}?start=${maskId}`;
         console.log(`→ Перенаправление в Telegram: ${redirectUrl}`);
         res.redirect(redirectUrl);
@@ -268,14 +214,9 @@ router.get('/:maskId', async (req, res) => {
         console.log(`→ Перенаправление в VK`);
         res.redirect('https://vk.com/negodiai');
     }
-    else if (isMAX) {
-        console.log(`→ Перенаправление в MAX`);
-        res.redirect('https://max.ru');
-    }
     else {
-        // Показываем страницу выбора платформы
         console.log(`→ Показываем страницу выбора платформы`);
-        res.send(getPlatformPage(maskId, maskName));
+        res.send(getPlatformPage(maskId));
     }
 });
 
