@@ -1888,6 +1888,117 @@
                 formDiv.classList.remove('hidden');
             }
         }
+
+                // === АКТИВАЦИЯ ПО QR-КОДУ ===
+        
+        // Запуск сканера QR-кода
+        function startQRScan() {
+            // Проверяем, что мы в Telegram
+            if (!window.Telegram || !window.Telegram.WebApp) {
+                showToast('Это приложение работает только в Telegram', 'error');
+                return;
+            }
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Способ 1: showScanQrPopup (современный метод)
+            if (typeof tg.showScanQrPopup === 'function') {
+                showToast('Наведите камеру на QR-код маски', 'info');
+                
+                tg.showScanQrPopup((scannedText) => {
+                    if (!scannedText) {
+                        showToast('Не удалось распознать код', 'error');
+                        return;
+                    }
+                    console.log('Отсканировано:', scannedText);
+                    activateMaskByQR(scannedText);
+                    return true;
+                }, (error) => {
+                    console.error('Ошибка сканера:', error);
+                    showToast('Ошибка запуска сканера', 'error');
+                });
+                return;
+            }
+            
+            // Способ 2: openScanQrPopup (старый метод)
+            if (typeof tg.openScanQrPopup === 'function') {
+                showToast('Наведите камеру на QR-код маски', 'info');
+                
+                tg.openScanQrPopup({
+                    text: 'Наведите камеру на QR-код маски'
+                }, (scannedText) => {
+                    if (!scannedText) {
+                        showToast('Не удалось распознать код', 'error');
+                        return;
+                    }
+                    console.log('Отсканировано:', scannedText);
+                    activateMaskByQR(scannedText);
+                });
+                return;
+            }
+            
+            // Способ 3: если сканер не поддерживается — предлагаем ввести код вручную
+            showToast('Сканер не поддерживается. Введите код маски вручную.', 'warning');
+            
+            const manualCode = prompt('Введите код с маски (например, mask_1):');
+            if (manualCode) {
+                activateMaskByQR(manualCode);
+            }
+        }
+        
+        // Активация маски по QR-коду
+        async function activateMaskByQR(qrCode) {
+            console.log('=== АКТИВАЦИЯ ПО QR ===');
+            console.log('Получен QR-код:', qrCode);
+            
+            if (!qrCode) {
+                showToast('Не удалось получить код маски', 'error');
+                return;
+            }
+            
+            showToast('Проверка маски...', 'info');
+            
+            try {
+                const tg = window.Telegram?.WebApp;
+                const user = tg?.initDataUnsafe?.user || {};
+                
+                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        qrCode: qrCode,
+                        telegramData: {
+                            chatId: user.id,
+                            username: user.username,
+                            firstName: user.first_name
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Результат активации:', result);
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    // Показываем контент активированной маски
+                    showActivatedMask(result.mask);
+                    // Обновляем данные пользователя
+                    await loadInitialData();
+                } else {
+                    showToast(result.message, 'error');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    }
+                }
+            } catch (error) {
+                console.error('Activation error:', error);
+                showToast('Ошибка активации. Попробуйте снова.', 'error');
+            }
+        }
         
         // Рендер главного меню
         function renderMainMenu() {
@@ -2402,7 +2513,7 @@
         }
         
         // Рендер активации
-                                function renderActivate() {
+                        function renderActivate() {
             const progress = appState.progress;
             const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
             const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
@@ -2414,18 +2525,14 @@
                 const date = new Date(act.activatedAt);
                 const formattedDate = date.toLocaleDateString('ru-RU');
                 historyHtml += `
-                    <div class="history-item" onclick="showExtendedMaskInfo('${mask.id}')">
-                        <div class="history-icon">
+                    <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
+                        <div class="history-icon-new">
                             <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                            <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
+                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                         </div>
-                        <div class="history-content">
-                            <h4 class="history-name">${escapeHtml(mask.name)}</h4>
-                            <p class="history-date"><i class="fas fa-calendar"></i> ${formattedDate}</p>
-                        </div>
-                        <div class="history-actions">
-                            ${mask.isAvailable ? `<button class="btn btn-primary small-btn" style="background: #10B981;" onclick="event.stopPropagation(); buyMask('${escapeHtml(mask.name)}')">Купить</button>` : ''}
-                            <button class="btn btn-secondary small-btn" onclick="event.stopPropagation(); showExtendedMaskInfo('${mask.id}')">Инфо</button>
+                        <div class="history-content-new">
+                            <h4 class="history-name-new">${escapeHtml(mask.name)}</h4>
+                            <p class="history-date-new"><i class="fas fa-calendar"></i> ${formattedDate}</p>
                         </div>
                     </div>
                 `;
@@ -2441,9 +2548,9 @@
                     
                     <div style="padding-top: 0;">
                         <h1 class="page-title" style="text-align: left; margin-bottom: 4px;">Активируй маску</h1>
-                        <p style="font-size: 11px; color: #64748b; text-align: left; margin-bottom: 20px;">Наведите камеру на QR-код на маске</p>
+                        <p style="font-size: 11px; color: #64748b; text-align: left; margin-bottom: 20px;">Подойдите к маске и нажмите кнопку ниже</p>
                         
-                        <!-- Общий блок прогресса -->
+                        <!-- Общий блок прогресса (как на главном экране) -->
                         <div class="progress-section" style="margin-bottom: 20px;">
                             <div class="progress-header">
                                 <span>Активированные маски</span>
@@ -4154,98 +4261,6 @@ window.openYandexMaps = openYandexMaps;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
                 window.startQRScan = startQRScan;
         window.activateMaskByQR = activateMaskByQR;
-
-                // === СКАНЕР QR-КОДА ===
-        function startQRScan() {
-            if (!window.Telegram || !window.Telegram.WebApp) {
-                showToast('Это приложение работает только в Telegram', 'error');
-                return;
-            }
-            
-            const tg = window.Telegram.WebApp;
-            
-            // Проверяем, поддерживается ли сканер
-            if (typeof tg.showScanQrPopup !== 'function') {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов. Пожалуйста, обновите приложение.', 'error');
-                return;
-            }
-            
-            showToast('Наведите камеру на QR-код маски', 'info');
-            
-            tg.showScanQrPopup((scannedText) => {
-                if (!scannedText) {
-                    showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
-                    return;
-                }
-                
-                console.log('Отсканирован QR-код с текстом:', scannedText);
-                
-                // Извлекаем ID маски из QR-кода
-                // Поддерживаем два формата:
-                // 1. Простой текст: mask_1
-                // 2. Ссылка: https://ваш-сайт/scan/mask_1
-                let maskId = scannedText;
-                
-                // Если это ссылка, извлекаем ID из пути
-                if (scannedText.includes('/scan/')) {
-                    const parts = scannedText.split('/scan/');
-                    maskId = parts[parts.length - 1];
-                }
-                
-                // Если это ссылка с параметром start
-                if (scannedText.includes('start=')) {
-                    const match = scannedText.match(/start=([^&]+)/);
-                    if (match) maskId = match[1];
-                }
-                
-                console.log('ID маски для активации:', maskId);
-                activateMaskByQR(maskId);
-                return true;
-            });
-        }
-        
-        // === АКТИВАЦИЯ ПО QR-КОДУ ===
-        async function activateMaskByQR(maskId) {
-            showToast('Проверка маски...', 'info');
-            
-            try {
-                const tg = window.Telegram?.WebApp;
-                const user = tg?.initDataUnsafe?.user || {};
-                
-                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: currentUserId,
-                        maskId: maskId,
-                        telegramData: {
-                            chatId: user.id,
-                            username: user.username,
-                            firstName: user.first_name
-                        }
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    }
-                    showActivatedMask(result.mask);
-                    await loadInitialData();
-                } else {
-                    showToast(result.message, 'error');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-                    }
-                }
-            } catch (error) {
-                console.error('Activation error:', error);
-                showToast('Ошибка активации. Попробуйте снова.', 'error');
-            }
-        }
     </script>
 </body>
 </html>
