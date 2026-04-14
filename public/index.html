@@ -2486,64 +2486,54 @@
             `;
         }
 
-                        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
-            console.log('=== startQRScan вызван ===');
-            console.log('window.Telegram:', window.Telegram);
-            console.log('window.Telegram.WebApp:', window.Telegram?.WebApp);
-            
             // Проверяем, что мы в Telegram
             if (!window.Telegram || !window.Telegram.WebApp) {
                 showToast('Это приложение работает только в Telegram', 'error');
-                console.error('Ошибка: не в Telegram WebApp');
                 return;
             }
             
             const tg = window.Telegram.WebApp;
-            console.log('Метод showScanQrPopup:', typeof tg.showScanQrPopup);
-            console.log('Метод openScanQrPopup:', typeof tg.openScanQrPopup);
             
-            // Пробуем разные методы сканера
+            // Пробуем метод showScanQrPopup
             if (typeof tg.showScanQrPopup === 'function') {
-                console.log('Используем showScanQrPopup');
-                showToast('Наведите камеру на QR-код маски', 'info');
+                showToast('Наведите камеру на QR-код', 'info');
                 
                 tg.showScanQrPopup((scannedText) => {
-                    console.log('Отсканировано:', scannedText);
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
-                        return;
+                    if (scannedText) {
+                        console.log('Отсканировано:', scannedText);
+                        activateMaskByQR(scannedText);
+                    } else {
+                        showToast('Не удалось распознать код', 'error');
                     }
-                    activateMaskByQR(scannedText);
-                    return true;
-                }, (error) => {
-                    console.error('Ошибка showScanQrPopup:', error);
-                    showToast('Ошибка запуска сканера. Попробуйте обновить Telegram.', 'error');
                 });
                 return;
             }
             
-            // Альтернативный метод (старая версия Telegram)
+            // Альтернативный метод
             if (typeof tg.openScanQrPopup === 'function') {
-                console.log('Используем openScanQrPopup');
-                showToast('Наведите камеру на QR-код маски', 'info');
+                showToast('Наведите камеру на QR-код', 'info');
                 
                 tg.openScanQrPopup({
                     text: 'Наведите камеру на QR-код маски'
                 }, (scannedText) => {
-                    console.log('Отсканировано:', scannedText);
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код. Попробуйте ещё раз.', 'error');
-                        return;
+                    if (scannedText) {
+                        console.log('Отсканировано:', scannedText);
+                        activateMaskByQR(scannedText);
+                    } else {
+                        showToast('Не удалось распознать код', 'error');
                     }
-                    activateMaskByQR(scannedText);
                 });
                 return;
             }
             
-            // Если сканер не поддерживается
-            console.error('Сканер не поддерживается в этой версии Telegram');
-            showToast('Ваша версия Telegram не поддерживает сканер QR-кодов. Пожалуйста, обновите Telegram.', 'error');
+            // Если ничего не работает — предлагаем ввести код вручную
+            showToast('Сканер не поддерживается, введите код вручную', 'warning');
+            setTimeout(() => {
+                const code = prompt('Введите код с маски (например, mask_1):');
+                if (code) activateMaskByQR(code);
+            }, 500);
         }
 
                 // === АКТИВАЦИЯ МАСКИ ПО QR-КОДУ ===
