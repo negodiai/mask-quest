@@ -2486,9 +2486,8 @@
             `;
         }
 
-                                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                                        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
-            // Проверяем, что мы в Telegram
             if (!window.Telegram || !window.Telegram.WebApp) {
                 showToast('Это приложение работает только в Telegram', 'error');
                 return;
@@ -2496,69 +2495,71 @@
             
             const tg = window.Telegram.WebApp;
             
-            // Пробуем метод showScanQrPopup
             if (typeof tg.showScanQrPopup === 'function') {
                 showToast('Наведите камеру на QR-код', 'info');
                 
                 tg.showScanQrPopup((scannedText) => {
-                    if (scannedText) {
-                        console.log('Отсканировано:', scannedText);
-                        activateMaskByQR(scannedText);
-                    } else {
+                    console.log('=== СКАНЕР СРАБОТАЛ ===');
+                    console.log('Отсканированный текст:', scannedText);
+                    console.log('Тип данных:', typeof scannedText);
+                    console.log('Длина:', scannedText?.length);
+                    
+                    if (!scannedText) {
                         showToast('Не удалось распознать код', 'error');
+                        return true;
                     }
+                    
+                    // Пробуем активировать
+                    activateMaskByQR(scannedText);
+                    return true;
+                }, (error) => {
+                    console.error('Ошибка сканера:', error);
+                    showToast('Ошибка сканера', 'error');
                 });
                 return;
             }
             
-            // Альтернативный метод
-            if (typeof tg.openScanQrPopup === 'function') {
-                showToast('Наведите камеру на QR-код', 'info');
-                
-                tg.openScanQrPopup({
-                    text: 'Наведите камеру на QR-код маски'
-                }, (scannedText) => {
-                    if (scannedText) {
-                        console.log('Отсканировано:', scannedText);
-                        activateMaskByQR(scannedText);
-                    } else {
-                        showToast('Не удалось распознать код', 'error');
-                    }
-                });
-                return;
-            }
-            
-            // Если ничего не работает — предлагаем ввести код вручную
-            showToast('Сканер не поддерживается, введите код вручную', 'warning');
-            setTimeout(() => {
-                const code = prompt('Введите код с маски (например, mask_1):');
-                if (code) activateMaskByQR(code);
-            }, 500);
+            showToast('Сканер не поддерживается', 'error');
         }
 
                 // === АКТИВАЦИЯ МАСКИ ПО QR-КОДУ ===
-        async function activateMaskByQR(maskIdFromQR) {
+                async function activateMaskByQR(maskIdFromQR) {
+            console.log('=== АКТИВАЦИЯ ПО QR ===');
+            console.log('Получен ID маски:', maskIdFromQR);
+            console.log('Тип:', typeof maskIdFromQR);
+            console.log('currentUserId:', currentUserId);
+            
+            if (!maskIdFromQR) {
+                showToast('Не удалось получить код маски', 'error');
+                return;
+            }
+            
             showToast('Проверка маски...', 'info');
 
             try {
                 const tg = window.Telegram?.WebApp;
                 const user = tg?.initDataUnsafe?.user || {};
-
+                
+                const requestBody = {
+                    userId: currentUserId,
+                    maskId: maskIdFromQR,
+                    telegramData: {
+                        chatId: user.id,
+                        username: user.username,
+                        firstName: user.first_name
+                    }
+                };
+                console.log('Отправляем запрос:', requestBody);
+                
                 const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: currentUserId,
-                        maskId: maskIdFromQR,
-                        telegramData: {
-                            chatId: user.id,
-                            username: user.username,
-                            firstName: user.first_name
-                        }
-                    })
+                    body: JSON.stringify(requestBody)
                 });
-
+                
+                console.log('Ответ сервера статус:', response.status);
                 const result = await response.json();
+                console.log('Результат:', result);
                 
                 if (result.success) {
                     showToast(result.message, 'success');
@@ -2569,13 +2570,10 @@
                     await loadInitialData();
                 } else {
                     showToast(result.message, 'error');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-                    }
                 }
             } catch (error) {
                 console.error('Activation error:', error);
-                showToast('Ошибка активации. Попробуйте снова.', 'error');
+                showToast('Ошибка активации. Проверьте соединение.', 'error');
             }
         }
         
