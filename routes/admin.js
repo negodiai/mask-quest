@@ -211,38 +211,28 @@ router.get('/stats', checkAdmin, async (req, res) => {
         const totalActivationsRes = await db.query('SELECT COUNT(*) as total FROM user_activations');
         stats.totalActivations = parseInt(totalActivationsRes.rows[0]?.total) || 0;
         
-        // Популярные маски
-        const popularMasksRes = await db.query(`
-            SELECT m.name, COUNT(*) as count 
-            FROM user_activations ua 
-            JOIN masks m ON ua."maskId" = m.id 
-            GROUP BY ua."maskId", m.name 
-            ORDER BY count DESC 
-            LIMIT 10
-        `);
-        stats.popularMasks = popularMasksRes.rows || [];
+        // Всего масок
+        const totalMasksRes = await db.query('SELECT COUNT(*) as total FROM masks WHERE "isAvailable" = 1');
+        stats.totalMasks = parseInt(totalMasksRes.rows[0]?.total) || 0;
         
-        // Популярные маршруты
-        const popularRoutesRes = await db.query(`
-            SELECT r.name, COUNT(*) as count 
-            FROM user_route_progress urp 
-            JOIN routes r ON urp."routeId" = r.id 
-            WHERE urp."completedAt" IS NOT NULL
-            GROUP BY urp."routeId", r.name 
-            ORDER BY count DESC 
-            LIMIT 10
-        `);
-        stats.popularRoutes = popularRoutesRes.rows || [];
+        // Всего маршрутов
+        const totalRoutesRes = await db.query('SELECT COUNT(*) as total FROM routes WHERE "isActive" = 1');
+        stats.totalRoutes = parseInt(totalRoutesRes.rows[0]?.total) || 0;
         
-                // Активации за 7 дней
-        const dailyActivationsRes = await db.query(`
-            SELECT DATE(TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS')) as date, COUNT(*) as count 
-            FROM user_activations 
-            WHERE TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '7 days'
-            GROUP BY DATE(TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS'))
-            ORDER BY date
-        `);
-        stats.dailyActivations = dailyActivationsRes.rows || [];
+        // Популярные маски (если есть данные)
+        if (stats.totalActivations > 0) {
+            const popularMasksRes = await db.query(`
+                SELECT m.name, COUNT(*) as count 
+                FROM user_activations ua 
+                JOIN masks m ON ua."maskId" = m.id 
+                GROUP BY ua."maskId", m.name 
+                ORDER BY count DESC 
+                LIMIT 5
+            `);
+            stats.popularMasks = popularMasksRes.rows || [];
+        } else {
+            stats.popularMasks = [];
+        }
         
         // Пройденные маршруты
         const completedRoutesRes = await db.query(`
@@ -252,27 +242,45 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.completedRoutesTotal = parseInt(completedRoutesRes.rows[0]?.count) || 0;
         
-                // Активные пользователи за последние 7 дней (конвертируем TEXT в TIMESTAMP)
+        // Активные пользователи за 7 дней (простая версия)
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 
             FROM user_activations 
-            WHERE TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '7 days'
+            WHERE "activatedAt" IS NOT NULL
         `);
         stats.activeUsers = parseInt(activeUsersRes.rows[0]?.count) || 0;
         
-        // Всего маршрутов
-        const totalRoutesRes = await db.query('SELECT COUNT(*) as total FROM routes WHERE "isActive" = 1');
-        stats.totalRoutes = parseInt(totalRoutesRes.rows[0]?.total) || 0;
+        // Активации за 7 дней (простая версия)
+        const dailyActivationsRes = await db.query(`
+            SELECT DATE("activatedAt") as date, COUNT(*) as count 
+            FROM user_activations 
+            GROUP BY DATE("activatedAt")
+            ORDER BY date DESC
+            LIMIT 7
+        `);
+        stats.dailyActivations = dailyActivationsRes.rows || [];
         
-        // Всего масок
-        const totalMasksRes = await db.query('SELECT COUNT(*) as total FROM masks WHERE "isAvailable" = 1');
-        stats.totalMasks = parseInt(totalMasksRes.rows[0]?.total) || 0;
+        // Популярные маршруты
+        if (stats.completedRoutesTotal > 0) {
+            const popularRoutesRes = await db.query(`
+                SELECT r.name, COUNT(*) as count 
+                FROM user_route_progress urp 
+                JOIN routes r ON urp."routeId" = r.id 
+                WHERE urp."completedAt" IS NOT NULL
+                GROUP BY urp."routeId", r.name 
+                ORDER BY count DESC 
+                LIMIT 5
+            `);
+            stats.popularRoutes = popularRoutesRes.rows || [];
+        } else {
+            stats.popularRoutes = [];
+        }
         
-        // Отладка
         console.log('=== СТАТИСТИКА ===');
-        console.log('Всего пользователей:', stats.totalUsers);
-        console.log('Активных за 7 дней:', stats.activeUsers);
-        console.log('Пройдено маршрутов:', stats.completedRoutesTotal);
+        console.log('totalUsers:', stats.totalUsers);
+        console.log('totalActivations:', stats.totalActivations);
+        console.log('completedRoutesTotal:', stats.completedRoutesTotal);
+        console.log('activeUsers:', stats.activeUsers);
         
         res.json(stats);
     } catch (err) {
@@ -331,6 +339,26 @@ router.get('/masks/:maskId/routes', checkAdmin, async (req, res) => {
             WHERE rm."maskId" = $1
         `, [req.params.maskId]);
         res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/check-data', checkAdmin, async (req, res) => {
+    try {
+        const usersCount = await db.query('SELECT COUNT(DISTINCT "userId") as count FROM user_activations');
+        const activationsCount = await db.query('SELECT COUNT(*) as count FROM user_activations');
+        const routesCount = await db.query('SELECT COUNT(*) as count FROM routes WHERE "isActive" = 1');
+        const masksCount = await db.query('SELECT COUNT(*) as count FROM masks WHERE "isAvailable" = 1');
+        const progressCount = await db.query('SELECT COUNT(*) as count FROM user_route_progress');
+        
+        res.json({
+            users: parseInt(usersCount.rows[0]?.count) || 0,
+            activations: parseInt(activationsCount.rows[0]?.count) || 0,
+            routes: parseInt(routesCount.rows[0]?.count) || 0,
+            masks: parseInt(masksCount.rows[0]?.count) || 0,
+            progress: parseInt(progressCount.rows[0]?.count) || 0
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
