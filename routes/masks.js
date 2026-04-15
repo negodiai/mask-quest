@@ -58,6 +58,9 @@ async function updateUserRouteProgress(userId) {
         console.log(`Прогресс маршрутов обновлён для пользователя ${userId}`);
     } catch (err) {
         console.error('Ошибка обновления прогресса маршрутов:', err);
+                console.log(`Начинаем обновление прогресса для пользователя ${userId}`);
+        console.log(`Найдено маршрутов: ${routes.length}`);
+        console.log(`Найдено активированных масок: ${activatedMaskIds.size}`);
     }
 }
 

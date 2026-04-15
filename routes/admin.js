@@ -234,12 +234,12 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.popularRoutes = popularRoutesRes.rows || [];
         
-        // Активации за 7 дней
+                // Активации за 7 дней
         const dailyActivationsRes = await db.query(`
-            SELECT DATE("activatedAt") as date, COUNT(*) as count 
+            SELECT DATE(TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS')) as date, COUNT(*) as count 
             FROM user_activations 
-            WHERE "activatedAt" >= NOW() - INTERVAL '7 days'
-            GROUP BY DATE("activatedAt")
+            WHERE TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE(TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS'))
             ORDER BY date
         `);
         stats.dailyActivations = dailyActivationsRes.rows || [];
@@ -252,11 +252,11 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.completedRoutesTotal = parseInt(completedRoutesRes.rows[0]?.count) || 0;
         
-        // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ ЗА 7 ДНЕЙ
+                // Активные пользователи за последние 7 дней (конвертируем TEXT в TIMESTAMP)
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 
             FROM user_activations 
-            WHERE "activatedAt" >= NOW() - INTERVAL '7 days'
+            WHERE TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') >= NOW() - INTERVAL '7 days'
         `);
         stats.activeUsers = parseInt(activeUsersRes.rows[0]?.count) || 0;
         
