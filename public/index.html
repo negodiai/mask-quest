@@ -1564,12 +1564,17 @@
             }
         }
         
-               async function loadMasks() {
+                       async function loadMasks() {
             try {
                 const res = await fetch(`${API_BASE}/masks/list`);
                 const data = await res.json();
                 console.log('Загружено масок:', data.length);
-                console.log('Первая маска:', data[0]);
+                console.log('Пример маски:', data[0]);
+                console.log('Ссылки на карты в первой маске:', {
+                    yandex: data[0]?.yandexMapLink,
+                    google: data[0]?.googleMapLink,
+                    twoGis: data[0]?.twoGisLink
+                });
                 appState.masks = data;
             } catch (e) {
                 console.error('Failed to load masks:', e);
@@ -3500,29 +3505,47 @@
         }
 
                         // Показать выбор карты для конкретной маски (из карточки)
-                        function showMaskMapChooser(lat, lng, maskName, maskId) {
-            // Ищем маску в актуальных данных (как в каталоге)
-            const mask = appState.masks.find(m => m.id === maskId);
+                                function showMaskMapChooser(lat, lng, maskName, maskId) {
+            console.log('=== showMaskMapChooser вызван ===');
+            console.log('maskId:', maskId);
+            console.log('Все маски в appState:', appState.masks);
             
+            // Ищем маску в актуальных данных
+            let mask = appState.masks.find(m => m.id === maskId);
+            
+            // Если не нашли, пробуем перезагрузить маски
             if (!mask) {
-                console.error('Маска не найдена:', maskId);
-                // fallback на координаты
-                const yandexLink = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
-                const googleLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                const twoGisLink = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
-                openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink);
+                console.log('Маска не найдена, перезагружаем маски...');
+                loadMasks().then(() => {
+                    mask = appState.masks.find(m => m.id === maskId);
+                    if (mask) {
+                        console.log('Маска найдена после перезагрузки:', mask.name);
+                        showMapChooserWithMask(mask, lat, lng, maskName);
+                    } else {
+                        console.error('Маска всё равно не найдена!');
+                        openMapChooserFallback(maskName, lat, lng);
+                    }
+                });
                 return;
             }
             
+            showMapChooserWithMask(mask, lat, lng, maskName);
+        }
+        
+        function showMapChooserWithMask(mask, lat, lng, maskName) {
             // Используем ссылки из маски (именно те, что вы ввели в админке)
             const yandexLink = mask.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
             const googleLink = mask.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
             const twoGisLink = mask.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
             
-            console.log('Маска:', mask.name);
-            console.log('Яндекс ссылка из админки:', mask.yandexMapLink);
-            console.log('Google ссылка из админки:', mask.googleMapLink);
-            console.log('2GIS ссылка из админки:', mask.twoGisLink);
+            console.log('=== ОТКРЫВАЕМ КАРТЫ ДЛЯ МАСКИ ===');
+            console.log('Название:', mask.name);
+            console.log('Яндекс ссылка (из админки):', mask.yandexMapLink);
+            console.log('Google ссылка (из админки):', mask.googleMapLink);
+            console.log('2GIS ссылка (из админки):', mask.twoGisLink);
+            console.log('Итоговая Яндекс:', yandexLink);
+            console.log('Итоговая Google:', googleLink);
+            console.log('Итоговая 2GIS:', twoGisLink);
             
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
@@ -3553,7 +3576,11 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
-        function openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink) {
+        function openMapChooserFallback(maskName, lat, lng) {
+            const yandexLink = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+            const googleLink = `https://www.google.com/maps?q=${lat},${lng}`;
+            const twoGisLink = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
                     <div class="modal-container" style="max-width: 350px;">
@@ -3580,6 +3607,24 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        function openCustomYandexMaps(url) {
+            console.log('Открываем Яндекс.Карты по ссылке:', url);
+            window.open(url, '_blank');
+            closeMaskMapChooser();
+        }
+        
+        function openCustomGoogleMaps(url) {
+            console.log('Открываем Google Maps по ссылке:', url);
+            window.open(url, '_blank');
+            closeMaskMapChooser();
+        }
+        
+        function openCustom2GIS(url) {
+            console.log('Открываем 2GIS по ссылке:', url);
+            window.open(url, '_blank');
+            closeMaskMapChooser();
         }
         
         // Закрыть модальное окно

@@ -244,7 +244,7 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.dailyActivations = dailyActivationsRes.rows || [];
         
-        // ПРОЙДЕННЫЕ МАРШРУТЫ - прямой подсчёт из user_route_progress
+        // ПРОЙДЕННЫЕ МАРШРУТЫ - прямой подсчёт
         const completedRoutesRes = await db.query(`
             SELECT COUNT(*) as count 
             FROM user_route_progress 
@@ -268,11 +268,9 @@ router.get('/stats', checkAdmin, async (req, res) => {
         const totalMasksRes = await db.query('SELECT COUNT(*) as total FROM masks WHERE "isAvailable" = 1');
         stats.totalMasks = parseInt(totalMasksRes.rows[0]?.total) || 0;
         
-        // ОТЛАДКА В ЛОГАХ
+        // ОТЛАДКА
         console.log('=== СТАТИСТИКА ===');
-        console.log('Всего пользователей:', stats.totalUsers);
-        console.log('Всего активаций:', stats.totalActivations);
-        console.log('Пройдено маршрутов (completedAt NOT NULL):', stats.completedRoutesTotal);
+        console.log('completedRoutesTotal:', stats.completedRoutesTotal);
         
         res.json(stats);
     } catch (err) {
