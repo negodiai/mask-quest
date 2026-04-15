@@ -220,6 +220,29 @@
             color: #94a3b8;
             margin-bottom: 12px;
         }
+
+                .route-card.completed-route {
+            border: 1px solid #10B981;
+            background: #1a2e1a;
+        }
+        
+        .completed-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: #10B981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .completed-badge i {
+            font-size: 14px;
+            color: white;
+        }
         
         .activate-icon {
             width: 80px;
@@ -234,6 +257,31 @@
         
         .activate-icon i {
             font-size: 36px;
+            color: white;
+        }
+
+                .activated-mask-card {
+            border: 1px solid #10B981;
+            background: #1a2e1a;
+            position: relative;
+        }
+        
+        .mask-completed-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 28px;
+            height: 28px;
+            background: #10B981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .mask-completed-badge i {
+            font-size: 12px;
             color: white;
         }
         
@@ -2017,10 +2065,10 @@
             
             for (const route of filteredRoutes) {
                 html += `
-                    <div class="route-card" onclick="showRouteMapChooser('${route.id}')">
+                                        <div class="route-card ${route.isCompleted ? 'completed-route' : ''}" onclick="showRouteMapChooser('${route.id}')">
                         <div class="route-image" style="background-color: ${route.color || '#3B82F6'}">
                             <i class="fas fa-route"></i>
-                            ${route.isCompleted ? '<div style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-check" style="font-size: 14px; color: white;"></i></div>' : ''}
+                            ${route.isCompleted ? '<div class="completed-badge"><i class="fas fa-check"></i></div>' : ''}
                         </div>
                         <div class="route-info">
                             <h3 class="route-name">${escapeHtml(route.name)}</h3>
@@ -2359,9 +2407,10 @@
             let masksHtml = '';
             for (const mask of filteredMasks) {
                 const isActivated = activatedIds.has(mask.id);
-                masksHtml += `
-                    <div class="card clickable-card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
-                        <div style="display: flex; gap: 12px;">
+                                masksHtml += `
+                    <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
+                        <div style="display: flex; gap: 12px; position: relative;">
+                            ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
                             <div class="mask-image">
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
@@ -2812,8 +2861,9 @@
         <span style="font-size: 14px; font-weight: 500;">10.000₽</span>
     </div>
 </button>` : ''}
-<button class="btn-small btn-secondary-small" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}');" style="background: #2d2d44; color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; gap: 8px;">
-    <i class="fas fa-directions"></i> Маршрут
+<button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+    <i class="fas fa-directions"></i>
+    <span>Маршрут</span>
 </button>
                             </div>
                             <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
@@ -3445,8 +3495,14 @@
             }
         }
 
-                // Показать выбор карты для конкретной маски (из карточки)
-        function showMaskMapChooser(lat, lng, maskName) {
+                        // Показать выбор карты для конкретной маски (из карточки)
+        function showMaskMapChooser(lat, lng, maskName, maskId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            
+            const yandexLink = mask?.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+            const googleLink = mask?.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
+            const twoGisLink = mask?.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay">
                     <div class="modal-container" style="max-width: 350px;">
@@ -3456,15 +3512,15 @@
                         </div>
                         <div class="modal-content" style="padding: 20px;">
                             <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
-                            <button class="map-choice-btn" onclick="openYandexMapsForMask(${lat}, ${lng})">
+                            <button class="map-choice-btn" onclick="openCustomYandexMaps('${yandexLink}')">
                                 <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
                                 Яндекс.Карты
                             </button>
-                            <button class="map-choice-btn" onclick="openGoogleMapsForMask(${lat}, ${lng})" style="margin-top: 12px;">
+                            <button class="map-choice-btn" onclick="openCustomGoogleMaps('${googleLink}')" style="margin-top: 12px;">
                                 <i class="fab fa-google" style="color: #4285F4;"></i>
                                 Google Maps
                             </button>
-                            <button class="map-choice-btn" onclick="open2GISForMask(${lat}, ${lng})" style="margin-top: 12px;">
+                            <button class="map-choice-btn" onclick="openCustom2GIS('${twoGisLink}')" style="margin-top: 12px;">
                                 <i class="fas fa-building" style="color: #00A0E3;"></i>
                                 2GIS
                             </button>
@@ -3476,29 +3532,17 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
-        // Закрыть окно выбора карты для маски
-        function closeMaskMapChooser() {
-            const modal = document.getElementById('mask-map-modal');
-            if (modal) modal.remove();
-        }
-        
-        // Открыть Яндекс.Карты для маски
-        function openYandexMapsForMask(lat, lng) {
-            const url = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+        function openCustomYandexMaps(url) {
             window.open(url, '_blank');
             closeMaskMapChooser();
         }
         
-        // Открыть Google Maps для маски
-        function openGoogleMapsForMask(lat, lng) {
-            const url = `https://www.google.com/maps?q=${lat},${lng}`;
+        function openCustomGoogleMaps(url) {
             window.open(url, '_blank');
             closeMaskMapChooser();
         }
         
-        // Открыть 2GIS для маски
-        function open2GISForMask(lat, lng) {
-            const url = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+        function openCustom2GIS(url) {
             window.open(url, '_blank');
             closeMaskMapChooser();
         }
