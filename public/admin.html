@@ -47,15 +47,6 @@
             cursor: pointer;
             font-size: 14px;
         }
-
-                .back-btn i {
-            margin-right: 6px;
-        }
-        
-        .back-btn:hover {
-            background: #3d3d5c;
-            transform: translateY(-1px);
-        }
         
         .tabs {
             display: flex;
@@ -100,11 +91,18 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         
         .card-title {
             font-size: 18px;
             font-weight: 600;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 8px;
         }
         
         .btn-icon {
@@ -114,19 +112,43 @@
             cursor: pointer;
             font-size: 16px;
             padding: 8px;
-            margin-left: 8px;
+            transition: all 0.2s ease;
         }
         
         .btn-icon:hover {
             color: #fff;
         }
         
+        .btn-publish {
+            color: #10B981;
+        }
+        
+        .btn-publish:hover {
+            color: #059669;
+        }
+        
         .btn-danger {
             color: #EF4444;
         }
         
+        .btn-danger:hover {
+            color: #DC2626;
+        }
+        
         .btn-success {
             background: #10B981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: #3B82F6;
             color: white;
             border: none;
             border-radius: 12px;
@@ -232,6 +254,43 @@
             border-bottom: 1px solid #2d2d44;
         }
         
+        .route-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid #2d2d44;
+            cursor: pointer;
+        }
+        
+        .route-checkbox input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .route-checkbox:hover {
+            background: #2d2d54;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-draft {
+            background: #F59E0B;
+            color: #1a1a2e;
+        }
+        
+        .badge-published {
+            background: #10B981;
+            color: white;
+        }
+        
         .hidden {
             display: none;
         }
@@ -258,23 +317,6 @@
             background: #2e1a1a;
             color: #EF4444;
         }
-        
-        .admin-id-info {
-            background: #2d2d44;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-                .btn-publish {
-            color: #10B981;
-        }
-        
-        .btn-publish:hover {
-            color: #059669;
-        }
     </style>
 </head>
 <body>
@@ -285,6 +327,10 @@
     <script>
         const API_BASE = window.location.origin + '/api';
         let currentUserId = null;
+        let currentTab = 'masks';
+        let masks = [];
+        let routes = [];
+        let allRoutes = [];
         
         // Получаем Telegram ID
         function init() {
@@ -323,15 +369,17 @@
                     `;
                     return;
                 }
+                await loadAllRoutes();
                 loadAdminPanel();
             } catch (e) {
                 console.error('Ошибка проверки доступа:', e);
             }
         }
         
-        let currentTab = 'masks';
-        let masks = [];
-        let routes = [];
+        async function loadAllRoutes() {
+            const res = await fetch(`${API_BASE}/admin/routes/list?userId=${currentUserId}`);
+            allRoutes = await res.json();
+        }
         
         async function loadAdminPanel() {
             await Promise.all([
@@ -357,19 +405,19 @@
             window.stats = await res.json();
         }
         
-                async function renderAdminPanel() {
+        async function loadMaskRoutes(maskId) {
+            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/routes?userId=${currentUserId}`);
+            return await res.json();
+        }
+        
+        function renderAdminPanel() {
             const html = `
                 <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
-                    <div style="display: flex; gap: 12px;">
-                        <button class="back-btn" onclick="refreshAdminPanel()" title="Обновить">
-                            <i class="fas fa-sync-alt"></i> Обновить
-                        </button>
-                        <button class="back-btn" onclick="location.href='/'">← На главную</button>
-                    </div>
+                    <button class="back-btn" onclick="location.href='/'">← На главную</button>
                 </div>
                 
-                <div class="admin-id-info">
+                <div class="admin-id-info" style="background: #2d2d44; border-radius: 12px; padding: 12px; margin-bottom: 20px; font-size: 13px;">
                     <i class="fas fa-id-badge"></i> Ваш ID: ${currentUserId}
                 </div>
                 
@@ -401,70 +449,17 @@
                     ${renderStats()}
                 </div>
             `;
-            
             document.getElementById('app').innerHTML = html;
-            
-            // Добавляем кнопку "Наверх"
-            setTimeout(() => {
-                if (!document.getElementById('scroll-top-admin')) {
-                    const scrollBtn = document.createElement('button');
-                    scrollBtn.id = 'scroll-top-admin';
-                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
-                    scrollBtn.style.cssText = `
-                        position: fixed;
-                        bottom: 30px;
-                        right: 30px;
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 25px;
-                        background: rgba(100, 116, 139, 0.5);
-                        backdrop-filter: blur(4px);
-                        border: none;
-                        color: white;
-                        font-size: 20px;
-                        cursor: pointer;
-                        display: none;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 1001;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                        transition: all 0.2s ease;
-                    `;
-                    
-                    scrollBtn.onclick = () => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    };
-                    
-                    scrollBtn.onmouseenter = () => {
-                        scrollBtn.style.transform = 'scale(1.05)';
-                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
-                    };
-                    scrollBtn.onmouseleave = () => {
-                        scrollBtn.style.transform = 'scale(1)';
-                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
-                    };
-                    
-                    document.body.appendChild(scrollBtn);
-                    
-                    window.addEventListener('scroll', () => {
-                        if (window.scrollY > 300) {
-                            scrollBtn.style.display = 'flex';
-                        } else {
-                            scrollBtn.style.display = 'none';
-                        }
-                    });
-                }
-            }, 100);
         }
         
-                function renderMasksList() {
+        function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
             
             return masks.map(mask => `
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(mask.name)}</span>
-                        <div>
+                        <div class="card-actions">
                             ${!mask.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishMask('${mask.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
                             <button class="btn-icon" onclick="editMask('${mask.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
@@ -473,7 +468,9 @@
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📍 ${mask.latitude}, ${mask.longitude}</div>
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
-                        <div>${mask.isAvailable ? '<span style="color: #10B981;">✅ Опубликована</span>' : '<span style="color: #F59E0B;">⏳ Черновик</span>'}</div>
+                        <div style="margin-top: 8px;">
+                            ${mask.isAvailable ? '<span class="badge badge-published">✅ Опубликована</span>' : '<span class="badge badge-draft">📝 Черновик</span>'}
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -486,9 +483,9 @@
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(route.name)}</span>
-                        <div>
-                            <button class="btn-icon" onclick="editRoute('${route.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')"><i class="fas fa-trash"></i></button>
+                        <div class="card-actions">
+                            <button class="btn-icon" onclick="editRoute('${route.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                     <div style="font-size: 12px; color: #64748b;">
@@ -499,9 +496,8 @@
             `).join('');
         }
         
-                function renderStats() {
+        function renderStats() {
             const stats = window.stats || {};
-            
             return `
                 <div class="stat-grid">
                     <div class="stat-card">
@@ -576,7 +572,31 @@
             renderAdminPanel();
         }
         
-        function showAddMaskModal() {
+        async function publishMask(id) {
+            if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
+                method: 'POST'
+            });
+            
+            if (res.ok) {
+                showMessage('Маска опубликована!', 'success');
+                loadMasks().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка публикации', 'error');
+            }
+        }
+        
+        async function showAddMaskModal() {
+            const maskRoutes = allRoutes.map(r => ({ id: r.id, name: r.name, checked: false }));
+            
+            const routesHtml = maskRoutes.map(route => `
+                <label class="route-checkbox">
+                    <input type="checkbox" value="${route.id}" class="route-checkbox-input">
+                    <span>${escapeHtml(route.name)}</span>
+                </label>
+            `).join('');
+            
             showModal('Добавить маску', `
                 <div class="form-group">
                     <label>Название *</label>
@@ -614,7 +634,18 @@
                     <label>Ссылка на Яндекс.Карты</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
+                <div class="form-group">
+                    <label>Добавить в маршруты</label>
+                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
+                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
+                    </div>
+                </div>
             `, async () => {
+                const selectedRoutes = [];
+                document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
+                    selectedRoutes.push(cb.value);
+                });
+                
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
@@ -624,7 +655,7 @@
                     address: document.getElementById('mask-address').value,
                     qrCode: document.getElementById('mask-qrCode').value,
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
-                    isAvailable: true,
+                    isAvailable: false,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value
                 };
                 
@@ -634,13 +665,126 @@
                     body: JSON.stringify(newMask)
                 });
                 
+                const result = await res.json();
+                
                 if (res.ok) {
+                    const maskId = result.id;
+                    for (const routeId of selectedRoutes) {
+                        await fetch(`${API_BASE}/admin/masks/${maskId}/routes/${routeId}?userId=${currentUserId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order: 0 })
+                        });
+                    }
                     showMessage('Маска добавлена!', 'success');
                     loadMasks().then(() => renderAdminPanel());
                 } else {
                     showMessage('Ошибка добавления', 'error');
                 }
             });
+        }
+        
+        async function editMask(id) {
+            const mask = masks.find(m => m.id === id);
+            if (!mask) return;
+            
+            const maskRoutes = await loadMaskRoutes(id);
+            const maskRouteIds = new Set(maskRoutes.map(r => r.id));
+            
+            const routesHtml = allRoutes.map(route => `
+                <label class="route-checkbox">
+                    <input type="checkbox" value="${route.id}" class="route-checkbox-input" ${maskRouteIds.has(route.id) ? 'checked' : ''}>
+                    <span>${escapeHtml(route.name)}</span>
+                </label>
+            `).join('');
+            
+            showModal('Редактировать маску', `
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="mask-name" value="${escapeHtml(mask.name)}">
+                </div>
+                <div class="form-group">
+                    <label>Краткое описание</label>
+                    <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Полное описание</label>
+                    <textarea id="mask-fullDescription">${escapeHtml(mask.fullDescription || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Широта</label>
+                    <input type="text" id="mask-latitude" value="${mask.latitude}">
+                </div>
+                <div class="form-group">
+                    <label>Долгота</label>
+                    <input type="text" id="mask-longitude" value="${mask.longitude}">
+                </div>
+                <div class="form-group">
+                    <label>Адрес</label>
+                    <input type="text" id="mask-address" value="${escapeHtml(mask.address || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="mask-priceAmount" value="${mask.priceAmount || 15000}">
+                </div>
+                <div class="form-group">
+                    <label>Добавить в маршруты</label>
+                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
+                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
+                    </div>
+                </div>
+            `, async () => {
+                const selectedRoutes = [];
+                document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
+                    selectedRoutes.push(cb.value);
+                });
+                
+                const updatedMask = {
+                    name: document.getElementById('mask-name').value,
+                    description: document.getElementById('mask-description').value,
+                    fullDescription: document.getElementById('mask-fullDescription').value,
+                    latitude: parseFloat(document.getElementById('mask-latitude').value),
+                    longitude: parseFloat(document.getElementById('mask-longitude').value),
+                    address: document.getElementById('mask-address').value,
+                    priceAmount: parseInt(document.getElementById('mask-priceAmount').value),
+                    isAvailable: mask.isAvailable
+                };
+                
+                const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedMask)
+                });
+                
+                if (res.ok) {
+                    for (const routeId of selectedRoutes) {
+                        await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order: 0 })
+                        });
+                    }
+                    showMessage('Маска обновлена!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                } else {
+                    showMessage('Ошибка обновления', 'error');
+                }
+            });
+        }
+        
+        async function deleteMask(id) {
+            if (!confirm('Удалить маску? Это действие нельзя отменить.')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                showMessage('Маска удалена', 'success');
+                loadMasks().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка удаления', 'error');
+            }
         }
         
         function showAddRouteModal() {
@@ -703,6 +847,7 @@
                 
                 if (res.ok) {
                     showMessage('Маршрут добавлен!', 'success');
+                    await loadAllRoutes();
                     loadRoutes().then(() => renderAdminPanel());
                 } else {
                     showMessage('Ошибка добавления', 'error');
@@ -710,121 +855,7 @@
             });
         }
         
-        async function deleteMask(id) {
-            if (!confirm('Удалить маску? Это действие нельзя отменить.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Маска удалена', 'success');
-                loadMasks().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
-        }
-
-                async function publishMask(id) {
-            if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
-            
-            try {
-                const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const result = await res.json();
-                
-                if (res.ok) {
-                    showMessage(result.message || 'Маска опубликована!', 'success');
-                    loadMasks().then(() => renderAdminPanel());
-                } else {
-                    showMessage(result.error || 'Ошибка публикации', 'error');
-                }
-            } catch (e) {
-                showMessage('Ошибка сети', 'error');
-            }
-        }
-        
-        async function deleteRoute(id) {
-            if (!confirm('Удалить маршрут? Это действие нельзя отменить.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Маршрут удалён', 'success');
-                loadRoutes().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
-        }
-        
-        function editMask(id) {
-            const mask = masks.find(m => m.id === id);
-            if (!mask) return;
-            
-            showModal('Редактировать маску', `
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="mask-name" value="${escapeHtml(mask.name)}">
-                </div>
-                <div class="form-group">
-                    <label>Краткое описание</label>
-                    <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Широта</label>
-                    <input type="text" id="mask-latitude" value="${mask.latitude}">
-                </div>
-                <div class="form-group">
-                    <label>Долгота</label>
-                    <input type="text" id="mask-longitude" value="${mask.longitude}">
-                </div>
-                <div class="form-group">
-                    <label>Адрес</label>
-                    <input type="text" id="mask-address" value="${escapeHtml(mask.address || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="mask-priceAmount" value="${mask.priceAmount || 15000}">
-                </div>
-                <div class="form-group">
-                    <label>Доступна для покупки</label>
-                    <select id="mask-isAvailable">
-                        <option value="1" ${mask.isAvailable ? 'selected' : ''}>Да</option>
-                        <option value="0" ${!mask.isAvailable ? 'selected' : ''}>Нет</option>
-                    </select>
-                </div>
-            `, async () => {
-                const updatedMask = {
-                    name: document.getElementById('mask-name').value,
-                    description: document.getElementById('mask-description').value,
-                    latitude: parseFloat(document.getElementById('mask-latitude').value),
-                    longitude: parseFloat(document.getElementById('mask-longitude').value),
-                    address: document.getElementById('mask-address').value,
-                    priceAmount: parseInt(document.getElementById('mask-priceAmount').value),
-                    isAvailable: document.getElementById('mask-isAvailable').value === '1'
-                };
-                
-                const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedMask)
-                });
-                
-                if (res.ok) {
-                    showMessage('Маска обновлена!', 'success');
-                    loadMasks().then(() => renderAdminPanel());
-                } else {
-                    showMessage('Ошибка обновления', 'error');
-                }
-            });
-        }
-        
-        function editRoute(id) {
+        async function editRoute(id) {
             const route = routes.find(r => r.id === id);
             if (!route) return;
             
@@ -838,12 +869,24 @@
                     <textarea id="route-description">${escapeHtml(route.description || '')}</textarea>
                 </div>
                 <div class="form-group">
+                    <label>Сложность</label>
+                    <select id="route-difficulty">
+                        <option value="easy" ${route.difficulty === 'easy' ? 'selected' : ''}>Лёгкий</option>
+                        <option value="medium" ${route.difficulty === 'medium' ? 'selected' : ''}>Средний</option>
+                        <option value="hard" ${route.difficulty === 'hard' ? 'selected' : ''}>Сложный</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Длительность (минут)</label>
                     <input type="number" id="route-durationMinutes" value="${route.durationMinutes}">
                 </div>
                 <div class="form-group">
                     <label>Дистанция (км)</label>
                     <input type="text" id="route-distanceKm" value="${route.distanceKm}">
+                </div>
+                <div class="form-group">
+                    <label>Цвет (HEX)</label>
+                    <input type="text" id="route-color" value="${route.color || '#3B82F6'}">
                 </div>
                 <div class="form-group">
                     <label>Активен</label>
@@ -856,8 +899,13 @@
                 const updatedRoute = {
                     name: document.getElementById('route-name').value,
                     description: document.getElementById('route-description').value,
+                    difficulty: document.getElementById('route-difficulty').value,
                     durationMinutes: parseInt(document.getElementById('route-durationMinutes').value),
                     distanceKm: parseFloat(document.getElementById('route-distanceKm').value),
+                    color: document.getElementById('route-color').value,
+                    centerLat: route.centerLat,
+                    centerLng: route.centerLng,
+                    zoom: route.zoom,
                     isActive: document.getElementById('route-isActive').value === '1'
                 };
                 
@@ -874,6 +922,22 @@
                     showMessage('Ошибка обновления', 'error');
                 }
             });
+        }
+        
+        async function deleteRoute(id) {
+            if (!confirm('Удалить маршрут? Это действие нельзя отменить.')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
+                method: 'DELETE'
+            });
+            
+            if (res.ok) {
+                showMessage('Маршрут удалён', 'success');
+                await loadAllRoutes();
+                loadRoutes().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка удаления', 'error');
+            }
         }
         
         let activeModal = null;
@@ -929,22 +993,6 @@
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
                 return m;
-            });
-        }
-
-                function refreshAdminPanel() {
-            // Показываем уведомление
-            showMessage('Обновление данных...', 'success');
-            // Перезагружаем данные и перерисовываем админку
-            Promise.all([
-                loadMasks(),
-                loadRoutes(),
-                loadStats()
-            ]).then(() => {
-                renderAdminPanel();
-                showMessage('Данные обновлены!', 'success');
-            }).catch(() => {
-                showMessage('Ошибка обновления', 'error');
             });
         }
         

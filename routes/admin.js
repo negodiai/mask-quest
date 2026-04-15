@@ -264,4 +264,57 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
     }
 });
 
+// ========== ДОБАВЛЕНИЕ МАСКИ В МАРШРУТЫ ==========
+
+// Получить все маршруты для селекта
+router.get('/routes/list', checkAdmin, async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, name FROM routes WHERE "isActive" = 1 ORDER BY name');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Получить маршруты, в которые уже добавлена маска
+router.get('/masks/:maskId/routes', checkAdmin, async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT r.id, r.name 
+            FROM route_masks rm
+            JOIN routes r ON rm."routeId" = r.id
+            WHERE rm."maskId" = $1
+        `, [req.params.maskId]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Добавить маску в маршрут
+router.post('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => {
+    const { order } = req.body;
+    try {
+        await db.query(`
+            INSERT INTO route_masks ("routeId", "maskId", "order")
+            VALUES ($1, $2, $3)
+            ON CONFLICT ("routeId", "maskId") DO UPDATE SET "order" = EXCLUDED."order"
+        `, [req.params.routeId, req.params.maskId, order || 0]);
+        res.json({ success: true, message: 'Маска добавлена в маршрут' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Удалить маску из маршрута
+router.delete('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => {
+    try {
+        await db.query('DELETE FROM route_masks WHERE "routeId" = $1 AND "maskId" = $2', 
+            [req.params.routeId, req.params.maskId]);
+        res.json({ success: true, message: 'Маска удалена из маршрута' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
