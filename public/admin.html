@@ -412,9 +412,12 @@
         
         function renderAdminPanel() {
             const html = `
-                <div class="header">
+                                <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
-                    <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="back-btn" onclick="refreshData()"><i class="fas fa-sync-alt"></i> Обновить</button>
+                        <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    </div>
                 </div>
                 
                 <div class="admin-id-info" style="background: #2d2d44; border-radius: 12px; padding: 12px; margin-bottom: 20px; font-size: 13px;">
@@ -496,7 +499,7 @@
             `).join('');
         }
         
-        function renderStats() {
+                function renderStats() {
             const stats = window.stats || {};
             return `
                 <div class="stat-grid">
@@ -521,7 +524,7 @@
                         <div class="stat-label">Всего маршрутов</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${stats.routeProgress?.completed || 0} / ${stats.routeProgress?.total || 0}</div>
+                        <div class="stat-value">${stats.completedRoutesTotal || 0}</div>
                         <div class="stat-label">Пройдено маршрутов</div>
                     </div>
                 </div>
@@ -1035,6 +1038,17 @@
                 if (m === '>') return '&gt;';
                 return m;
             });
+        }
+
+                async function refreshData() {
+            showMessage('Обновление данных...', 'info');
+            await Promise.all([
+                loadMasks(),
+                loadRoutes(),
+                loadStats()
+            ]);
+            renderAdminPanel();
+            showMessage('Данные обновлены', 'success');
         }
         
         init();
