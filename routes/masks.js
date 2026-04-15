@@ -254,10 +254,11 @@ router.post('/activate', async (req, res) => {
         }
         
                         const activationId = uuidv4();
+        const now = new Date().toISOString();
         await db.query(`
-            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData")
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [activationId, userId, targetMask.id, userLat, userLng, JSON.stringify(telegramData || {})]);
+            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData", "activatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [activationId, userId, targetMask.id, userLat, userLng, JSON.stringify(telegramData || {}), now]);
         
         // Обновляем прогресс маршрутов
         await updateUserRouteProgress(userId);

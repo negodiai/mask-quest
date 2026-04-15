@@ -62,6 +62,19 @@ router.post('/masks', checkAdmin, async (req, res) => {
     }
 });
 
+router.post('/fix-dates', checkAdmin, async (req, res) => {
+    try {
+        await db.query(`
+            UPDATE user_activations 
+            SET "activatedAt" = NOW() 
+            WHERE "activatedAt" IS NULL
+        `);
+        res.json({ success: true, message: 'Даты активации обновлены' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // PUT /api/admin/masks/:id - обновить маску
 router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
