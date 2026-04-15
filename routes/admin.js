@@ -239,13 +239,19 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.dailyActivations = dailyActivationsRes.rows || [];
         
-        // Пройденные маршруты (всего завершённых маршрутов)
+        // ПРОВЕРЯЕМ: сколько записей в user_route_progress
+        const allProgressRes = await db.query(`SELECT COUNT(*) as total FROM user_route_progress`);
+        console.log('Всего записей в user_route_progress:', allProgressRes.rows[0]?.total);
+        
+        // Пройденные маршруты (где completedAt не NULL)
         const completedRoutesRes = await db.query(`
             SELECT COUNT(*) as count 
             FROM user_route_progress 
             WHERE "completedAt" IS NOT NULL
         `);
         stats.completedRoutesTotal = parseInt(completedRoutesRes.rows[0]?.count) || 0;
+        
+        console.log('Пройдено маршрутов (completedAt NOT NULL):', stats.completedRoutesTotal);
         
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 

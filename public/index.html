@@ -2837,6 +2837,11 @@
                 alert(`Для покупки маски "${maskName}" напишите в Telegram: @undergroundmask_shop`);
             }
         }
+
+                function closeModal() {
+            const modal = document.getElementById('info-modal');
+            if (modal) modal.remove();
+        }
         
         // Простая информация о маске (для каталога)
         function showSimpleMaskInfo(maskId) {
@@ -2854,17 +2859,16 @@
                             <div onclick="openFullscreen(0)">
                                 ${renderGallery(mask.id, 'maskinfo')}
                             </div>
-                            <div class="action-buttons-small">
-                                ${mask.isAvailable ? `<button class="btn-small btn-success-small" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer;">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <i class="fas fa-shopping-cart" style="font-size: 16px;"></i>
-        <span style="font-size: 14px; font-weight: 500;">10.000₽</span>
-    </div>
-</button>` : ''}
-<button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-    <i class="fas fa-directions"></i>
-    <span>Маршрут</span>
-</button>
+                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
+                                ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>10.000₽</span>
+                                </button>` : ''}
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                    <i class="fas fa-directions"></i>
+                                    <span>Маршрут</span>
+                                </button>
+                            </div>
                             </div>
                             <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
@@ -3496,15 +3500,19 @@
         }
 
                         // Показать выбор карты для конкретной маски (из карточки)
-        function showMaskMapChooser(lat, lng, maskName, maskId) {
+                function showMaskMapChooser(lat, lng, maskName, maskId) {
+            // Ищем маску в актуальных данных
             const mask = appState.masks.find(m => m.id === maskId);
             
+            // Используем ссылки из маски, если они есть, иначе генерируем по координатам
             const yandexLink = mask?.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
             const googleLink = mask?.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
             const twoGisLink = mask?.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
             
+            console.log('Открываем карты для маски:', mask?.name, 'Ссылка Яндекс:', yandexLink);
+            
             const modalHtml = `
-                <div id="mask-map-modal" class="modal-overlay">
+                <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
                     <div class="modal-container" style="max-width: 350px;">
                         <div class="modal-header">
                             <h2>${escapeHtml(maskName)}</h2>
