@@ -1873,7 +1873,7 @@
                 document.getElementById('activated-mask-name').innerText = mask.name;
                 document.getElementById('activated-mask-description').innerText = mask.fullDescription || mask.description;
                 
-                                const imgHtml = `<img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'" style="width: 100%; border-radius: 16px; margin-bottom: 16px;">`;
+                const imgHtml = `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; border-radius: 16px; margin-bottom: 16px;"><div style="display: none; background: #1a1a2e; border-radius: 16px; padding: 40px; text-align: center; margin-bottom: 16px;"><i class="fas fa-mask" style="font-size: 48px; color: #3d3d5c;"></i></div>`;
                 const photoContainer = document.getElementById('activated-mask-photo');
                 if (photoContainer) photoContainer.innerHTML = imgHtml;
             }
@@ -2086,13 +2086,15 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-                function getMaskImages(maskId) {
-            const mask = appState.masks.find(m => m.id === maskId);
-            const baseImage = mask?.photoHash || `/images/${maskId}.jpg`;
+        function getMaskImages(maskId) {
+            // Первое фото из папки images
+            const firstImage = `/images/${maskId}.jpg`;
+            // Второе фото (заглушка)
+            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
+            // Третье фото (заглушка)
+            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
             
-            // Если есть загруженное фото — используем его для всех 5 слотов
-            // Если нет — используем заглушку
-            return [baseImage, baseImage, baseImage, baseImage, baseImage];
+            return [firstImage, secondImage, thirdImage];
         }
         
         let currentGalleryIndex = 0;
@@ -2202,15 +2204,14 @@
             updateGalleryDots();
         }
         
-                  function openFullscreen(startIndex) {
-            const maskId = window.currentFullscreenMaskId;
-            const mask = appState.masks.find(m => m.id === maskId);
-            const baseImage = mask?.photoHash || `/images/${maskId}.jpg`;
+                function openFullscreen(startIndex) {
+            isFullscreen = true;
+            fullscreenCurrentIndex = startIndex;
             
             let fullscreenSlides = '';
-            for (let i = 1; i <= 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('${baseImage}');"></div>`;
-            }
+            galleryImages.forEach((img, index) => {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('${img}');"></div>`;
+            });
             
             let fullscreenDots = '';
             galleryImages.forEach((img, index) => {
@@ -2362,7 +2363,7 @@
                     <div class="card clickable-card" style="${isActivated ? 'border: 1px solid #10B981;' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px;">
                             <div class="mask-image">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
@@ -2414,10 +2415,10 @@
                 const formattedDate = date.toLocaleDateString('ru-RU');
                 historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
-                                                    <div class="history-icon">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
-                            </div>
+                        <div class="history-icon-new">
+                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
+                        </div>
                         <div class="history-content-new">
                             <h4 class="history-name-new">${escapeHtml(mask.name)}</h4>
                             <p class="history-date-new"><i class="fas fa-calendar"></i> ${formattedDate}</p>
@@ -2915,12 +2916,12 @@
             
             // Функция для создания карусели с полнофункциональными фото
             function createGalleryForTab(tabName) {
-                            let gallerySlides = '';
-            let galleryDots = '';
-            for (let i = 1; i <= 5; i++) {
-                gallerySlides += `<div class="gallery-slide" style="background-image: url('${mask.photoHash || `/images/${mask.id}.jpg`}');" onclick="event.stopPropagation(); openFullscreenExtendedTab('${tabName}', ${i - 1})"></div>`;
-                galleryDots += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
-            }
+                let slidesHtml = '';
+                let dotsHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
+                }
                 
                 return `
                     <div class="gallery-container" id="gallery-container-${tabName}">
@@ -2946,7 +2947,7 @@
                         <div class="modal-content">
                             <!-- Главное фото (без onclick) -->
                             <div class="main-photo">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
                             
                             <!-- Описание -->
@@ -3161,10 +3162,9 @@
             const maskId = window.currentFullscreenMaskId;
             const currentIndex = window[`currentIndex_${tab}`] || startIndex;
             
-                        let fullscreenSlides = '';
-            const mask = appState.masks.find(m => m.id === maskId);
+            let fullscreenSlides = '';
             for (let i = 1; i <= 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('${mask?.photoHash || `/images/${maskId}.jpg`}');"></div>`;
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
             }
             
             let fullscreenDots = '';
@@ -3316,12 +3316,11 @@
         // Полноэкранный режим для вкладок
         function openFullscreenExtendedTab(tab, startIndex) {
             const maskId = window.currentFullscreenMaskId;
-            const mask = appState.masks.find(m => m.id === maskId);
-            const baseImage = mask?.photoHash || `/images/${maskId}.jpg`;
+            window[`currentIndex_${tab}`] = startIndex;
             
             let fullscreenSlides = '';
             for (let i = 1; i <= 5; i++) {
-                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('${baseImage}');"></div>`;
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
             }
             
             let fullscreenDots = '';

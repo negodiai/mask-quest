@@ -162,31 +162,6 @@
             min-height: 80px;
             resize: vertical;
         }
-
-                .photo-preview {
-            margin-top: 10px;
-            text-align: center;
-        }
-        
-        .photo-preview img {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 12px;
-        }
-        
-        .photo-upload-area {
-            border: 2px dashed #2d2d44;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .photo-upload-area:hover {
-            border-color: #3B82F6;
-            background: #1a1a2e;
-        }
         
         .modal-overlay {
             position: fixed;
@@ -501,13 +476,6 @@
                         <div>${mask.isAvailable ? '<span style="color: #10B981;">✅ Опубликована</span>' : '<span style="color: #F59E0B;">⏳ Черновик</span>'}</div>
                     </div>
                 </div>
-                                        <div style="display: flex; gap: 12px; align-items: center;">
-                            ${mask.photoHash ? `<img src="${mask.photoHash}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">` : '<div style="width: 40px; height: 40px; background: #1a1a2e; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-mask"></i></div>'}
-                            <div>
-                                <div>${escapeHtml(mask.name)}</div>
-                                <div style="font-size: 11px; color: #64748b;">${mask.latitude}, ${mask.longitude}</div>
-                            </div>
-                        </div>
             `).join('');
         }
         
@@ -608,138 +576,71 @@
             renderAdminPanel();
         }
         
-                function showAddMaskModal() {
-            let uploadedPhotoUrl = null;
-            
-            const modalHtml = `
-                <div id="admin-modal" class="modal-overlay">
-                    <div class="modal-container" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3>Добавить маску</h3>
-                            <button class="btn-icon" onclick="closeModal()">&times;</button>
-                        </div>
-                        <div class="modal-content">
-                            <div class="form-group">
-                                <label>Название *</label>
-                                <input type="text" id="mask-name" placeholder="Например: Берёзовая">
-                            </div>
-                            <div class="form-group">
-                                <label>Краткое описание</label>
-                                <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Полное описание</label>
-                                <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Широта *</label>
-                                <input type="text" id="mask-latitude" placeholder="54.679629">
-                            </div>
-                            <div class="form-group">
-                                <label>Долгота *</label>
-                                <input type="text" id="mask-longitude" placeholder="20.463649">
-                            </div>
-                            <div class="form-group">
-                                <label>Адрес</label>
-                                <input type="text" id="mask-address" placeholder="ул. Берёзовая">
-                            </div>
-                            <div class="form-group">
-                                <label>QR-код (уникальный)</label>
-                                <input type="text" id="mask-qrCode" placeholder="MASK_001">
-                            </div>
-                            <div class="form-group">
-                                <label>Цена (₽)</label>
-                                <input type="number" id="mask-priceAmount" placeholder="15000">
-                            </div>
-                            <div class="form-group">
-                                <label>Ссылка на Яндекс.Карты</label>
-                                <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
-                            </div>
-                            <div class="form-group">
-                                <label>Фото маски</label>
-                                <div class="photo-upload-area" id="photo-upload-area">
-                                    <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: #64748b;"></i>
-                                    <p style="margin-top: 8px;">Нажмите или перетащите фото</p>
-                                </div>
-                                <input type="file" id="mask-photo" accept="image/*" style="display: none;">
-                                <div id="photo-preview" class="photo-preview"></div>
-                            </div>
-                            <button class="btn-success" onclick="saveNewMask()" style="margin-top: 16px;">Сохранить</button>
-                        </div>
-                    </div>
+        function showAddMaskModal() {
+            showModal('Добавить маску', `
+                <div class="form-group">
+                    <label>Название *</label>
+                    <input type="text" id="mask-name" placeholder="Например: Берёзовая">
                 </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
-            // Настройка загрузки фото
-            const uploadArea = document.getElementById('photo-upload-area');
-            const fileInput = document.getElementById('mask-photo');
-            const previewDiv = document.getElementById('photo-preview');
-            
-            uploadArea.onclick = () => fileInput.click();
-            
-            fileInput.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                // Показываем превью
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewDiv.innerHTML = `<img src="${event.target.result}" alt="Превью">`;
+                <div class="form-group">
+                    <label>Краткое описание</label>
+                    <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Полное описание</label>
+                    <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Широта *</label>
+                    <input type="text" id="mask-latitude" placeholder="54.679629">
+                </div>
+                <div class="form-group">
+                    <label>Долгота *</label>
+                    <input type="text" id="mask-longitude" placeholder="20.463649">
+                </div>
+                <div class="form-group">
+                    <label>Адрес</label>
+                    <input type="text" id="mask-address" placeholder="ул. Берёзовая">
+                </div>
+                <div class="form-group">
+                    <label>QR-код (уникальный)</label>
+                    <input type="text" id="mask-qrCode" placeholder="MASK_001">
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="mask-priceAmount" placeholder="15000">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на Яндекс.Карты</label>
+                    <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
+                </div>
+            `, async () => {
+                const newMask = {
+                    name: document.getElementById('mask-name').value,
+                    description: document.getElementById('mask-description').value,
+                    fullDescription: document.getElementById('mask-fullDescription').value,
+                    latitude: parseFloat(document.getElementById('mask-latitude').value),
+                    longitude: parseFloat(document.getElementById('mask-longitude').value),
+                    address: document.getElementById('mask-address').value,
+                    qrCode: document.getElementById('mask-qrCode').value,
+                    priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
+                    isAvailable: true,
+                    yandexMapLink: document.getElementById('mask-yandexMapLink').value
                 };
-                reader.readAsDataURL(file);
                 
-                // Загружаем временно (пока без ID маски, сохраним позже)
-                uploadedPhotoUrl = file;
-            };
-            
-            window.newMaskPhoto = uploadedPhotoUrl;
-        }
-        
-        async function saveNewMask() {
-            const newMask = {
-                name: document.getElementById('mask-name').value,
-                description: document.getElementById('mask-description').value,
-                fullDescription: document.getElementById('mask-fullDescription').value,
-                latitude: parseFloat(document.getElementById('mask-latitude').value),
-                longitude: parseFloat(document.getElementById('mask-longitude').value),
-                address: document.getElementById('mask-address').value,
-                qrCode: document.getElementById('mask-qrCode').value,
-                priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
-                isAvailable: false,
-                yandexMapLink: document.getElementById('mask-yandexMapLink').value
-            };
-            
-            const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newMask)
-            });
-            
-            const result = await res.json();
-            
-            if (res.ok) {
-                const maskId = result.id;
-                const photoFile = document.getElementById('mask-photo').files[0];
+                const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newMask)
+                });
                 
-                // Если есть фото — загружаем
-                if (photoFile) {
-                    const formData = new FormData();
-                    formData.append('photo', photoFile);
-                    
-                    await fetch(`${API_BASE}/upload/mask-photo/${maskId}?userId=${currentUserId}`, {
-                        method: 'POST',
-                        body: formData
-                    });
+                if (res.ok) {
+                    showMessage('Маска добавлена!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                } else {
+                    showMessage('Ошибка добавления', 'error');
                 }
-                
-                showMessage('Маска добавлена!', 'success');
-                closeModal();
-                loadMasks().then(() => renderAdminPanel());
-            } else {
-                showMessage(result.error || 'Ошибка добавления', 'error');
-            }
+            });
         }
         
         function showAddRouteModal() {
