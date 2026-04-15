@@ -32,13 +32,20 @@
             margin-bottom: 20px;
             padding-bottom: 16px;
             border-bottom: 1px solid #2d2d44;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .header h1 {
             font-size: 24px;
         }
         
-        .back-btn {
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .back-btn, .refresh-btn {
             background: #252542;
             border: none;
             border-radius: 12px;
@@ -46,6 +53,10 @@
             color: white;
             cursor: pointer;
             font-size: 14px;
+        }
+        
+        .refresh-btn:hover {
+            background: #3d3d5c;
         }
         
         .tabs {
@@ -332,7 +343,6 @@
         let routes = [];
         let allRoutes = [];
         
-        // Получаем Telegram ID
         function init() {
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
@@ -381,6 +391,17 @@
             allRoutes = await res.json();
         }
         
+        async function refreshData() {
+            showMessage('Обновление...', 'success');
+            await Promise.all([
+                loadMasks(),
+                loadRoutes(),
+                loadStats()
+            ]);
+            renderAdminPanel();
+            showMessage('Данные обновлены', 'success');
+        }
+        
         async function loadAdminPanel() {
             await Promise.all([
                 loadMasks(),
@@ -414,7 +435,10 @@
             const html = `
                 <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
-                    <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    <div class="header-actions">
+                        <button class="refresh-btn" onclick="refreshData()"><i class="fas fa-sync-alt"></i> Обновить</button>
+                        <button class="back-btn" onclick="location.href='/'">← На главную</button>
+                    </div>
                 </div>
                 
                 <div class="admin-id-info" style="background: #2d2d44; border-radius: 12px; padding: 12px; margin-bottom: 20px; font-size: 13px;">
@@ -587,60 +611,76 @@
             }
         }
         
+        function getMaskFormHtml(maskData = null, selectedRouteIds = []) {
+            const isEdit = maskData !== null;
+            return `
+                <div class="form-group">
+                    <label>Название *</label>
+                    <input type="text" id="mask-name" value="${maskData ? escapeHtml(maskData.name) : ''}" placeholder="Например: Берёзовая">
+                </div>
+                <div class="form-group">
+                    <label>Краткое описание</label>
+                    <textarea id="mask-description" placeholder="Краткое описание маски">${maskData ? escapeHtml(maskData.description || '') : ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Полное описание</label>
+                    <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)">${maskData ? escapeHtml(maskData.fullDescription || '') : ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Широта *</label>
+                    <input type="text" id="mask-latitude" value="${maskData ? maskData.latitude : '54.679629'}" placeholder="54.679629">
+                </div>
+                <div class="form-group">
+                    <label>Долгота *</label>
+                    <input type="text" id="mask-longitude" value="${maskData ? maskData.longitude : '20.463649'}" placeholder="20.463649">
+                </div>
+                <div class="form-group">
+                    <label>Адрес</label>
+                    <input type="text" id="mask-address" value="${maskData ? escapeHtml(maskData.address || '') : ''}" placeholder="ул. Берёзовая">
+                </div>
+                <div class="form-group">
+                    <label>QR-код (уникальный)</label>
+                    <input type="text" id="mask-qrCode" value="${maskData ? escapeHtml(maskData.qrCode || '') : ''}" placeholder="MASK_001">
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽)</label>
+                    <input type="number" id="mask-priceAmount" value="${maskData ? (maskData.priceAmount || 15000) : '15000'}" placeholder="15000">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на Яндекс.Карты</label>
+                    <input type="text" id="mask-yandexMapLink" value="${maskData ? escapeHtml(maskData.yandexMapLink || '') : ''}" placeholder="https://yandex.ru/maps/...">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на Google Maps</label>
+                    <input type="text" id="mask-googleMapLink" value="${maskData ? escapeHtml(maskData.googleMapLink || '') : ''}" placeholder="https://maps.google.com/...">
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на 2GIS</label>
+                    <input type="text" id="mask-twoGisLink" value="${maskData ? escapeHtml(maskData.twoGisLink || '') : ''}" placeholder="https://2gis.ru/...">
+                </div>
+                <div class="form-group">
+                    <label>Добавить в маршруты</label>
+                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
+                        ${allRoutes.map(route => `
+                            <label class="route-checkbox">
+                                <input type="checkbox" value="${route.id}" class="route-checkbox-input" ${selectedRouteIds.includes(route.id) ? 'checked' : ''}>
+                                <span>${escapeHtml(route.name)}</span>
+                            </label>
+                        `).join('') || '<p style="padding: 12px;">Нет маршрутов</p>'}
+                    </div>
+                </div>
+            `;
+        }
+        
         async function showAddMaskModal() {
-            const maskRoutes = allRoutes.map(r => ({ id: r.id, name: r.name, checked: false }));
-            
-            const routesHtml = maskRoutes.map(route => `
+            const routesHtml = allRoutes.map(route => `
                 <label class="route-checkbox">
                     <input type="checkbox" value="${route.id}" class="route-checkbox-input">
                     <span>${escapeHtml(route.name)}</span>
                 </label>
             `).join('');
             
-            showModal('Добавить маску', `
-                <div class="form-group">
-                    <label>Название *</label>
-                    <input type="text" id="mask-name" placeholder="Например: Берёзовая">
-                </div>
-                <div class="form-group">
-                    <label>Краткое описание</label>
-                    <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Полное описание</label>
-                    <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Широта *</label>
-                    <input type="text" id="mask-latitude" placeholder="54.679629">
-                </div>
-                <div class="form-group">
-                    <label>Долгота *</label>
-                    <input type="text" id="mask-longitude" placeholder="20.463649">
-                </div>
-                <div class="form-group">
-                    <label>Адрес</label>
-                    <input type="text" id="mask-address" placeholder="ул. Берёзовая">
-                </div>
-                <div class="form-group">
-                    <label>QR-код (уникальный)</label>
-                    <input type="text" id="mask-qrCode" placeholder="MASK_001">
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="mask-priceAmount" placeholder="15000">
-                </div>
-                <div class="form-group">
-                    <label>Ссылка на Яндекс.Карты</label>
-                    <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
-                </div>
-                <div class="form-group">
-                    <label>Добавить в маршруты</label>
-                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
-                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
-                    </div>
-                </div>
-            `, async () => {
+            showModal('Добавить маску', getMaskFormHtml(), async () => {
                 const selectedRoutes = [];
                 document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
                     selectedRoutes.push(cb.value);
@@ -656,7 +696,9 @@
                     qrCode: document.getElementById('mask-qrCode').value,
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
                     isAvailable: false,
-                    yandexMapLink: document.getElementById('mask-yandexMapLink').value
+                    yandexMapLink: document.getElementById('mask-yandexMapLink').value,
+                    googleMapLink: document.getElementById('mask-googleMapLink').value,
+                    twoGisLink: document.getElementById('mask-twoGisLink').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
@@ -689,51 +731,9 @@
             if (!mask) return;
             
             const maskRoutes = await loadMaskRoutes(id);
-            const maskRouteIds = new Set(maskRoutes.map(r => r.id));
+            const selectedRouteIds = maskRoutes.map(r => r.id);
             
-            const routesHtml = allRoutes.map(route => `
-                <label class="route-checkbox">
-                    <input type="checkbox" value="${route.id}" class="route-checkbox-input" ${maskRouteIds.has(route.id) ? 'checked' : ''}>
-                    <span>${escapeHtml(route.name)}</span>
-                </label>
-            `).join('');
-            
-            showModal('Редактировать маску', `
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="mask-name" value="${escapeHtml(mask.name)}">
-                </div>
-                <div class="form-group">
-                    <label>Краткое описание</label>
-                    <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Полное описание</label>
-                    <textarea id="mask-fullDescription">${escapeHtml(mask.fullDescription || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Широта</label>
-                    <input type="text" id="mask-latitude" value="${mask.latitude}">
-                </div>
-                <div class="form-group">
-                    <label>Долгота</label>
-                    <input type="text" id="mask-longitude" value="${mask.longitude}">
-                </div>
-                <div class="form-group">
-                    <label>Адрес</label>
-                    <input type="text" id="mask-address" value="${escapeHtml(mask.address || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="mask-priceAmount" value="${mask.priceAmount || 15000}">
-                </div>
-                <div class="form-group">
-                    <label>Добавить в маршруты</label>
-                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
-                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
-                    </div>
-                </div>
-            `, async () => {
+            showModal('Редактировать маску', getMaskFormHtml(mask, selectedRouteIds), async () => {
                 const selectedRoutes = [];
                 document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
                     selectedRoutes.push(cb.value);
@@ -746,8 +746,12 @@
                     latitude: parseFloat(document.getElementById('mask-latitude').value),
                     longitude: parseFloat(document.getElementById('mask-longitude').value),
                     address: document.getElementById('mask-address').value,
+                    qrCode: document.getElementById('mask-qrCode').value,
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value),
-                    isAvailable: mask.isAvailable
+                    isAvailable: mask.isAvailable,
+                    yandexMapLink: document.getElementById('mask-yandexMapLink').value,
+                    googleMapLink: document.getElementById('mask-googleMapLink').value,
+                    twoGisLink: document.getElementById('mask-twoGisLink').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
@@ -939,8 +943,6 @@
                 showMessage('Ошибка удаления', 'error');
             }
         }
-        
-        let activeModal = null;
         
         function showModal(title, content, onSave) {
             const modalHtml = `
