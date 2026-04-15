@@ -2864,10 +2864,10 @@
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
                                 </button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                    <i class="fas fa-directions"></i>
-                                    <span>Маршрут</span>
-                                </button>
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+    <i class="fas fa-directions"></i>
+    <span>Маршрут</span>
+</button>
                             </div>
                             </div>
                             <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
@@ -3500,16 +3500,29 @@
         }
 
                         // Показать выбор карты для конкретной маски (из карточки)
-                function showMaskMapChooser(lat, lng, maskName, maskId) {
-            // Ищем маску в актуальных данных
+                        function showMaskMapChooser(lat, lng, maskName, maskId) {
+            // Ищем маску в актуальных данных (как в каталоге)
             const mask = appState.masks.find(m => m.id === maskId);
             
-            // Используем ссылки из маски, если они есть, иначе генерируем по координатам
-            const yandexLink = mask?.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
-            const googleLink = mask?.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
-            const twoGisLink = mask?.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            if (!mask) {
+                console.error('Маска не найдена:', maskId);
+                // fallback на координаты
+                const yandexLink = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+                const googleLink = `https://www.google.com/maps?q=${lat},${lng}`;
+                const twoGisLink = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+                openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink);
+                return;
+            }
             
-            console.log('Открываем карты для маски:', mask?.name, 'Ссылка Яндекс:', yandexLink);
+            // Используем ссылки из маски (именно те, что вы ввели в админке)
+            const yandexLink = mask.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+            const googleLink = mask.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
+            const twoGisLink = mask.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            
+            console.log('Маска:', mask.name);
+            console.log('Яндекс ссылка из админки:', mask.yandexMapLink);
+            console.log('Google ссылка из админки:', mask.googleMapLink);
+            console.log('2GIS ссылка из админки:', mask.twoGisLink);
             
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
@@ -3540,19 +3553,33 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
-        function openCustomYandexMaps(url) {
-            window.open(url, '_blank');
-            closeMaskMapChooser();
-        }
-        
-        function openCustomGoogleMaps(url) {
-            window.open(url, '_blank');
-            closeMaskMapChooser();
-        }
-        
-        function openCustom2GIS(url) {
-            window.open(url, '_blank');
-            closeMaskMapChooser();
+        function openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink) {
+            const modalHtml = `
+                <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2>${escapeHtml(maskName)}</h2>
+                            <button class="close-btn" onclick="closeMaskMapChooser()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
+                            <button class="map-choice-btn" onclick="openCustomYandexMaps('${yandexLink}')">
+                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
+                                Яндекс.Карты
+                            </button>
+                            <button class="map-choice-btn" onclick="openCustomGoogleMaps('${googleLink}')" style="margin-top: 12px;">
+                                <i class="fab fa-google" style="color: #4285F4;"></i>
+                                Google Maps
+                            </button>
+                            <button class="map-choice-btn" onclick="openCustom2GIS('${twoGisLink}')" style="margin-top: 12px;">
+                                <i class="fas fa-building" style="color: #00A0E3;"></i>
+                                2GIS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
         // Закрыть модальное окно
