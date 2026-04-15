@@ -244,7 +244,7 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.dailyActivations = dailyActivationsRes.rows || [];
         
-        // ПРОЙДЕННЫЕ МАРШРУТЫ - прямой подсчёт
+        // Пройденные маршруты
         const completedRoutesRes = await db.query(`
             SELECT COUNT(*) as count 
             FROM user_route_progress 
@@ -252,7 +252,7 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.completedRoutesTotal = parseInt(completedRoutesRes.rows[0]?.count) || 0;
         
-        // Активные пользователи за 7 дней
+        // АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ ЗА 7 ДНЕЙ
         const activeUsersRes = await db.query(`
             SELECT COUNT(DISTINCT "userId") as count 
             FROM user_activations 
@@ -268,9 +268,11 @@ router.get('/stats', checkAdmin, async (req, res) => {
         const totalMasksRes = await db.query('SELECT COUNT(*) as total FROM masks WHERE "isAvailable" = 1');
         stats.totalMasks = parseInt(totalMasksRes.rows[0]?.total) || 0;
         
-        // ОТЛАДКА
+        // Отладка
         console.log('=== СТАТИСТИКА ===');
-        console.log('completedRoutesTotal:', stats.completedRoutesTotal);
+        console.log('Всего пользователей:', stats.totalUsers);
+        console.log('Активных за 7 дней:', stats.activeUsers);
+        console.log('Пройдено маршрутов:', stats.completedRoutesTotal);
         
         res.json(stats);
     } catch (err) {
