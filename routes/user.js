@@ -18,24 +18,33 @@ router.get('/progress', async (req, res) => {
         );
         const activatedMasks = parseInt(activationsResult.rows[0]?.count) || 0;
         
-        // Общее количество масок
+        // Общее количество масок (только опубликованные)
         const totalMasksResult = await db.query(
             'SELECT COUNT(*) as count FROM masks WHERE "isAvailable" = 1'
         );
         const totalMasks = parseInt(totalMasksResult.rows[0]?.count) || 0;
         
-        // Количество пройденных маршрутов
-        const completedRoutesResult = await db.query(
-            'SELECT COUNT(*) as count FROM user_route_progress WHERE "userId" = $1 AND "completedAt" IS NOT NULL',
+        // Количество пройденных маршрутов (где все маски активированы)
+        // Получаем все маршруты и их маски
+        const routesResult = await db.query('SELECT id FROM routes WHERE "isActive" = 1');
+        const routeMasksResult = await db.query('SELECT * FROM route_masks');
+        const userActivationsResult = await db.query(
+            'SELECT "maskId" FROM user_activations WHERE "userId" = $1',
             [userId]
         );
-        const completedRoutes = parseInt(completedRoutesResult.rows[0]?.count) || 0;
         
-        // Общее количество маршрутов
-        const totalRoutesResult = await db.query(
-            'SELECT COUNT(*) as count FROM routes WHERE "isActive" = 1'
-        );
-        const totalRoutes = parseInt(totalRoutesResult.rows[0]?.count) || 0;
+        const activatedMaskSet = new Set(userActivationsResult.rows.map(r => r.maskId));
+        
+        let completedRoutes = 0;
+        for (const route of routesResult.rows) {
+            const masksInRoute = routeMasksResult.rows.filter(rm => rm.routeId === route.id);
+            const allActivated = masksInRoute.every(rm => activatedMaskSet.has(rm.maskId));
+            if (allActivated && masksInRoute.length > 0) {
+                completedRoutes++;
+            }
+        }
+        
+        const totalRoutes = routesResult.rows.length;
         
         res.json({
             activatedMasks,

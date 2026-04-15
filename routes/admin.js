@@ -38,36 +38,76 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
     }
 });
 
+// POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
-    const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink } = req.body;
+    const { 
+        name, description, fullDescription, latitude, longitude, address, 
+        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
+    } = req.body;
     const id = uuidv4();
     
     try {
         await db.query(`
-            INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, address, "qrCode", "priceAmount", "isAvailable", "yandexMapLink", "googleMapLink", "twoGisLink")
+            INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, 
+                               address, "qrCode", "priceAmount", "isAvailable", 
+                               "yandexMapLink", "googleMapLink", "twoGisLink")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        `, [id, name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink, googleMapLink, twoGisLink]);
-        res.json({ success: true, id, message: 'Маска добавлена' });
+        `, [id, name, description, fullDescription, latitude, longitude, address, 
+            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
+        
+        res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
-        console.error('Error adding mask:', err);
+        console.error('Add mask error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
+// PUT /api/admin/masks/:id - обновить маску
 router.put('/masks/:id', checkAdmin, async (req, res) => {
-    const { name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink } = req.body;
+    const { 
+        name, description, fullDescription, latitude, longitude, address, 
+        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink 
+    } = req.body;
     
     try {
         await db.query(`
             UPDATE masks SET 
-                name = $1, description = $2, "fullDescription" = $3, latitude = $4, longitude = $5, 
-                address = $6, "qrCode" = $7, "priceAmount" = $8, "isAvailable" = $9, 
+                name = $1, description = $2, "fullDescription" = $3, 
+                latitude = $4, longitude = $5, address = $6, "qrCode" = $7, 
+                "priceAmount" = $8, "isAvailable" = $9, 
                 "yandexMapLink" = $10, "googleMapLink" = $11, "twoGisLink" = $12
             WHERE id = $13
-        `, [name, description, fullDescription, latitude, longitude, address, qrCode, priceAmount, isAvailable ? 1 : 0, yandexMapLink, googleMapLink, twoGisLink, req.params.id]);
+        `, [name, description, fullDescription, latitude, longitude, address, 
+            qrCode, priceAmount, isAvailable ? 1 : 0, 
+            yandexMapLink, googleMapLink, twoGisLink, req.params.id]);
+        
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
-        console.error('Error updating mask:', err);
+        console.error('Update mask error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/admin/masks/:id/publish - опубликовать маску
+router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
+    try {
+        const maskResult = await db.query('SELECT * FROM masks WHERE id = $1', [req.params.id]);
+        if (maskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Маска не найдена' });
+        }
+        
+        await db.query(`
+            UPDATE masks SET "isAvailable" = 1 WHERE id = $1
+        `, [req.params.id]);
+        
+        await db.query(`
+            INSERT INTO admin_logs ("adminId", action, "targetId", details)
+            VALUES ($1, $2, $3, $4)
+        `, [req.headers['x-user-id'], 'PUBLISH_MASK', req.params.id, JSON.stringify({ maskId: req.params.id })]);
+        
+        res.json({ success: true, message: 'Маска опубликована' });
+    } catch (err) {
+        console.error('Publish error:', err);
         res.status(500).json({ error: err.message });
     }
 });

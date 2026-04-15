@@ -165,14 +165,6 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-
-                // Добавляем колонки для карт, если их нет
-        await pool.query(`
-            ALTER TABLE masks ADD COLUMN IF NOT EXISTS "googleMapLink" TEXT
-        `);
-        await pool.query(`
-            ALTER TABLE masks ADD COLUMN IF NOT EXISTS "twoGisLink" TEXT
-        `);
         
         // Запускаем миграции для преобразования существующих данных
         await runMigrations();

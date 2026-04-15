@@ -2959,7 +2959,7 @@
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
                                 </button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${escapeHtml(mask.yandexMapLink || '')}', '${escapeHtml(mask.googleMapLink || '')}', '${escapeHtml(mask.twoGisLink || '')}'); closeModal();"> style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-directions"></i>
                                     <span>Маршрут</span>
                                 </button>
@@ -3446,12 +3446,7 @@
         }
 
                 // Показать выбор карты для конкретной маски (из карточки)
-                function showMaskMapChooser(lat, lng, maskName, yandexLink, googleLink, twoGisLink) {
-            // Если есть сохранённые ссылки — используем их
-            const yandexUrl = yandexLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
-            const googleUrl = googleLink || `https://www.google.com/maps?q=${lat},${lng}`;
-            const twoGisUrl = twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
-            
+        function showMaskMapChooser(lat, lng, maskName) {
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay">
                     <div class="modal-container" style="max-width: 350px;">
@@ -3461,15 +3456,15 @@
                         </div>
                         <div class="modal-content" style="padding: 20px;">
                             <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
-                            <button class="map-choice-btn" onclick="window.open('${yandexUrl}', '_blank'); closeMaskMapChooser();">
+                            <button class="map-choice-btn" onclick="openYandexMapsForMask(${lat}, ${lng})">
                                 <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
                                 Яндекс.Карты
                             </button>
-                            <button class="map-choice-btn" onclick="window.open('${googleUrl}', '_blank'); closeMaskMapChooser();" style="margin-top: 12px;">
+                            <button class="map-choice-btn" onclick="openGoogleMapsForMask(${lat}, ${lng})" style="margin-top: 12px;">
                                 <i class="fab fa-google" style="color: #4285F4;"></i>
                                 Google Maps
                             </button>
-                            <button class="map-choice-btn" onclick="window.open('${twoGisUrl}', '_blank'); closeMaskMapChooser();" style="margin-top: 12px;">
+                            <button class="map-choice-btn" onclick="open2GISForMask(${lat}, ${lng})" style="margin-top: 12px;">
                                 <i class="fas fa-building" style="color: #00A0E3;"></i>
                                 2GIS
                             </button>
