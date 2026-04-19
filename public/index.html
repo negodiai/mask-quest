@@ -2416,8 +2416,8 @@
                     <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
-                            <div class="mask-image">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                                        <div class="mask-image">
+                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
@@ -2469,10 +2469,10 @@
                 const formattedDate = date.toLocaleDateString('ru-RU');
                 historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
-                        <div class="history-icon-new">
-                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
-                        </div>
+                                                    <div class="history-icon">
+                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
+                            </div>
                         <div class="history-content-new">
                             <h4 class="history-name-new">${escapeHtml(mask.name)}</h4>
                             <p class="history-date-new"><i class="fas fa-calendar"></i> ${formattedDate}</p>
@@ -2978,7 +2978,7 @@
                 let slidesHtml = '';
                 let dotsHtml = '';
                 for (let i = 1; i <= 5; i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
+                                        gallerySlides += `<div class="gallery-slide" style="background-image: url('${mask.photoHash || `/images/${mask.id}.jpg`}');"></div>`;
                     dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
                 }
                 
@@ -3005,8 +3005,8 @@
                         </div>
                         <div class="modal-content">
                             <!-- Главное фото (без onclick) -->
-                            <div class="main-photo">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
+                                                        <div class="main-photo" onclick="openFullscreenExtended(0)">
+                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
                             </div>
                             
                             <!-- Описание -->
