@@ -2139,15 +2139,19 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-        function getMaskImages(maskId) {
-            // Первое фото из папки images
-            const firstImage = `/images/${maskId}.jpg`;
-            // Второе фото (заглушка)
-            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
-            // Третье фото (заглушка)
-            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+                function getMaskImages(maskId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            if (!mask) return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
             
-            return [firstImage, secondImage, thirdImage];
+            const photos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
+            if (photos.length === 0) {
+                return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
+            }
+            // Дополняем до 3 фото, если меньше
+            while (photos.length < 3) {
+                photos.push(photos[0]);
+            }
+            return photos;
         }
         
         let currentGalleryIndex = 0;
@@ -2155,14 +2159,18 @@
         let isFullscreen = false;
         let fullscreenCurrentIndex = 0;
         
-                function renderGallery(maskId, containerId) {
-            const images = getMaskImages(maskId);
-            galleryImages = images;
+                        function renderGallery(maskId, containerId) {
+            const mask = appState.masks.find(m => m.id === maskId);
+            if (!mask) return '<div class="gallery-container">Ошибка загрузки фото</div>';
+            
+            // Собираем фото из полей маски
+            const maskPhotos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
+            const photos = maskPhotos.length > 0 ? maskPhotos : [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
             
             let slidesHtml = '';
             let dotsHtml = '';
             
-            images.forEach((img, index) => {
+            photos.forEach((img, index) => {
                 slidesHtml += `<div class="gallery-slide" style="background-image: url('${img}');"></div>`;
                 dotsHtml += `<div class="gallery-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlide(${index})"></div>`;
             });
@@ -2416,8 +2424,8 @@
                     <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
-                                                                                    <div class="mask-image">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div class="mask-image">
+                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
@@ -2469,10 +2477,10 @@
                 const formattedDate = date.toLocaleDateString('ru-RU');
                 historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
-                                                    <div class="history-icon">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <i class="fas fa-mask" style="display: none; font-size: 24px; color: #3d3d5c;"></i>
-                            </div>
+                        <div class="history-icon-new">
+                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
+                        </div>
                         <div class="history-content-new">
                             <h4 class="history-name-new">${escapeHtml(mask.name)}</h4>
                             <p class="history-date-new"><i class="fas fa-calendar"></i> ${formattedDate}</p>
@@ -2849,12 +2857,12 @@
         }
         
         // Простая информация о маске (для каталога)
-                function showSimpleMaskInfo(maskId) {
+        function showSimpleMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
-            const modalHtml = `
-                <div id="info-modal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+                       const modalHtml = `
+                <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
                         <div class="modal-header">
                             <h2>${escapeHtml(mask.name)}</h2>
@@ -2862,25 +2870,29 @@
                         </div>
                         <div class="modal-content">
                             <div class="main-photo">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
                             </div>
-                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
-                            <div class="action-buttons-small">
+                            <div onclick="openFullscreen(0)">
+                                ${renderGallery(mask.id, 'maskinfo')}
+                            </div>
+                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
                                 </button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                    <i class="fas fa-directions"></i>
-                                    <span>Маршрут</span>
-                                </button>
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+    <i class="fas fa-directions"></i>
+    <span>Маршрут</span>
+</button>
                             </div>
+                            </div>
+                            <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
                     </div>
                 </div>
             `;
+            
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
             
             // Добавляем проверку прокрутки для модального окна
             setTimeout(() => {
@@ -2901,19 +2913,18 @@
                     });
                 }
             }, 100);
+        }
         
         // Расширенная информация о маске (для активированных)
-                                                                function showExtendedMaskInfo(maskId) {
+                   function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
-            if (!mask) {
-                console.error('Маска не найдена:', maskId);
-                return;
-            }
+            if (!mask) return;
             
-            console.log('Открываем карточку активированной маски:', mask.name);
-            console.log('Фото маски:', mask.photoHash);
+            // Сохраняем текущую маску глобально
+            window.currentExtendedMask = mask;
+            window.currentExtendedTab = 'present';
             
-            // Тексты для разных эпох
+            // Тексты для разных эпох (оставляем как есть)
             const texts = {
                 present: `Современный Калининград — это удивительное сочетание европейской архитектуры и российской культуры. Город, который пережил возрождение и стал одним из самых привлекательных туристических центров России.
 
@@ -2966,19 +2977,24 @@
 Сегодня Кафедральный собор — это не только восстановленный памятник архитектуры, но и символ возрождения Калининграда. Он напоминает о богатой истории региона, о трагических событиях прошлого и о надежде на мирное будущее.`
             };
             
+            // Заголовки для разных эпох
             const titles = {
                 present: `Современный Калининград`,
                 ussr: `Советский период (1945-1991)`,
                 past: `Кёнигсберг (1333-1945)`
             };
             
-            // Функция для создания карусели (используем одно и то же фото)
+            // Функция для создания карусели с полнофункциональными фото
             function createGalleryForTab(tabName) {
+                // Собираем фото из полей маски
+                const maskPhotos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
+                const photos = maskPhotos.length > 0 ? maskPhotos : [`/images/${mask.id}.jpg`, `/images/${mask.id}.jpg`, `/images/${mask.id}.jpg`];
+                
                 let slidesHtml = '';
                 let dotsHtml = '';
-                for (let i = 1; i <= 5; i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('${mask.photoHash || `/images/${mask.id}.jpg`}');"></div>`;
-                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
+                for (let i = 0; i < Math.min(photos.length, 5); i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('${photos[i]}');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i})"></div>`;
                 }
                 
                 return `
@@ -2996,23 +3012,23 @@
             }
             
             const modalHtml = `
-                <div id="info-modal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
                         <div class="modal-header">
                             <h2>${escapeHtml(mask.name)}</h2>
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <!-- Главное фото -->
+                            <!-- Главное фото (без onclick) -->
                             <div class="main-photo">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
                             </div>
                             
                             <!-- Описание -->
                             <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                             
                             <!-- Кнопки -->
-                            <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
+                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
@@ -3061,13 +3077,37 @@
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            // Инициализация каруселей
+            // Сохраняем ID маски для полноэкранного режима
+            window.currentFullscreenMaskId = mask.id;
+            
+                        // Инициализация каруселей и кнопки "Наверх"
             setTimeout(() => {
+                // Инициализируем карусели для всех вкладок
                 ['present', 'ussr', 'past'].forEach(tab => {
+                    // Убеждаемся, что глобальные переменные для индексов существуют
+                    if (window[`currentIndex_${tab}`] === undefined) {
+                        window[`currentIndex_${tab}`] = 0;
+                    }
+                    
+                    // Добавляем нажатие на фото для открытия полноэкранного режима
+                    const slides = document.querySelectorAll(`#gallery-container-${tab} .gallery-slide`);
+                    slides.forEach((slide, idx) => {
+                        slide.style.cursor = 'pointer';
+                        slide.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openFullscreenForTab(tab, idx);
+                        });
+                    });
+                    
+                    // Добавляем обработчики свайпа для галереи
                     const container = document.getElementById(`gallery-container-${tab}`);
                     if (container) {
                         let touchStartX = 0;
                         let touchEndX = 0;
+                        
+                        // Удаляем старые обработчики, чтобы не дублировать
+                        container.removeEventListener('touchstart', null);
+                        container.removeEventListener('touchend', null);
                         
                         container.addEventListener('touchstart', (e) => {
                             touchStartX = e.changedTouches[0].screenX;
@@ -3079,15 +3119,116 @@
                             
                             if (Math.abs(deltaX) > 50) {
                                 if (deltaX > 0) {
-                                    prevSlideExtendedTab(tab);
+                                    // Свайп вправо - предыдущее фото
+                                    if (window[`currentIndex_${tab}`] > 0) {
+                                        window[`currentIndex_${tab}`]--;
+                                        const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                        if (slidesEl) {
+                                            slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        }
+                                        updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    }
                                 } else {
-                                    nextSlideExtendedTab(tab);
+                                    // Свайп влево - следующее фото
+                                    if (window[`currentIndex_${tab}`] < 4) {
+                                        window[`currentIndex_${tab}`]++;
+                                        const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                        if (slidesEl) {
+                                            slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        }
+                                        updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    }
                                 }
                             }
                         });
                     }
+                    
+                    // Добавляем обработчики для стрелок
+                    const leftArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-left`);
+                    const rightArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-right`);
+                    
+                    if (leftArrow) {
+                        leftArrow.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window[`currentIndex_${tab}`] > 0) {
+                                window[`currentIndex_${tab}`]--;
+                                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                if (slidesEl) {
+                                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                }
+                                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                            }
+                        };
+                    }
+                    
+                    if (rightArrow) {
+                        rightArrow.onclick = (e) => {
+                            e.stopPropagation();
+                            if (window[`currentIndex_${tab}`] < 4) {
+                                window[`currentIndex_${tab}`]++;
+                                const slidesEl = document.getElementById(`gallery-slides-${tab}`);
+                                if (slidesEl) {
+                                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                }
+                                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                            }
+                        };
+                    }
                 });
-            }, 100);
+                
+                // Кнопка "Наверх" внутри модального окна
+                const modalContainer = document.querySelector('#info-modal .modal-container');
+                if (modalContainer && !document.getElementById('scroll-top-btn-modal')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.id = 'scroll-top-btn-modal';
+                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    scrollBtn.style.cssText = `
+                        position: sticky;
+                        bottom: 20px;
+                        left: calc(100% - 70px);
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 25px;
+                        background: rgba(100, 116, 139, 0.5);
+                        backdrop-filter: blur(4px);
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1001;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                        margin-bottom: 10px;
+                    `;
+                    
+                    scrollBtn.onclick = () => {
+                        modalContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    
+                    scrollBtn.onmouseenter = () => {
+                        scrollBtn.style.transform = 'scale(1.05)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
+                    };
+                    scrollBtn.onmouseleave = () => {
+                        scrollBtn.style.transform = 'scale(1)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
+                    };
+                    
+                    modalContainer.appendChild(scrollBtn);
+                    
+                    modalContainer.addEventListener('scroll', () => {
+                        if (modalContainer.scrollTop > 300) {
+                            scrollBtn.style.display = 'flex';
+                        } else {
+                            scrollBtn.style.display = 'none';
+                        }
+                    });
+                }
+            }, 200);
         }
         
         // Функция для открытия полноэкранного режима из карусели

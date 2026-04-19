@@ -2,37 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { v4: uuidv4 } = require('uuid');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Настройка хранения файлов
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../public/uploads');
-        // Создаём папку если её нет
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB лимит
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Только изображения'), false);
-        }
-    }
-});
 
 const ADMIN_ID = '359839365';
 
@@ -52,7 +21,7 @@ async function checkAdmin(req, res, next) {
 
 router.get('/masks', checkAdmin, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM masks ORDER BY name');
+        const result = await db.query('SELECT *, "photo1", "photo2", "photo3" FROM masks ORDER BY name');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -69,30 +38,27 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
     }
 });
 
-// POST /api/admin/masks - добавить маску с фото
-router.post('/masks', checkAdmin, upload.single('photo'), async (req, res) => {
+// POST /api/admin/masks - добавить маску (черновик)
+router.post('/masks', checkAdmin, async (req, res) => {
     const { 
         name, description, fullDescription, latitude, longitude, address, 
-        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
+        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink,
+        photo1, photo2, photo3
     } = req.body;
     const id = uuidv4();
-    
-    // Обработка загруженного фото
-    let photoHash = null;
-    if (req.file) {
-        photoHash = `/uploads/${req.file.filename}`;
-    }
     
     try {
         await db.query(`
             INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, 
                                address, "qrCode", "priceAmount", "isAvailable", 
-                               "yandexMapLink", "googleMapLink", "twoGisLink", "photoHash")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                               "yandexMapLink", "googleMapLink", "twoGisLink",
+                               "photo1", "photo2", "photo3")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         `, [id, name, description, fullDescription, latitude, longitude, address, 
-            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink, photoHash]);
+            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink,
+            photo1, photo2, photo3]);
         
-        res.json({ success: true, id, message: 'Маска добавлена как черновик', photo: photoHash });
+        res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
         console.error('Add mask error:', err);
         res.status(500).json({ error: err.message });
@@ -112,28 +78,13 @@ router.post('/fix-dates', checkAdmin, async (req, res) => {
     }
 });
 
-// PUT /api/admin/masks/:id - обновить маску с фото
-router.put('/masks/:id', checkAdmin, upload.single('photo'), async (req, res) => {
+// PUT /api/admin/masks/:id - обновить маску
+router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
         name, description, fullDescription, latitude, longitude, address, 
-        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink 
+        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink,
+        photo1, photo2, photo3
     } = req.body;
-    
-    // Получаем текущую маску
-    const currentMask = await db.query('SELECT "photoHash" FROM masks WHERE id = $1', [req.params.id]);
-    let photoHash = currentMask.rows[0]?.photoHash;
-    
-    // Если загружено новое фото
-    if (req.file) {
-        // Удаляем старое фото если есть
-        if (photoHash) {
-            const oldPath = path.join(__dirname, '../public', photoHash);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-        }
-        photoHash = `/uploads/${req.file.filename}`;
-    }
     
     try {
         await db.query(`
@@ -142,13 +93,14 @@ router.put('/masks/:id', checkAdmin, upload.single('photo'), async (req, res) =>
                 latitude = $4, longitude = $5, address = $6, "qrCode" = $7, 
                 "priceAmount" = $8, "isAvailable" = $9, 
                 "yandexMapLink" = $10, "googleMapLink" = $11, "twoGisLink" = $12,
-                "photoHash" = $13
-            WHERE id = $14
+                "photo1" = $13, "photo2" = $14, "photo3" = $15
+            WHERE id = $16
         `, [name, description, fullDescription, latitude, longitude, address, 
             qrCode, priceAmount, isAvailable ? 1 : 0, 
-            yandexMapLink, googleMapLink, twoGisLink, photoHash, req.params.id]);
+            yandexMapLink, googleMapLink, twoGisLink,
+            photo1, photo2, photo3, req.params.id]);
         
-        res.json({ success: true, message: 'Маска обновлена', photo: photoHash });
+        res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
         console.error('Update mask error:', err);
         res.status(500).json({ error: err.message });

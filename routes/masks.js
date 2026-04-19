@@ -82,7 +82,8 @@ const ACTIVATION_RADIUS_METERS = 50;
 router.get('/list', async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT id, name, description, latitude, longitude, "photoHash", "isAvailable", 
+            SELECT id, name, description, latitude, longitude, 
+                   "photo1", "photo2", "photo3", "isAvailable", 
                    "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink"
             FROM masks 
             WHERE "isAvailable" = 1
@@ -95,7 +96,9 @@ router.get('/list', async (req, res) => {
             description: m.description,
             latitude: m.latitude,
             longitude: m.longitude,
-            photoHash: m.photoHash,
+            photo1: m.photo1,
+            photo2: m.photo2,
+            photo3: m.photo3,
             isAvailable: m.isAvailable === 1,
             price: { amount: m.priceAmount, currency: m.priceCurrency || 'RUB' },
             yandexMapLink: m.yandexMapLink,

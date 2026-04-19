@@ -77,7 +77,7 @@ async function initDatabase() {
     
     try {
         // Создаём таблицы с правильными типами
-        await pool.query(`
+                await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -88,6 +88,9 @@ async function initDatabase() {
                 address TEXT,
                 "qrCode" TEXT UNIQUE,
                 "photoHash" TEXT,
+                "photo1" TEXT,
+                "photo2" TEXT,
+                "photo3" TEXT,
                 "activationPhotoHash" TEXT,
                 "audioGuideHash" TEXT,
                 "priceAmount" INTEGER,
@@ -165,6 +168,16 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+                // Миграция: добавляем поля для фото, если их нет
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo1" TEXT`);
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo2" TEXT`);
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo3" TEXT`);
+            console.log('✅ Поля для фото добавлены');
+        } catch (err) {
+            console.log('Миграция фото не требуется:', err.message);
+        }
         
         // Запускаем миграции для преобразования существующих данных
         await runMigrations();
