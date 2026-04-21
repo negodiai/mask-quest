@@ -2417,7 +2417,7 @@
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
                             <div class="mask-image">
-                                <img src="/images/masks/${mask.id}.1.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <img src="/images/masks/${mask.id}.1.jpg" onerror="this.src='/images/mask-placeholder.jpg'; this.onerror=''">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">

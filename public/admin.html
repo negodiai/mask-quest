@@ -645,21 +645,11 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
                 </div>
-                                <div class="form-group">
-                    <label>Фото для каталога (3 шт)</label>
-                    <div id="photos-container">
-                        <div style="margin-bottom: 12px;">
-                            <label>Фото 1 (главное)</label>
-                            <input type="file" id="photo-1" accept="image/*">
-                        </div>
-                        <div style="margin-bottom: 12px;">
-                            <label>Фото 2</label>
-                            <input type="file" id="photo-2" accept="image/*">
-                        </div>
-                        <div style="margin-bottom: 12px;">
-                            <label>Фото 3</label>
-                            <input type="file" id="photo-3" accept="image/*">
-                        </div>
+                                                <div class="form-group">
+                    <label>Фото для каталога (3 шт, выберите несколько файлов)</label>
+                    <input type="file" id="mask-photos" accept="image/*" multiple style="background: #1a1a2e; padding: 8px;">
+                    <small style="color: #64748b;">Выберите до 3 фото. Первое будет главным</small>
+                </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -699,13 +689,13 @@
 
                                     const maskId = result.id;
                     
-                    // Загружаем фото
-                    for (let i = 1; i <= 3; i++) {
-                        const fileInput = document.getElementById(`photo-${i}`);
-                        if (fileInput && fileInput.files.length > 0) {
+                                        // Загружаем фото (до 3 штук)
+                    const photoInput = document.getElementById('mask-photos');
+                    if (photoInput && photoInput.files.length > 0) {
+                        for (let i = 0; i < Math.min(photoInput.files.length, 3); i++) {
                             const formData = new FormData();
-                            formData.append('photo', fileInput.files[0]);
-                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo/${i}?userId=${currentUserId}`, {
+                            formData.append('photo', photoInput.files[i]);
+                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo/${i + 1}?userId=${currentUserId}`, {
                                 method: 'POST',
                                 body: formData
                             });
