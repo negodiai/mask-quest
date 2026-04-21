@@ -14,7 +14,6 @@ const userRoutes = require('./routes/user');
 const seedRoutes = require('./routes/seed');
 const redirectRoutes = require('./routes/redirect');
 const adminRoutes = require('./routes/admin');
-const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,7 +31,6 @@ app.use('/api/user', userRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/scan', redirectRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/upload', uploadRoutes);
 
 // Главная страница
 app.get('/', (req, res) => {

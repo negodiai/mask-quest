@@ -2139,21 +2139,15 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-        async function getMaskImages(maskId) {
-            try {
-                const res = await fetch(`${API_BASE}/upload/mask-photos/${maskId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.photos && data.photos.length > 0) {
-                        console.log(`Загружено ${data.photos.length} фото для маски ${maskId}`);
-                        return data.photos;
-                    }
-                }
-            } catch(e) {
-                console.error('Failed to load photos from server:', e);
-            }
-            // fallback на заглушки из папки images
-            return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
+        function getMaskImages(maskId) {
+            // Первое фото из папки images
+            const firstImage = `/images/${maskId}.jpg`;
+            // Второе фото (заглушка)
+            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
+            // Третье фото (заглушка)
+            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+            
+            return [firstImage, secondImage, thirdImage];
         }
         
         let currentGalleryIndex = 0;
@@ -2161,10 +2155,9 @@
         let isFullscreen = false;
         let fullscreenCurrentIndex = 0;
         
-                async function renderGallery(maskId, containerId) {
-            const images = await getMaskImages(maskId);
+                function renderGallery(maskId, containerId) {
+            const images = getMaskImages(maskId);
             galleryImages = images;
-            currentGalleryIndex = 0;
             
             let slidesHtml = '';
             let dotsHtml = '';
@@ -2424,7 +2417,7 @@
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
                             <div class="mask-image">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <img src="/images/masks/${mask.id}.1.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
@@ -2868,8 +2861,8 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <div id="gallery-container-simple" onclick="openFullscreen(0)">
-                                <!-- галерея будет загружена через JS -->
+                            <div onclick="openFullscreen(0)">
+                                ${renderGallery(mask.id, 'maskinfo')}
                             </div>
                                                         <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
@@ -2889,18 +2882,6 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-                        // Загружаем галерею
-            (async () => {
-                const galleryHtml = await renderGallery(mask.id, 'maskinfo');
-                const galleryContainer = document.querySelector('#info-modal #gallery-container-simple');
-                if (galleryContainer) {
-                    galleryContainer.innerHTML = galleryHtml;
-                    // Перепривязываем обработчики
-                    const container = document.getElementById(`gallery-container-maskinfo`);
-                    if (container) addSwipeToGallery(container);
-                }
-            })();
             
             // Добавляем проверку прокрутки для модального окна
             setTimeout(() => {

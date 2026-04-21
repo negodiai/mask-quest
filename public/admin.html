@@ -590,7 +590,7 @@
             }
         }
         
-                        async function showAddMaskModal() {
+                async function showAddMaskModal() {
             const maskRoutes = allRoutes.map(r => ({ id: r.id, name: r.name, checked: false }));
             
             const routesHtml = maskRoutes.map(route => `
@@ -645,10 +645,22 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
                 </div>
-                <div class="form-group">
-                    <label>Фотографии для каталога (3 шт)</label>
-                    <input type="file" id="mask-photos" accept="image/*" multiple style="background: #1a1a2e; color: white; padding: 8px;">
-                    <small style="color: #64748b;">Выберите до 3 фото. Первое будет основным</small>
+                                <div class="form-group">
+                    <label>Фото для каталога (3 шт)</label>
+                    <div id="photos-container">
+                        <div style="margin-bottom: 12px;">
+                            <label>Фото 1 (главное)</label>
+                            <input type="file" id="photo-1" accept="image/*">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Фото 2</label>
+                            <input type="file" id="photo-2" accept="image/*">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label>Фото 3</label>
+                            <input type="file" id="photo-3" accept="image/*">
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Добавить в маршруты</label>
@@ -662,7 +674,6 @@
                     selectedRoutes.push(cb.value);
                 });
                 
-                // Сначала создаём маску
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
@@ -685,25 +696,24 @@
                 });
                 
                 const result = await res.json();
+
+                                    const maskId = result.id;
+                    
+                    // Загружаем фото
+                    for (let i = 1; i <= 3; i++) {
+                        const fileInput = document.getElementById(`photo-${i}`);
+                        if (fileInput && fileInput.files.length > 0) {
+                            const formData = new FormData();
+                            formData.append('photo', fileInput.files[0]);
+                            await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo/${i}?userId=${currentUserId}`, {
+                                method: 'POST',
+                                body: formData
+                            });
+                        }
+                    }
                 
                 if (res.ok) {
                     const maskId = result.id;
-                    
-                    // Загружаем фото
-                    const photoInput = document.getElementById('mask-photos');
-                    if (photoInput.files.length > 0) {
-                        const formData = new FormData();
-                        for (let i = 0; i < Math.min(photoInput.files.length, 3); i++) {
-                            formData.append('photos', photoInput.files[i]);
-                        }
-                        
-                        await fetch(`${API_BASE}/upload/mask-photos/${maskId}?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
-                    
-                    // Добавляем в маршруты
                     for (const routeId of selectedRoutes) {
                         await fetch(`${API_BASE}/admin/masks/${maskId}/routes/${routeId}?userId=${currentUserId}`, {
                             method: 'POST',
@@ -711,7 +721,6 @@
                             body: JSON.stringify({ order: 0 })
                         });
                     }
-                    
                     showMessage('Маска добавлена как черновик!', 'success');
                     loadMasks().then(() => renderAdminPanel());
                 } else {
@@ -725,20 +734,6 @@
             if (!mask) return;
             
             const maskRoutes = await loadMaskRoutes(id);
-
-                        // Загружаем текущие фото маски
-            let currentPhotosHtml = '';
-            try {
-                const photosRes = await fetch(`${API_BASE}/upload/mask-photos/${id}?userId=${currentUserId}`);
-                const photosData = await photosRes.json();
-                if (photosData.photos && photosData.photos.length > 0) {
-                    currentPhotosHtml = '<div style="margin-bottom: 12px;"><small style="color: #64748b;">Текущие фото:</small><div style="display: flex; gap: 8px; margin-top: 8px;">';
-                    for (const photo of photosData.photos) {
-                        currentPhotosHtml += `<img src="${photo}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">`;
-                    }
-                    currentPhotosHtml += '</div></div>';
-                }
-            } catch(e) {}
             const maskRouteIds = new Set(maskRoutes.map(r => r.id));
             
             const routesHtml = allRoutes.map(route => `
@@ -760,12 +755,6 @@
                 <div class="form-group">
                     <label>Полное описание</label>
                     <textarea id="mask-fullDescription">${escapeHtml(mask.fullDescription || '')}</textarea>
-                </div>
-                                <div class="form-group">
-                    <label>Заменить фотографии (3 шт)</label>
-                    <input type="file" id="mask-photos" accept="image/*" multiple style="background: #1a1a2e; color: white; padding: 8px;">
-                    <small style="color: #64748b;">Выберите до 3 новых фото. Первое станет основным</small>
-                    ${currentPhotosHtml}
                 </div>
                 <div class="form-group">
                     <label>Широта</label>
@@ -833,19 +822,6 @@
                 });
                 
                 if (res.ok) {
-                    // ===== ЗАГРУЖАЕМ НОВЫЕ ФОТО =====
-                    const photoInput = document.getElementById('mask-photos');
-                    if (photoInput && photoInput.files.length > 0) {
-                        const formData = new FormData();
-                        for (let i = 0; i < Math.min(photoInput.files.length, 3); i++) {
-                            formData.append('photos', photoInput.files[i]);
-                        }
-                        
-                        await fetch(`${API_BASE}/upload/mask-photos/${id}?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
                     // Обновляем связи с маршрутами
                     const currentRoutes = maskRouteIds;
                     for (const routeId of selectedRoutes) {

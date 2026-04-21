@@ -2,6 +2,29 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Создаём папку для фото
+const uploadDir = path.join(__dirname, '../public/images/masks');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const maskId = req.params.maskId;
+        const index = req.params.index;
+        const ext = path.extname(file.originalname);
+        cb(null, `${maskId}.${index}${ext}`);
+    }
+});
+
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 const ADMIN_ID = '359839365';
 
@@ -391,6 +414,21 @@ router.delete('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => 
         await db.query('DELETE FROM route_masks WHERE "routeId" = $1 AND "maskId" = $2', 
             [req.params.routeId, req.params.maskId]);
         res.json({ success: true, message: 'Маска удалена из маршрута' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Загрузка фото
+router.post('/masks/:maskId/upload-photo/:index', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        const { maskId, index } = req.params;
+        if (!req.file) return res.status(400).json({ error: 'Нет файла' });
+        
+        if (index === '1') {
+            await db.query(`UPDATE masks SET "photoHash" = $1 WHERE id = $2`, [req.file.filename, maskId]);
+        }
+        res.json({ success: true, filename: req.file.filename });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
