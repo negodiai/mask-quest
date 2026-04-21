@@ -33,7 +33,6 @@ app.use('/api/seed', seedRoutes);
 app.use('/scan', redirectRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/uploads', express.static('uploads'));
 
 // Главная страница
 app.get('/', (req, res) => {

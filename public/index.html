@@ -2139,19 +2139,21 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-                function getMaskImages(maskId) {
-            const mask = appState.masks.find(m => m.id === maskId);
-            if (!mask) return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
-            
-            const photos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
-            if (photos.length === 0) {
-                return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
+        async function getMaskImages(maskId) {
+            try {
+                const res = await fetch(`${API_BASE}/upload/mask-photos/${maskId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.photos && data.photos.length > 0) {
+                        console.log(`Загружено ${data.photos.length} фото для маски ${maskId}`);
+                        return data.photos;
+                    }
+                }
+            } catch(e) {
+                console.error('Failed to load photos from server:', e);
             }
-            // Дополняем до 3 фото, если меньше
-            while (photos.length < 3) {
-                photos.push(photos[0]);
-            }
-            return photos;
+            // fallback на заглушки из папки images
+            return [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
         }
         
         let currentGalleryIndex = 0;
@@ -2159,18 +2161,15 @@
         let isFullscreen = false;
         let fullscreenCurrentIndex = 0;
         
-                        function renderGallery(maskId, containerId) {
-            const mask = appState.masks.find(m => m.id === maskId);
-            if (!mask) return '<div class="gallery-container">Ошибка загрузки фото</div>';
-            
-            // Собираем фото из полей маски
-            const maskPhotos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
-            const photos = maskPhotos.length > 0 ? maskPhotos : [`/images/${maskId}.jpg`, `/images/${maskId}.jpg`, `/images/${maskId}.jpg`];
+                async function renderGallery(maskId, containerId) {
+            const images = await getMaskImages(maskId);
+            galleryImages = images;
+            currentGalleryIndex = 0;
             
             let slidesHtml = '';
             let dotsHtml = '';
             
-            photos.forEach((img, index) => {
+            images.forEach((img, index) => {
                 slidesHtml += `<div class="gallery-slide" style="background-image: url('${img}');"></div>`;
                 dotsHtml += `<div class="gallery-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlide(${index})"></div>`;
             });
@@ -2425,7 +2424,7 @@
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
                             <div class="mask-image">
-                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
@@ -2869,11 +2868,8 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <div class="main-photo">
-                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
-                            </div>
-                            <div onclick="openFullscreen(0)">
-                                ${renderGallery(mask.id, 'maskinfo')}
+                            <div id="gallery-container-simple" onclick="openFullscreen(0)">
+                                <!-- галерея будет загружена через JS -->
                             </div>
                                                         <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
@@ -2893,6 +2889,18 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                        // Загружаем галерею
+            (async () => {
+                const galleryHtml = await renderGallery(mask.id, 'maskinfo');
+                const galleryContainer = document.querySelector('#info-modal #gallery-container-simple');
+                if (galleryContainer) {
+                    galleryContainer.innerHTML = galleryHtml;
+                    // Перепривязываем обработчики
+                    const container = document.getElementById(`gallery-container-maskinfo`);
+                    if (container) addSwipeToGallery(container);
+                }
+            })();
             
             // Добавляем проверку прокрутки для модального окна
             setTimeout(() => {
@@ -2916,7 +2924,7 @@
         }
         
         // Расширенная информация о маске (для активированных)
-                   function showExtendedMaskInfo(maskId) {
+                                                        function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
@@ -2986,15 +2994,11 @@
             
             // Функция для создания карусели с полнофункциональными фото
             function createGalleryForTab(tabName) {
-                // Собираем фото из полей маски
-                const maskPhotos = [mask.photo1, mask.photo2, mask.photo3].filter(p => p && p.trim() !== '');
-                const photos = maskPhotos.length > 0 ? maskPhotos : [`/images/${mask.id}.jpg`, `/images/${mask.id}.jpg`, `/images/${mask.id}.jpg`];
-                
                 let slidesHtml = '';
                 let dotsHtml = '';
-                for (let i = 0; i < Math.min(photos.length, 5); i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('${photos[i]}');"></div>`;
-                    dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i})"></div>`;
+                for (let i = 1; i <= 5; i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
                 }
                 
                 return `
@@ -3021,7 +3025,7 @@
                         <div class="modal-content">
                             <!-- Главное фото (без onclick) -->
                             <div class="main-photo">
-                                <img src="${mask.photo1 || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
                             
                             <!-- Описание -->

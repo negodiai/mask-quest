@@ -88,7 +88,6 @@ async function initDatabase() {
                 address TEXT,
                 "qrCode" TEXT UNIQUE,
                 "photoHash" TEXT,
-                "photo1" TEXT,
                 "photo2" TEXT,
                 "photo3" TEXT,
                 "activationPhotoHash" TEXT,
@@ -168,16 +167,6 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-
-                // Миграция: добавляем поля для фото, если их нет
-        try {
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo1" TEXT`);
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo2" TEXT`);
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo3" TEXT`);
-            console.log('✅ Поля для фото добавлены');
-        } catch (err) {
-            console.log('Миграция фото не требуется:', err.message);
-        }
         
         // Запускаем миграции для преобразования существующих данных
         await runMigrations();
@@ -187,6 +176,15 @@ async function initDatabase() {
         console.error('❌ Ошибка инициализации БД:', error.message);
     }
 }
+
+        // Миграция: добавляем поля photo2 и photo3, если их нет
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo2" TEXT`);
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo3" TEXT`);
+            console.log('✅ Поля photo2 и photo3 добавлены');
+        } catch (err) {
+            console.log('Миграция photo2/photo3 не требуется:', err.message);
+        }
 
 // Получить только опубликованные маски
 async function getPublishedMasks() {

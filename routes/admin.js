@@ -21,7 +21,7 @@ async function checkAdmin(req, res, next) {
 
 router.get('/masks', checkAdmin, async (req, res) => {
     try {
-        const result = await db.query('SELECT *, "photo1", "photo2", "photo3" FROM masks ORDER BY name');
+        const result = await db.query('SELECT * FROM masks ORDER BY name');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -42,8 +42,7 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
         name, description, fullDescription, latitude, longitude, address, 
-        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink,
-        photo1, photo2, photo3
+        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
     } = req.body;
     const id = uuidv4();
     
@@ -51,12 +50,10 @@ router.post('/masks', checkAdmin, async (req, res) => {
         await db.query(`
             INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, 
                                address, "qrCode", "priceAmount", "isAvailable", 
-                               "yandexMapLink", "googleMapLink", "twoGisLink",
-                               "photo1", "photo2", "photo3")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                               "yandexMapLink", "googleMapLink", "twoGisLink")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `, [id, name, description, fullDescription, latitude, longitude, address, 
-            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink,
-            photo1, photo2, photo3]);
+            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -82,8 +79,7 @@ router.post('/fix-dates', checkAdmin, async (req, res) => {
 router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
         name, description, fullDescription, latitude, longitude, address, 
-        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink,
-        photo1, photo2, photo3
+        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink 
     } = req.body;
     
     try {
@@ -92,13 +88,11 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
                 name = $1, description = $2, "fullDescription" = $3, 
                 latitude = $4, longitude = $5, address = $6, "qrCode" = $7, 
                 "priceAmount" = $8, "isAvailable" = $9, 
-                "yandexMapLink" = $10, "googleMapLink" = $11, "twoGisLink" = $12,
-                "photo1" = $13, "photo2" = $14, "photo3" = $15
-            WHERE id = $16
+                "yandexMapLink" = $10, "googleMapLink" = $11, "twoGisLink" = $12
+            WHERE id = $13
         `, [name, description, fullDescription, latitude, longitude, address, 
             qrCode, priceAmount, isAvailable ? 1 : 0, 
-            yandexMapLink, googleMapLink, twoGisLink,
-            photo1, photo2, photo3, req.params.id]);
+            yandexMapLink, googleMapLink, twoGisLink, req.params.id]);
         
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {

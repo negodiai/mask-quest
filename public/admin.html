@@ -219,61 +219,6 @@
         .modal-content {
             padding: 20px;
         }
-
-                .image-preview {
-            display: inline-block;
-            width: 80px;
-            height: 80px;
-            margin: 5px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #1a1a2e;
-            position: relative;
-        }
-        
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .image-preview .remove-image {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 10px;
-            color: white;
-        }
-        
-        .upload-area {
-            border: 2px dashed #2d2d44;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 10px;
-        }
-        
-        .upload-area:hover {
-            border-color: #3B82F6;
-            background: #1a1a2e;
-        }
-        
-        .photos-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
         
         .stat-grid {
             display: grid;
@@ -645,13 +590,7 @@
             }
         }
         
-                        let photo1Url = '';
-        let photo2Url = '';
-        let photo3Url = '';
-        
-                let uploadedPhotos = ['', '', ''];
-        
-        async function showAddMaskModal() {
+                        async function showAddMaskModal() {
             const maskRoutes = allRoutes.map(r => ({ id: r.id, name: r.name, checked: false }));
             
             const routesHtml = maskRoutes.map(route => `
@@ -660,9 +599,6 @@
                     <span>${escapeHtml(route.name)}</span>
                 </label>
             `).join('');
-            
-            // Сбрасываем фото
-            uploadedPhotos = ['', '', ''];
             
             showModal('Добавить маску', `
                 <div class="form-group">
@@ -698,29 +634,22 @@
                     <input type="number" id="mask-priceAmount" placeholder="15000">
                 </div>
                 <div class="form-group">
-                    <label>Ссылка на Яндекс.Карты</label>
+                    <label>Яндекс.Карты (ссылка)</label>
                     <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
                 </div>
                 <div class="form-group">
-                    <label>Ссылка на Google Maps</label>
+                    <label>Google Maps (ссылка)</label>
                     <input type="text" id="mask-googleMapLink" placeholder="https://maps.google.com/...">
                 </div>
                 <div class="form-group">
-                    <label>Ссылка на 2GIS</label>
+                    <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
                 </div>
-                
-                <!-- Загрузка фото (одна кнопка для 3 фото) -->
                 <div class="form-group">
-                    <label>Фотографии (до 3 штук)</label>
-                    <div class="upload-area" onclick="document.getElementById('photos-input').click()">
-                        <i class="fas fa-cloud-upload-alt"></i> Нажмите для загрузки фото (можно выбрать до 3)
-                    </div>
-                    <input type="file" id="photos-input" accept="image/*" multiple style="display: none;" onchange="uploadMultiplePhotos(this)">
-                    <div id="photos-preview" class="photos-container"></div>
-                    <small style="color: #64748b;">Первое фото будет отображаться в карточке каталога</small>
+                    <label>Фотографии для каталога (3 шт)</label>
+                    <input type="file" id="mask-photos" accept="image/*" multiple style="background: #1a1a2e; color: white; padding: 8px;">
+                    <small style="color: #64748b;">Выберите до 3 фото. Первое будет основным</small>
                 </div>
-                
                 <div class="form-group">
                     <label>Добавить в маршруты</label>
                     <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
@@ -733,6 +662,7 @@
                     selectedRoutes.push(cb.value);
                 });
                 
+                // Сначала создаём маску
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
@@ -745,10 +675,7 @@
                     isAvailable: false,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value,
                     googleMapLink: document.getElementById('mask-googleMapLink').value,
-                    twoGisLink: document.getElementById('mask-twoGisLink').value,
-                    photo1: uploadedPhotos[0] || '',
-                    photo2: uploadedPhotos[1] || '',
-                    photo3: uploadedPhotos[2] || ''
+                    twoGisLink: document.getElementById('mask-twoGisLink').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
@@ -761,6 +688,22 @@
                 
                 if (res.ok) {
                     const maskId = result.id;
+                    
+                    // Загружаем фото
+                    const photoInput = document.getElementById('mask-photos');
+                    if (photoInput.files.length > 0) {
+                        const formData = new FormData();
+                        for (let i = 0; i < Math.min(photoInput.files.length, 3); i++) {
+                            formData.append('photos', photoInput.files[i]);
+                        }
+                        
+                        await fetch(`${API_BASE}/upload/mask-photos/${maskId}?userId=${currentUserId}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }
+                    
+                    // Добавляем в маршруты
                     for (const routeId of selectedRoutes) {
                         await fetch(`${API_BASE}/admin/masks/${maskId}/routes/${routeId}?userId=${currentUserId}`, {
                             method: 'POST',
@@ -768,6 +711,7 @@
                             body: JSON.stringify({ order: 0 })
                         });
                     }
+                    
                     showMessage('Маска добавлена как черновик!', 'success');
                     loadMasks().then(() => renderAdminPanel());
                 } else {
@@ -776,80 +720,25 @@
             });
         }
         
-        async function uploadMultiplePhotos(input) {
-            const files = Array.from(input.files);
-            if (files.length > 3) {
-                showMessage('Можно загрузить не более 3 фото', 'error');
-                return;
-            }
-            
-            uploadedPhotos = ['', '', ''];
-            const previewDiv = document.getElementById('photos-preview');
-            previewDiv.innerHTML = '';
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append('photo', file);
-                
-                try {
-                    const res = await fetch(`${API_BASE}/upload/photo`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await res.json();
-                    if (result.success) {
-                        uploadedPhotos[i] = result.url;
-                        
-                        // Показываем превью
-                        const previewHtml = `
-                            <div class="image-preview" data-index="${i}">
-                                <img src="${result.url}">
-                                <div class="remove-image" onclick="removeUploadedPhoto(${i})">✕</div>
-                                ${i === 0 ? '<div style="position: absolute; bottom: 2px; left: 2px; background: #3B82F6; padding: 2px 4px; border-radius: 4px; font-size: 8px;">Главное</div>' : ''}
-                            </div>
-                        `;
-                        previewDiv.insertAdjacentHTML('beforeend', previewHtml);
-                    }
-                } catch (err) {
-                    console.error('Upload error:', err);
-                    showMessage('Ошибка загрузки фото', 'error');
-                }
-            }
-        }
-        
-        function removeUploadedPhoto(index) {
-            uploadedPhotos[index] = '';
-            const previewDiv = document.getElementById('photos-preview');
-            const previews = previewDiv.querySelectorAll('.image-preview');
-            if (previews[index]) {
-                previews[index].remove();
-            }
-            // Переиндексируем оставшиеся
-            const remaining = Array.from(previewDiv.querySelectorAll('.image-preview'));
-            const newPhotos = uploadedPhotos.filter(p => p !== '');
-            uploadedPhotos = [...newPhotos, '', '', ''].slice(0, 3);
-            // Обновляем метки
-            remaining.forEach((el, idx) => {
-                el.setAttribute('data-index', idx);
-                const label = el.querySelector('div');
-                if (idx === 0 && label) {
-                    if (!label.innerText.includes('Главное')) {
-                        label.innerText = 'Главное';
-                    }
-                }
-            });
-        }
-        
-                        async function editMask(id) {
+                async function editMask(id) {
             const mask = masks.find(m => m.id === id);
             if (!mask) return;
             
-            // Загружаем текущие фото маски
-            uploadedPhotos = [mask.photo1 || '', mask.photo2 || '', mask.photo3 || ''];
-            
             const maskRoutes = await loadMaskRoutes(id);
+
+                        // Загружаем текущие фото маски
+            let currentPhotosHtml = '';
+            try {
+                const photosRes = await fetch(`${API_BASE}/upload/mask-photos/${id}?userId=${currentUserId}`);
+                const photosData = await photosRes.json();
+                if (photosData.photos && photosData.photos.length > 0) {
+                    currentPhotosHtml = '<div style="margin-bottom: 12px;"><small style="color: #64748b;">Текущие фото:</small><div style="display: flex; gap: 8px; margin-top: 8px;">';
+                    for (const photo of photosData.photos) {
+                        currentPhotosHtml += `<img src="${photo}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">`;
+                    }
+                    currentPhotosHtml += '</div></div>';
+                }
+            } catch(e) {}
             const maskRouteIds = new Set(maskRoutes.map(r => r.id));
             
             const routesHtml = allRoutes.map(route => `
@@ -858,20 +747,6 @@
                     <span>${escapeHtml(route.name)}</span>
                 </label>
             `).join('');
-            
-            // Создаём превью для существующих фото
-            let previewsHtml = '';
-            for (let i = 0; i < uploadedPhotos.length; i++) {
-                if (uploadedPhotos[i]) {
-                    previewsHtml += `
-                        <div class="image-preview" data-index="${i}">
-                            <img src="${uploadedPhotos[i]}">
-                            <div class="remove-image" onclick="removeUploadedPhoto(${i})">✕</div>
-                            ${i === 0 ? '<div style="position: absolute; bottom: 2px; left: 2px; background: #3B82F6; padding: 2px 4px; border-radius: 4px; font-size: 8px;">Главное</div>' : ''}
-                        </div>
-                    `;
-                }
-            }
             
             showModal('Редактировать маску', `
                 <div class="form-group">
@@ -885,6 +760,12 @@
                 <div class="form-group">
                     <label>Полное описание</label>
                     <textarea id="mask-fullDescription">${escapeHtml(mask.fullDescription || '')}</textarea>
+                </div>
+                                <div class="form-group">
+                    <label>Заменить фотографии (3 шт)</label>
+                    <input type="file" id="mask-photos" accept="image/*" multiple style="background: #1a1a2e; color: white; padding: 8px;">
+                    <small style="color: #64748b;">Выберите до 3 новых фото. Первое станет основным</small>
+                    ${currentPhotosHtml}
                 </div>
                 <div class="form-group">
                     <label>Широта</label>
@@ -918,20 +799,6 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}">
                 </div>
-                
-                <!-- Загрузка фото -->
-                <div class="form-group">
-                    <label>Фотографии (до 3 штук)</label>
-                    <div class="upload-area" onclick="document.getElementById('photos-input-edit').click()">
-                        <i class="fas fa-cloud-upload-alt"></i> Нажмите для загрузки фото (можно выбрать до 3)
-                    </div>
-                    <input type="file" id="photos-input-edit" accept="image/*" multiple style="display: none;" onchange="uploadMultiplePhotosEdit(this)">
-                    <div id="photos-preview-edit" class="photos-container">
-                        ${previewsHtml}
-                    </div>
-                    <small style="color: #64748b;">Первое фото будет отображаться в карточке каталога</small>
-                </div>
-                
                 <div class="form-group">
                     <label>Добавить в маршруты</label>
                     <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
@@ -956,10 +823,7 @@
                     isAvailable: mask.isAvailable,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value,
                     googleMapLink: document.getElementById('mask-googleMapLink').value,
-                    twoGisLink: document.getElementById('mask-twoGisLink').value,
-                    photo1: uploadedPhotos[0] || '',
-                    photo2: uploadedPhotos[1] || '',
-                    photo3: uploadedPhotos[2] || ''
+                    twoGisLink: document.getElementById('mask-twoGisLink').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
@@ -969,6 +833,19 @@
                 });
                 
                 if (res.ok) {
+                    // ===== ЗАГРУЖАЕМ НОВЫЕ ФОТО =====
+                    const photoInput = document.getElementById('mask-photos');
+                    if (photoInput && photoInput.files.length > 0) {
+                        const formData = new FormData();
+                        for (let i = 0; i < Math.min(photoInput.files.length, 3); i++) {
+                            formData.append('photos', photoInput.files[i]);
+                        }
+                        
+                        await fetch(`${API_BASE}/upload/mask-photos/${id}?userId=${currentUserId}`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }
                     // Обновляем связи с маршрутами
                     const currentRoutes = maskRouteIds;
                     for (const routeId of selectedRoutes) {
@@ -993,86 +870,6 @@
                     showMessage('Ошибка обновления', 'error');
                 }
             });
-        }
-        
-        async function uploadMultiplePhotosEdit(input) {
-            const files = Array.from(input.files);
-            if (files.length > 3) {
-                showMessage('Можно загрузить не более 3 фото', 'error');
-                return;
-            }
-            
-            // Загружаем новые фото
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append('photo', file);
-                
-                try {
-                    const res = await fetch(`${API_BASE}/upload/photo`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await res.json();
-                    if (result.success) {
-                        // Добавляем в первый свободный слот
-                        let added = false;
-                        for (let j = 0; j < uploadedPhotos.length; j++) {
-                            if (!uploadedPhotos[j]) {
-                                uploadedPhotos[j] = result.url;
-                                added = true;
-                                break;
-                            }
-                        }
-                        if (!added && uploadedPhotos.length < 3) {
-                            uploadedPhotos.push(result.url);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Upload error:', err);
-                    showMessage('Ошибка загрузки фото', 'error');
-                }
-            }
-            
-            // Обновляем превью
-            const previewDiv = document.getElementById('photos-preview-edit');
-            previewDiv.innerHTML = '';
-            for (let i = 0; i < uploadedPhotos.length; i++) {
-                if (uploadedPhotos[i]) {
-                    const previewHtml = `
-                        <div class="image-preview" data-index="${i}">
-                            <img src="${uploadedPhotos[i]}">
-                            <div class="remove-image" onclick="removeUploadedPhotoEdit(${i})">✕</div>
-                            ${i === 0 ? '<div style="position: absolute; bottom: 2px; left: 2px; background: #3B82F6; padding: 2px 4px; border-radius: 4px; font-size: 8px;">Главное</div>' : ''}
-                        </div>
-                    `;
-                    previewDiv.insertAdjacentHTML('beforeend', previewHtml);
-                }
-            }
-        }
-        
-        function removeUploadedPhotoEdit(index) {
-            uploadedPhotos[index] = '';
-            // Сдвигаем фото, чтобы не было пустых мест
-            const newPhotos = uploadedPhotos.filter(p => p !== '');
-            uploadedPhotos = [...newPhotos, '', '', ''].slice(0, 3);
-            
-            // Обновляем превью
-            const previewDiv = document.getElementById('photos-preview-edit');
-            previewDiv.innerHTML = '';
-            for (let i = 0; i < uploadedPhotos.length; i++) {
-                if (uploadedPhotos[i]) {
-                    const previewHtml = `
-                        <div class="image-preview" data-index="${i}">
-                            <img src="${uploadedPhotos[i]}">
-                            <div class="remove-image" onclick="removeUploadedPhotoEdit(${i})">✕</div>
-                            ${i === 0 ? '<div style="position: absolute; bottom: 2px; left: 2px; background: #3B82F6; padding: 2px 4px; border-radius: 4px; font-size: 8px;">Главное</div>' : ''}
-                        </div>
-                    `;
-                    previewDiv.insertAdjacentHTML('beforeend', previewHtml);
-                }
-            }
         }
         
         async function deleteMask(id) {
