@@ -12,63 +12,7 @@ const pool = new Pool({
     ssl: databaseUrl ? { rejectUnauthorized: false } : false
 });
 
-// Функция для выполнения миграций
-async function runMigrations() {
-    try {
-        // Проверяем и преобразуем поле activatedAt из TEXT в TIMESTAMP
-        const columnCheck = await pool.query(`
-            SELECT data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'user_activations' AND column_name = 'activatedAt'
-        `);
-        
-        if (columnCheck.rows.length > 0 && columnCheck.rows[0].data_type === 'text') {
-            console.log('🔄 Миграция: преобразуем activatedAt из TEXT в TIMESTAMP');
-            
-            // Создаем временную колонку с типом TIMESTAMP
-            await pool.query(`ALTER TABLE user_activations ADD COLUMN IF NOT EXISTS "activatedAt_new" TIMESTAMP`);
-            
-            // Копируем данные с преобразованием
-            await pool.query(`
-                UPDATE user_activations 
-                SET "activatedAt_new" = TO_TIMESTAMP("activatedAt", 'YYYY-MM-DD HH24:MI:SS') 
-                WHERE "activatedAt" IS NOT NULL AND "activatedAt" != ''
-            `);
-            
-            // Удаляем старую колонку и переименовываем новую
-            await pool.query(`ALTER TABLE user_activations DROP COLUMN "activatedAt"`);
-            await pool.query(`ALTER TABLE user_activations RENAME COLUMN "activatedAt_new" TO "activatedAt"`);
-            
-            console.log('✅ Миграция activatedAt завершена');
-        }
-        
-        // Аналогично для completedAt в user_route_progress
-        const columnCheck2 = await pool.query(`
-            SELECT data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'user_route_progress' AND column_name = 'completedAt'
-        `);
-        
-        if (columnCheck2.rows.length > 0 && columnCheck2.rows[0].data_type === 'text') {
-            console.log('🔄 Миграция: преобразуем completedAt из TEXT в TIMESTAMP');
-            
-            await pool.query(`ALTER TABLE user_route_progress ADD COLUMN IF NOT EXISTS "completedAt_new" TIMESTAMP`);
-            await pool.query(`
-                UPDATE user_route_progress 
-                SET "completedAt_new" = TO_TIMESTAMP("completedAt", 'YYYY-MM-DD HH24:MI:SS') 
-                WHERE "completedAt" IS NOT NULL AND "completedAt" != ''
-            `);
-            await pool.query(`ALTER TABLE user_route_progress DROP COLUMN "completedAt"`);
-            await pool.query(`ALTER TABLE user_route_progress RENAME COLUMN "completedAt_new" TO "completedAt"`);
-            
-            console.log('✅ Миграция completedAt завершена');
-        }
-    } catch (err) {
-        console.log('Миграция не требуется или ошибка:', err.message);
-    }
-}
-
-// Инициализация таблиц
+// Функция инициализации таблиц (будет вызвана позже)
 async function initDatabase() {
     if (!databaseUrl) {
         console.log('⚠️ База данных не настроена, пропускаем инициализацию');
@@ -76,8 +20,8 @@ async function initDatabase() {
     }
     
     try {
-        // Создаём таблицы с правильными типами
-                await pool.query(`
+        // Создание таблиц
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS masks (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -168,23 +112,11 @@ async function initDatabase() {
             )
         `);
         
-        // Запускаем миграции для преобразования существующих данных
-        await runMigrations();
-        
         console.log('✅ База данных PostgreSQL инициализирована');
     } catch (error) {
         console.error('❌ Ошибка инициализации БД:', error.message);
     }
 }
-
-        // Миграция: добавляем поля photo2 и photo3, если их нет
-        try {
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo2" TEXT`);
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photo3" TEXT`);
-            console.log('✅ Поля photo2 и photo3 добавлены');
-        } catch (err) {
-            console.log('Миграция photo2/photo3 не требуется:', err.message);
-        }
 
 // Получить только опубликованные маски
 async function getPublishedMasks() {
@@ -192,6 +124,7 @@ async function getPublishedMasks() {
     return result.rows;
 }
 
+// Запускаем инициализацию (без top-level await)
 initDatabase();
 
 module.exports = pool;

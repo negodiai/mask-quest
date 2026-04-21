@@ -9,7 +9,6 @@ const { v4: uuidv4 } = require('uuid');
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const uploadDir = path.join(__dirname, '../public/uploads');
-        // Создаём папку, если её нет
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -21,7 +20,6 @@ const storage = multer.diskStorage({
     }
 });
 
-// Фильтр для проверки типа файла
 const fileFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -37,7 +35,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ 
     storage: storage,
     fileFilter: fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB лимит
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // Загрузка нескольких фото для маски
@@ -51,19 +49,11 @@ router.post('/mask-photos/:maskId', upload.array('photos', 3), async (req, res) 
         
         const photoUrls = req.files.map(file => `/uploads/${file.filename}`);
         
-        // Сохраняем фото в базе данных
+        // Подключаем базу внутри запроса
         const db = require('../database');
         
-        // Получаем текущие фото маски
-        const maskResult = await db.query('SELECT "photoHash", "photo2", "photo3" FROM masks WHERE id = $1', [maskId]);
-        
-        if (maskResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Маска не найдена' });
-        }
-        
-        // Обновляем фото (первое фото - photoHash, остальные - photo2, photo3)
         const updateData = {
-            photoHash: photoUrls[0] || maskResult.rows[0].photoHash,
+            photoHash: photoUrls[0] || null,
             photo2: photoUrls[1] || null,
             photo3: photoUrls[2] || null
         };
@@ -105,6 +95,7 @@ router.get('/mask-photos/:maskId', async (req, res) => {
         
         res.json({ photos });
     } catch (err) {
+        console.error('Get photos error:', err);
         res.status(500).json({ error: err.message });
     }
 });
