@@ -6,25 +6,88 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Создаём папку для фото
-const uploadDir = path.join(__dirname, '../public/images/masks');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
+// Настройка хранилища для фото
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '../public/images');
+        // Создаём папку, если её нет
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        const maskId = req.params.maskId;
-        const index = req.params.index;
+        const maskId = req.params.id;
         const ext = path.extname(file.originalname);
-        cb(null, `${maskId}.${index}${ext}`);
+        cb(null, `${maskId}${ext}`);
     }
 });
 
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images are allowed'));
+        }
+    }
+});
+
+// Эндпоинт для загрузки фото маски
+router.post('/masks/:id/upload', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const maskId = req.params.id;
+        const ext = path.extname(req.file.filename);
+        const photoHash = `${maskId}${ext}`;
+        
+        // Обновляем запись в базе данных
+        await db.query(`
+            UPDATE masks SET "photoHash" = $1 WHERE id = $2
+        `, [photoHash, maskId]);
+        
+        res.json({ 
+            success: true, 
+            message: 'Фото загружено', 
+            photoUrl: `/images/${photoHash}` 
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Эндпоинт для удаления фото маски
+router.delete('/masks/:id/photo', checkAdmin, async (req, res) => {
+    try {
+        const maskId = req.params.id;
+        
+        // Получаем текущий photoHash
+        const result = await db.query('SELECT "photoHash" FROM masks WHERE id = $1', [maskId]);
+        const photoHash = result.rows[0]?.photoHash;
+        
+        if (photoHash) {
+            // Удаляем файл
+            const filePath = path.join(__dirname, '../public/images', photoHash);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+        
+        // Обновляем запись в базе
+        await db.query('UPDATE masks SET "photoHash" = NULL WHERE id = $1', [maskId]);
+        
+        res.json({ success: true, message: 'Фото удалено' });
+    } catch (err) {
+        console.error('Delete photo error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 const ADMIN_ID = '359839365';
 
@@ -61,18 +124,13 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
     }
 });
 
+// POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
         name, description, fullDescription, latitude, longitude, address, 
         qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
     } = req.body;
     const id = uuidv4();
-    
-    // Генерируем уникальный QR-код, если не указан
-    let finalQrCode = qrCode;
-    if (!finalQrCode) {
-        finalQrCode = `MASK_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    }
     
     try {
         await db.query(`
@@ -81,7 +139,7 @@ router.post('/masks', checkAdmin, async (req, res) => {
                                "yandexMapLink", "googleMapLink", "twoGisLink")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `, [id, name, description, fullDescription, latitude, longitude, address, 
-            finalQrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
+            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -419,21 +477,6 @@ router.delete('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => 
         await db.query('DELETE FROM route_masks WHERE "routeId" = $1 AND "maskId" = $2', 
             [req.params.routeId, req.params.maskId]);
         res.json({ success: true, message: 'Маска удалена из маршрута' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Загрузка фото
-router.post('/masks/:maskId/upload-photo/:index', checkAdmin, upload.single('photo'), async (req, res) => {
-    try {
-        const { maskId, index } = req.params;
-        if (!req.file) return res.status(400).json({ error: 'Нет файла' });
-        
-        if (index === '1') {
-            await db.query(`UPDATE masks SET "photoHash" = $1 WHERE id = $2`, [req.file.filename, maskId]);
-        }
-        res.json({ success: true, filename: req.file.filename });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
