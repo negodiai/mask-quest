@@ -72,6 +72,15 @@
             margin-bottom: 12px;
             min-height: 120px;
         }
+
+                /* Текст внутри карточки каталога */
+        .card-text-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;  /* Текст прижимается к верху */
+            padding-left: 8px;            /* Сдвиг вправо */
+            margin-top: -4px;              /* Подъём вверх (отрицательный отступ) */
+        }
         
         .progress-section {
             background: #1a1a2e;
@@ -2419,7 +2428,7 @@
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
-                            <div style="flex: 1;">
+                            <div class="card-text-content">
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
                                 <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
                             </div>
