@@ -143,9 +143,9 @@ app.get('/m/:maskId', (req, res) => {
                 <h1>НЕГОДЯЙ</h1>
                 <p class="subtitle">Туристический квест по Калининграду</p>
                 <div class="buttons">
-                    <a href="https://t.me/negodiai_bot/app?startapp=mask_${maskId}" class="btn btn-telegram">
-                        <i class="fab fa-telegram"></i> Открыть в Telegram
-                    </a>
+                    <a href="https://t.me/negodiai_quest_bot/app?startapp=mask_${maskId}" class="btn btn-telegram">
+    <i class="fab fa-telegram"></i> Открыть в Telegram
+</a>
                     <a href="https://vk.com/negodiai?w=appXXXX#mask_${maskId}" class="btn btn-vk">
                         <i class="fab fa-vk"></i> Открыть в VK
                     </a>

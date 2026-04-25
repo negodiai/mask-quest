@@ -2567,8 +2567,8 @@
                         </div>
                         
                         <div id="activation-form">
-                            <button class="btn btn-primary" onclick="startQRScan()">
-    <i class="fas fa-qrcode"></i> Отсканировать QR-код маски
+                            <button class="btn btn-primary" onclick="startQRScan()" style="margin-bottom: 20px;">
+    <i class="fas fa-qrcode"></i> Отсканировать QR-код
 </button>
                         </div>
                         
@@ -2593,25 +2593,47 @@
 
                                 let html5QrCode = null;
         
-        function startQRScan() {
-            console.log('=== ЗАПУСК СКАНЕРА (html5-qrcode) ===');
+                        function startQRScan() {
+            console.log('=== ЗАПУСК СКАНЕРА ===');
             
             const scannerContainer = document.getElementById('qr-scanner-container');
             if (!scannerContainer) {
-                console.error('Контейнер сканера не найден');
+                alert('Ошибка: контейнер сканера не найден');
                 return;
             }
             
             scannerContainer.classList.add('active');
             
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    startScanner();
-                }).catch(() => startScanner());
-            } else {
-                startScanner();
+            // Используем простой input для выбора файла (как fallback)
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        scannerContainer.classList.remove('active');
+                        // Здесь можно добавить распознавание QR из картинки
+                        alert('Распознавание QR из изображения пока в разработке');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+            
+            // Обработчик закрытия
+            const closeBtn = document.querySelector('#qr-scanner-container .scanner-close');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    scannerContainer.classList.remove('active');
+                };
             }
+        }
             
             function startScanner() {
                 html5QrCode = new Html5Qrcode("qr-reader");
@@ -2640,7 +2662,6 @@
                     closeQRScanner();
                 });
             }
-        }
         
         function closeQRScanner() {
             const scannerContainer = document.getElementById('qr-scanner-container');
