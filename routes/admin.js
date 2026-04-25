@@ -396,4 +396,17 @@ router.delete('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => 
     }
 });
 
+router.post('/set-mask-numbers', checkAdmin, async (req, res) => {
+    try {
+        const masks = await db.query('SELECT id FROM masks ORDER BY created_at');
+        for (let i = 0; i < masks.rows.length; i++) {
+            await db.query('UPDATE masks SET number = $1 WHERE id = $2', [i + 1, masks.rows[i].id]);
+        }
+        res.json({ success: true, message: `Маскам присвоены номера 1-${masks.rows.length}` });
+    } catch (err) {
+        console.error('Set mask numbers error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

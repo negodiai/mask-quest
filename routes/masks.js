@@ -82,15 +82,16 @@ const ACTIVATION_RADIUS_METERS = 50;
 router.get('/list', async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT id, name, description, latitude, longitude, "photoHash", "isAvailable", 
+            SELECT id, number, name, description, latitude, longitude, "photoHash", "isAvailable", 
                    "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink"
             FROM masks 
             WHERE "isAvailable" = 1
-            ORDER BY name
+            ORDER BY number ASC
         `);
         
         const safeMasks = result.rows.map(m => ({
             id: m.id,
+            number: m.number,
             name: m.name,
             description: m.description,
             latitude: m.latitude,

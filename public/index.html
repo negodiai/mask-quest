@@ -2645,7 +2645,7 @@
             }
         }
         
-        function handleQRScan(scannedText) {
+                function handleQRScan(scannedText) {
             console.log('Обработка QR:', scannedText);
             
             if (!scannedText) {
@@ -2653,28 +2653,28 @@
                 return;
             }
             
-            // Извлекаем ID маски из URL
-            let maskId = null;
+            // Извлекаем номер маски из URL
+            let maskNumber = null;
             
-            // Пробуем извлечь из URL вида https://domain.com/m/17
-            const urlMatch = scannedText.match(/\/m\/(\d+|[a-f0-9\-]+)/);
+            // Пробуем извлечь из URL вида https://domain.com/m/1
+            const urlMatch = scannedText.match(/\/m\/(\d+)/);
             if (urlMatch) {
-                maskId = urlMatch[1];
-            } else {
-                // Если просто ID
-                maskId = scannedText;
+                maskNumber = parseInt(urlMatch[1]);
+            } else if (!isNaN(parseInt(scannedText))) {
+                // Если просто число
+                maskNumber = parseInt(scannedText);
             }
             
-            if (!maskId) {
-                showToast('Неверный QR-код маски', 'error');
+            if (!maskNumber) {
+                showToast('Неверный QR-код маски. Нужен номер маски.', 'error');
                 return;
             }
             
-            console.log('ID маски для активации:', maskId);
-            activateMaskByQR(maskId);
+            console.log('Номер маски для активации:', maskNumber);
+            activateMaskByQR(maskNumber);
         }
         
-                async function activateMaskByQR(maskId) {
+                        async function activateMaskByQR(maskNumber) {
             showToast('Проверка маски...', 'info');
             
             try {
@@ -2685,18 +2685,18 @@
                 const masksRes = await fetch(`${API_BASE}/masks/list`);
                 const masks = await masksRes.json();
                 
-                // Ищем маску по ID или QR-коду
-                let mask = masks.find(m => m.id === maskId || m.qrCode === maskId);
+                console.log('Доступные маски:', masks);
+                console.log('Ищем маску с номером:', maskNumber);
                 
-                // Если не нашли по ID, пробуем найти по числовому ID
-                if (!mask && !isNaN(maskId)) {
-                    mask = masks.find(m => m.id === `mask_${maskId}` || m.qrCode === `MASK_${maskId}`);
-                }
+                // Ищем маску по номеру (number)
+                const mask = masks.find(m => m.number == maskNumber);
                 
                 if (!mask) {
-                    showToast('Маска с таким QR-кодом не найдена', 'error');
+                    showToast(`Маска с номером ${maskNumber} не найдена`, 'error');
                     return;
                 }
+                
+                console.log('Найдена маска:', mask);
                 
                 const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
                     method: 'POST',
@@ -2723,13 +2723,10 @@
                     await loadInitialData();
                 } else {
                     showToast(result.message, 'error');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-                    }
                 }
             } catch (error) {
                 console.error('Activation error:', error);
-                showToast('Ошибка активации. Попробуйте снова.', 'error');
+                showToast('Ошибка активации', 'error');
             }
         }
         

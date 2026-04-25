@@ -99,6 +99,14 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+                // Добавляем поле number, если его нет
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS number INTEGER`);
+            console.log('✅ Поле number добавлено в таблицу masks');
+        } catch (err) {
+            console.log('Поле number уже существует или ошибка:', err.message);
+        }
         
         await pool.query(`
             CREATE TABLE IF NOT EXISTS routes (
@@ -127,6 +135,10 @@ async function initDatabase() {
                 FOREIGN KEY ("maskId") REFERENCES masks(id) ON DELETE CASCADE,
                 UNIQUE("routeId", "maskId")
             )
+        `);
+
+                await pool.query(`
+            ALTER TABLE masks ADD COLUMN IF NOT EXISTS number INTEGER
         `);
         
         await pool.query(`
