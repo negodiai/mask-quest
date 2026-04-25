@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>НЕГОДЯЙ - Туристический квест по Калининграду</title>
+    <title>Underground Mask - Калининградский квест</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <!-- Яндекс.Карты API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=5f1366e2-a11d-413e-b05a-165bce31ed4a&lang=ru_RU"></script>
     <style>
         * {
             margin: 0;
@@ -51,9 +53,10 @@
             color: #fff;
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            color: white;
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #3B82F6;
+            color: #3B82F6;
         }
         
         .btn:disabled {
@@ -132,13 +135,41 @@
         }
         
         .menu-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e2e8f0;
-        }
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;  /* светло-серый */
+}
         
-        .menu-item:hover .menu-label {
-            color: #ffffff;
+        .menu-desc {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }  
+      
+        .map-choice-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px;
+            background: #252542;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .map-choice-btn:hover {
+            background: #2d2d54;
+            transform: translateY(-2px);
+        }
+
+        .map-choice-btn i {
+            font-size: 24px;
         }
         
         .page-title {
@@ -159,11 +190,6 @@
             margin-bottom: 16px;
             cursor: pointer;
             overflow: hidden;
-        }
-        
-        .route-card.completed-route {
-            border: 1px solid #10B981;
-            background: #1a2e1a;
         }
         
         .route-image {
@@ -194,8 +220,31 @@
             color: #94a3b8;
             margin-bottom: 12px;
         }
+
+                .route-card.completed-route {
+            border: 1px solid #10B981;
+            background: #1a2e1a;
+        }
         
-        .qr-icon {
+        .completed-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: #10B981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .completed-badge i {
+            font-size: 14px;
+            color: white;
+        }
+        
+        .activate-icon {
             width: 80px;
             height: 80px;
             background: linear-gradient(135deg, #10B981, #059669);
@@ -206,11 +255,37 @@
             margin: 0 auto 24px;
         }
         
-        .qr-icon i {
+        .activate-icon i {
             font-size: 36px;
             color: white;
         }
+
+                .activated-mask-card {
+            border: 1px solid #10B981;
+            background: #1a2e1a;
+            position: relative;
+        }
         
+        .mask-completed-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 28px;
+            height: 28px;
+            background: #10B981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .mask-completed-badge i {
+            font-size: 12px;
+            color: white;
+        }
+        
+        /* Стили для уведомлений */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -260,6 +335,28 @@
                 opacity: 1;
                 transform: translateX(-50%) translateY(0);
             }
+        }
+        
+        .status-message {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background: #1a2e1a;
+            color: #10B981;
+        }
+        
+        .status-error {
+            background: #2e1a1a;
+            color: #EF4444;
+        }
+        
+        .status-info {
+            background: #1a1a2e;
+            color: #3B82F6;
         }
         
         .back-button {
@@ -480,6 +577,19 @@
             overflow-y: auto;
         }
         
+        .modal-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .modal-container::-webkit-scrollbar-track {
+            background: #2d2d44;
+        }
+        
+        .modal-container::-webkit-scrollbar-thumb {
+            background: #3B82F6;
+            border-radius: 4px;
+        }
+        
         .modal-header {
             padding: 20px;
             border-bottom: 1px solid #2d2d44;
@@ -520,6 +630,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        
+        .main-photo i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 64px;
+            color: #3B82F6;
         }
         
         .price-block {
@@ -578,6 +697,15 @@
             object-fit: cover;
         }
         
+        .gallery-item i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 24px;
+            color: #3d3d5c;
+        }
+        
         .history-text {
             background: #252542;
             border-radius: 16px;
@@ -586,13 +714,107 @@
             color: #94a3b8;
             font-size: 14px;
             margin-top: 16px;
+        }      
+        
+        /* Анимация для свайпа */
+        .swipe-container {
+            touch-action: pan-y pinch-zoom;
         }
         
-        .mask-completed-badge i {
-            font-size: 12px;
+        .swipe-transition {
+            transition: transform 0.3s ease;
+        }
+        
+        .swipe-back {
+            transform: translateX(100%);
+        }
+
+        #app {
+            transition: transform 0.3s ease;
+            min-height: 100vh;
+        }
+
+                #app {
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            will-change: transform;
+        }
+
+                /* Для анимации свайпа */
+        #app {
+            overflow-x: hidden;
+        }
+
+                /* Кнопка "Наверх" */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: rgba(100, 116, 139, 0.5);
+            backdrop-filter: blur(4px);
+            border: none;
             color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
         }
         
+        .scroll-top-btn:hover {
+            transform: scale(1.05);
+            background: rgba(100, 116, 139, 0.7);
+        }
+        
+        .scroll-top-btn.show {
+            display: flex;
+        }
+
+                               /* Кнопка фильтра в маршрутах */
+        .filter-btn {
+            background: transparent;
+            border: none;
+            border-radius: 30px;
+            width: 40px;
+            height: 40px;
+            color: #94a3b8;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .filter-btn.filter-all {
+            color: #ffffff;
+        }
+        
+        .filter-btn.filter-completed {
+            color: #10B981;
+        }
+        
+        .filter-btn.filter-uncompleted {
+            color: #64748b;
+        }
+        
+        .route-header-with-filter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .route-header-with-filter h1 {
+            margin: 0;
+        }
+
+                /* Кликабельная карточка */
         .clickable-card {
             cursor: pointer;
             transition: all 0.2s ease;
@@ -602,51 +824,8 @@
             transform: translateY(-2px);
             background: #2d2d54;
         }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .badge-draft {
-            background: #F59E0B;
-            color: #1a1a2e;
-        }
-        
-        .badge-published {
-            background: #10B981;
-            color: white;
-        }
-        
-        .map-choice-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 16px;
-            background: #252542;
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .map-choice-btn:hover {
-            background: #2d2d54;
-            transform: translateY(-2px);
-        }
-        
-        .map-choice-btn i {
-            font-size: 24px;
-        }
-        
+
+                                       /* Маленькие кнопки в модальном окне */
         .action-buttons-small {
             display: flex;
             gap: 12px;
@@ -664,21 +843,6 @@
             border-radius: 10px;
             font-weight: 500;
             font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex: 1;
-        }
-        
-        .btn-small-catalog {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
             flex: 1;
@@ -719,45 +883,66 @@
         .btn-secondary-small:hover {
             background: #3d3d5c;
         }
-        
-        .filter-btn {
-            background: transparent;
-            border: none;
-            border-radius: 30px;
-            width: 40px;
-            height: 40px;
-            color: #94a3b8;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
+
+                .btn-success-small {
+            background: #10B981;
+            color: white;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 4px;
+            text-align: center;
         }
         
-        .filter-btn.filter-all {
-            color: #ffffff;
+        .btn-success-small i {
+            font-size: 18px;
+            margin-bottom: 2px;
         }
         
-        .filter-btn.filter-completed {
-            color: #10B981;
+        .btn-success-small .price-text {
+            font-size: 11px;
+            opacity: 0.9;
+            font-weight: normal;
         }
         
-        .filter-btn.filter-uncompleted {
-            color: #64748b;
+        .btn-success-small span {
+            display: block;
+        }
+
+                /* Принудительные стили для кнопки Купить */
+        .btn-success-small {
+            background: #10B981 !important;
+            color: white !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            text-align: center !important;
+            padding: 10px 20px !important;
         }
         
-        .route-header-with-filter {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
+        .btn-success-small .btn-top-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
         }
         
-        .route-header-with-filter h1 {
-            margin: 0;
+        .btn-success-small i {
+            font-size: 16px !important;
+            margin: 0 !important;
         }
         
+        .btn-success-small .price-text {
+            font-size: 11px !important;
+            opacity: 0.9 !important;
+            font-weight: normal !important;
+            display: block !important;
+        }
+
+                /* Галерея в карточке маски */
         .gallery-container {
             position: relative;
             width: 100%;
@@ -836,6 +1021,7 @@
             right: 10px;
         }
         
+        /* Полноэкранный просмотр фото */
         .fullscreen-modal {
             position: fixed;
             top: 0;
@@ -946,20 +1132,276 @@
             font-size: 14px;
             z-index: 2010;
         }
-        
-        .clickable-card {
+
+                /* Новые стили для карточек истории активаций (как в локациях) */
+        .history-item-new {
+            display: flex;
+            gap: 16px;
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         
-        .clickable-card:hover {
+        .history-item-new:hover {
+            background: #2d2d54;
+            transform: translateY(-2px);
+        }
+        
+        .history-icon-new {
+            width: 100px;
+            height: 100px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-left: 0;
+        }
+        
+        .history-icon-new img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .history-icon-new i {
+            font-size: 32px;
+            color: #3d3d5c;
+        }
+        
+        .history-content-new {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .history-name-new {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #fff;
+        }
+        
+        .history-date-new {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0;
+        }
+        
+        .history-date-new i {
+            margin-right: 6px;
+        }
+
+                /* Маленькие кнопки в модальном окне (как в каталоге) */
+        .btn-small-catalog {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .btn-small-catalog:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+                /* Стили для окна поддержки */
+        .support-contact-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .support-contact-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #2563EB, #1d4ed8);
+        }
+        
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .info-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        
+        .info-icon {
+            width: 36px;
+            height: 36px;
+            background: #252542;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .info-icon i {
+            font-size: 18px;
+            color: #3B82F6;
+        }
+        
+        .info-text {
+            flex: 1;
+        }
+        
+        .info-text strong {
+            display: block;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .info-text span {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.4;
+            display: block;
+        }
+
+                        /* Стили для достижений */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .achievement-card {
+            background: #252542;
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+            aspect-ratio: 1 / 1;
+            justify-content: center;
+        }
+        
+        .achievement-card.unlocked {
+            background: #1a2e1a;
+            border: 1px solid #10B981;
+        }
+        
+        .achievement-card.locked {
+            background: #1a1a2e;
+            opacity: 0.7;
+        }
+        
+        .achievement-card:hover {
             transform: translateY(-2px);
             background: #2d2d54;
+        }
+        
+        .achievement-card.unlocked:hover {
+            background: #1a3a1a;
+        }
+        
+        .achievement-icon {
+            width: 56px;
+            height: 56px;
+            background: #1a1a2e;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .achievement-card.unlocked .achievement-icon i {
+            color: #F59E0B;
+        }
+        
+        .achievement-card.locked .achievement-icon i {
+            color: #3d3d5c;
+        }
+        
+        .achievement-info {
+            width: 100%;
+        }
+        
+        .achievement-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .achievement-desc {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.3;
+        }
+        
+        .achievement-status {
+            font-size: 18px;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+        
+        .achievement-card {
+            position: relative;
+        }
+        
+        .achievement-reward-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .achievement-reward-btn:hover {
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #D97706, #B45309);
         }
     </style>
 </head>
 <body>
-    <div id="app">
+        <div id="app">
         <div class="spinner"></div>
     </div>
     
@@ -982,21 +1424,94 @@
             progress: { activatedMasks: 0, totalMasks: 0, completedRoutes: 0, totalRoutes: 0 },
             activations: []
         };
+                let currentFilter = 'all'; // all, completed, uncompleted
+                        let currentMaskFilter = 'all'; // all, activated, notactivated
+                                let currentAchievementFilter = 'all'; // all, unlocked, locked
+
+                                // === ДАННЫЕ ДОСТИЖЕНИЙ ===
+        let userAchievements = {
+            firstMask: false,
+            threeMasks: false,
+            fiveMasks: false,
+            dozenMasks: false,
+            fiftyMasks: false,
+            hundredMasks: false,
+            twoFiftyMasks: false,
+            fiveHundredMasks: false,
+            firstRoute: false,
+            threeRoutes: false,
+            sixRoutes: false,
+            tenRoutes: false,
+            fifteenRoutes: false,
+            twentyFourRoutes: false,
+            photographer: false,
+            historian: false,
+            modernist: false,
+            epochExplorer: false,
+            audioLover: false,
+            negodjai: false
+        };
         
+                        const achievementsList = [
+            { id: 'firstMask', name: 'Первая маска', icon: 'fa-star', condition: '1', type: 'mask', description: 'Первый шаг в мире НЕГОДЯЙ', requirement: 'Активировать 1 маску', special: false },
+            { id: 'threeMasks', name: 'Знакомство с городом', icon: 'fa-city', condition: '3', type: 'mask', description: 'Вы начали исследовать Калининград', requirement: 'Активировать 3 маски', special: false },
+            { id: 'fiveMasks', name: 'Любознательный турист', icon: 'fa-binoculars', condition: '5', type: 'mask', description: 'Уже полпути к первой дюжине', requirement: 'Активировать 5 масок', special: false },
+            { id: 'dozenMasks', name: 'Первая дюжина', icon: 'fa-list', condition: '12', type: 'mask', description: 'Дюжина масок собрана!', requirement: 'Активировать 12 масок', special: false },
+            { id: 'fiftyMasks', name: 'Полтинник', icon: 'fa-chart-line', condition: '50', type: 'mask', description: 'Серьёзный результат!', requirement: 'Активировать 50 масок', special: false },
+            { id: 'hundredMasks', name: 'Первая сотня', icon: 'fa-gem', condition: '100', type: 'mask', description: 'Настоящий коллекционер!', requirement: 'Активировать 100 масок', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'twoFiftyMasks', name: 'Исследователь', icon: 'fa-compass', condition: '250', type: 'mask', description: 'Вы знаете город как свои пять пальцев', requirement: 'Активировать 250 масок', special: false },
+            { id: 'fiveHundredMasks', name: 'Легенда', icon: 'fa-crown', condition: '500', type: 'mask', description: 'Все маски города покорились вам!', requirement: 'Активировать 500 масок', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'firstRoute', name: 'Первый маршрут', icon: 'fa-route', condition: '1', type: 'route', description: 'Первое путешествие завершено', requirement: 'Пройти 1 маршрут', special: false },
+            { id: 'threeRoutes', name: 'Любитель прогулок', icon: 'fa-person-walking', condition: '3', type: 'route', description: 'Вы уже профи в городских прогулках', requirement: 'Пройти 3 маршрута', special: false },
+            { id: 'sixRoutes', name: 'Опытный путешественник', icon: 'fa-map', condition: '6', type: 'route', description: 'Половина маршрутов позади', requirement: 'Пройти 6 маршрутов', special: false },
+            { id: 'tenRoutes', name: 'Мастер маршрутов', icon: 'fa-trophy', condition: '10', type: 'route', description: 'Десятка! Почти всё позади', requirement: 'Пройти 10 маршрутов', special: true, reward: 'Похвастаться негодяю' },
+            { id: 'fifteenRoutes', name: 'Покоритель города', icon: 'fa-mountain-city', condition: '15', type: 'route', description: 'Осталось совсем немного', requirement: 'Пройти 15 маршрутов', special: false },
+            { id: 'twentyFourRoutes', name: 'Король маршрутов', icon: 'fa-crown', condition: '24', type: 'route', description: 'Все маршруты завершены!', requirement: 'Пройти 24 маршрута', special: true, reward: 'Запросить подарок-маску' },
+            { id: 'photographer', name: 'Фотограф', icon: 'fa-camera', condition: '10', type: 'photo', description: 'Вы не просто проходите, а запоминаете', requirement: 'Сделать фото 10 масок', special: false },
+            { id: 'historian', name: 'Историк', icon: 'fa-landmark', condition: 'all', type: 'past', description: 'Интерес к истории города', requirement: 'Активировать все маски категории "Прошлое"', special: false },
+            { id: 'modernist', name: 'Современник', icon: 'fa-building', condition: 'all', type: 'present', description: 'Ценитель современности', requirement: 'Активировать все маски категории "Настоящее"', special: false },
+            { id: 'epochExplorer', name: 'Исследователь эпох', icon: 'fa-clock', condition: 'both', type: 'epoch', description: 'Мастер всех времён', requirement: 'Получить достижения "Историк" и "Современник"', special: false },
+            { id: 'audioLover', name: 'Аудиолюбитель', icon: 'fa-headphones', condition: '10', type: 'audio', description: 'Любите слушать истории', requirement: 'Прослушать 10 аудиогидов', special: false },
+            { id: 'negodjai', name: 'НЕГОДЯЙ', icon: 'fa-mask', condition: 'all', type: 'final', description: 'Абсолютный чемпион!', requirement: 'Получить все достижения', special: true, reward: 'Похвастаться негодяю' }
+        ];
+        
+        // Функция для показа всплывающего уведомления
         let toastTimeout = null;
         
         function showToast(message, type = 'success') {
+            // Удаляем предыдущее уведомление
             const existingToast = document.querySelector('.toast-notification');
-            if (existingToast) existingToast.remove();
-            if (toastTimeout) clearTimeout(toastTimeout);
+            if (existingToast) {
+                existingToast.remove();
+            }
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
             
+            // Создаём новое уведомление
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `<span>${message}</span>`;
+            
+            // Выбираем иконку в зависимости от типа
+            let icon = '';
+            if (type === 'success') {
+                icon = '<i class="fas fa-check-circle" style="font-size: 18px;"></i>';
+            } else if (type === 'error') {
+                icon = '<i class="fas fa-exclamation-circle" style="font-size: 18px;"></i>';
+            } else if (type === 'warning') {
+                icon = '<i class="fas fa-exclamation-triangle" style="font-size: 18px;"></i>';
+            } else {
+                icon = '<i class="fas fa-info-circle" style="font-size: 18px;"></i>';
+            }
+            
+            toast.innerHTML = `${icon} <span>${message}</span>`;
             document.body.appendChild(toast);
             
+            // Автоматически удаляем через 3 секунды
             toastTimeout = setTimeout(() => {
-                if (toast && toast.remove) toast.remove();
+                if (toast && toast.remove) {
+                    toast.remove();
+                }
             }, 3000);
         }
         
@@ -1006,10 +1521,11 @@
                 const tg = window.Telegram.WebApp;
                 tg.ready();
                 tg.expand();
-                
-                if (typeof tg.disableVerticalSwipes === 'function') {
-                    tg.disableVerticalSwipes();
-                }
+                           
+                // Отключаем сворачивание приложения свайпом вниз
+            if (typeof tg.disableVerticalSwipes === 'function') {
+                tg.disableVerticalSwipes();
+            }
                 
                 const user = tg.initDataUnsafe?.user;
                 if (user && user.id) {
@@ -1026,13 +1542,15 @@
         }
         
         // Загрузка начальных данных
-        async function loadInitialData() {
+                async function loadInitialData() {
             await Promise.all([
                 loadProgress(),
                 loadMasks(),
                 loadRoutes(),
                 loadActivations()
             ]);
+            loadUserAchievements();
+            checkAchievements();
             render();
         }
         
@@ -1046,11 +1564,17 @@
             }
         }
         
-        async function loadMasks() {
+                       async function loadMasks() {
             try {
                 const res = await fetch(`${API_BASE}/masks/list`);
                 const data = await res.json();
                 console.log('Загружено масок:', data.length);
+                console.log('Пример маски:', data[0]);
+                console.log('Ссылки на карты в первой маске:', {
+                    yandex: data[0]?.yandexMapLink,
+                    google: data[0]?.googleMapLink,
+                    twoGis: data[0]?.twoGisLink
+                });
                 appState.masks = data;
             } catch (e) {
                 console.error('Failed to load masks:', e);
@@ -1076,144 +1600,323 @@
                 console.error('Failed to load activations:', e);
             }
         }
+
+                // Функция для получения отфильтрованных маршрутов
+        function getFilteredRoutes() {
+            if (currentFilter === 'all') {
+                return appState.routes;
+            } else if (currentFilter === 'completed') {
+                return appState.routes.filter(route => route.isCompleted === true);
+            } else if (currentFilter === 'uncompleted') {
+                return appState.routes.filter(route => route.isCompleted === false);
+            }
+            return appState.routes;
+        }
         
+        // Функция для переключения фильтра
+        function cycleFilter() {
+            if (currentFilter === 'all') {
+                currentFilter = 'completed';
+                showToast('Показаны пройденные маршруты', 'info');
+            } else if (currentFilter === 'completed') {
+                currentFilter = 'uncompleted';
+                showToast('Показаны непройденные маршруты', 'info');
+            } else if (currentFilter === 'uncompleted') {
+                currentFilter = 'all';
+                showToast('Показаны все маршруты', 'info');
+            }
+            renderRoutesList();
+            render(); // Перерисовываем страницу
+        }
+
+                // === СИСТЕМА ДОСТИЖЕНИЙ ===
+                // === СИСТЕМА ДОСТИЖЕНИЙ ===
+        function checkAchievements() {
+            const activatedCount = appState.activations.length;
+            const completedRoutesCount = appState.progress.completedRoutes;
+            let changed = false;
+            
+            // Подсчёт масок по категориям (для историка и современника)
+            // Для демо: считаем, что маски 1-5 относятся к "Прошлому", 6-10 к "Настоящему"
+            const pastMasks = ['mask_1', 'mask_2', 'mask_3', 'mask_4', 'mask_5'];
+            const presentMasks = ['mask_6', 'mask_7', 'mask_8', 'mask_9', 'mask_10'];
+            
+            const activatedMaskIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            
+            const pastActivated = pastMasks.filter(id => activatedMaskIds.has(id)).length;
+            const presentActivated = presentMasks.filter(id => activatedMaskIds.has(id)).length;
+            const totalPast = pastMasks.length;
+            const totalPresent = presentMasks.length;
+            
+            // Фотограф: считаем, что у каждой маски есть фото (для демо)
+            const hasPhotos = activatedCount >= 10;
+            
+            // Аудиолюбитель: для демо, считаем что после 10 активаций есть аудиогиды
+            const hasAudio = activatedCount >= 10;
+            
+            // Маски
+            if (activatedCount >= 1 && !userAchievements.firstMask) { userAchievements.firstMask = true; changed = true; showAchievementToast('Первая маска'); }
+            if (activatedCount >= 3 && !userAchievements.threeMasks) { userAchievements.threeMasks = true; changed = true; showAchievementToast('Знакомство с городом'); }
+            if (activatedCount >= 5 && !userAchievements.fiveMasks) { userAchievements.fiveMasks = true; changed = true; showAchievementToast('Любознательный турист'); }
+            if (activatedCount >= 12 && !userAchievements.dozenMasks) { userAchievements.dozenMasks = true; changed = true; showAchievementToast('Первая дюжина'); }
+            if (activatedCount >= 50 && !userAchievements.fiftyMasks) { userAchievements.fiftyMasks = true; changed = true; showAchievementToast('Полтинник'); }
+            if (activatedCount >= 100 && !userAchievements.hundredMasks) { userAchievements.hundredMasks = true; changed = true; showAchievementToast('Первая сотня', true); }
+            if (activatedCount >= 250 && !userAchievements.twoFiftyMasks) { userAchievements.twoFiftyMasks = true; changed = true; showAchievementToast('Исследователь'); }
+            if (activatedCount >= 500 && !userAchievements.fiveHundredMasks) { userAchievements.fiveHundredMasks = true; changed = true; showAchievementToast('Легенда', true); }
+            
+            // Маршруты
+            if (completedRoutesCount >= 1 && !userAchievements.firstRoute) { userAchievements.firstRoute = true; changed = true; showAchievementToast('Первый маршрут'); }
+            if (completedRoutesCount >= 3 && !userAchievements.threeRoutes) { userAchievements.threeRoutes = true; changed = true; showAchievementToast('Любитель прогулок'); }
+            if (completedRoutesCount >= 6 && !userAchievements.sixRoutes) { userAchievements.sixRoutes = true; changed = true; showAchievementToast('Опытный путешественник'); }
+            if (completedRoutesCount >= 10 && !userAchievements.tenRoutes) { userAchievements.tenRoutes = true; changed = true; showAchievementToast('Мастер маршрутов', true); }
+            if (completedRoutesCount >= 15 && !userAchievements.fifteenRoutes) { userAchievements.fifteenRoutes = true; changed = true; showAchievementToast('Покоритель города'); }
+            if (completedRoutesCount >= 24 && !userAchievements.twentyFourRoutes) { userAchievements.twentyFourRoutes = true; changed = true; showAchievementToast('Король маршрутов', true); }
+            
+            // Фотограф (10 масок с фото)
+            if (hasPhotos && !userAchievements.photographer) { 
+                userAchievements.photographer = true; 
+                changed = true; 
+                showAchievementToast('Фотограф'); 
+            }
+            
+            // Историк (все маски из категории "Прошлое")
+            if (pastActivated === totalPast && totalPast > 0 && !userAchievements.historian) { 
+                userAchievements.historian = true; 
+                changed = true; 
+                showAchievementToast('Историк'); 
+            }
+            
+            // Современник (все маски из категории "Настоящее")
+            if (presentActivated === totalPresent && totalPresent > 0 && !userAchievements.modernist) { 
+                userAchievements.modernist = true; 
+                changed = true; 
+                showAchievementToast('Современник'); 
+            }
+            
+            // Исследователь эпох (есть и Историк, и Современник)
+            if (userAchievements.historian && userAchievements.modernist && !userAchievements.epochExplorer) { 
+                userAchievements.epochExplorer = true; 
+                changed = true; 
+                showAchievementToast('Исследователь эпох'); 
+            }
+            
+            // Аудиолюбитель (10 аудиогидов)
+            if (hasAudio && !userAchievements.audioLover) { 
+                userAchievements.audioLover = true; 
+                changed = true; 
+                showAchievementToast('Аудиолюбитель'); 
+            }
+            
+            // НЕГОДЯЙ (все достижения)
+            const allAchievements = Object.keys(userAchievements);
+            const allUnlocked = allAchievements.every(key => userAchievements[key] === true);
+            if (allUnlocked && allAchievements.length >= 19 && !userAchievements.negodjai) {
+                userAchievements.negodjai = true;
+                changed = true;
+                showAchievementToast('НЕГОДЯЙ', true);
+            }
+            
+            // Сохраняем достижения в localStorage
+            if (changed) {
+                localStorage.setItem(`achievements_${currentUserId}`, JSON.stringify(userAchievements));
+            }
+        }
+        
+                function showAchievementToast(achievementName, isSpecial = false) {
+            // Показываем уведомление только на главном экране
+            if (currentPage !== 'main') {
+                // Сохраняем в localStorage, что есть непрочитанное достижение
+                localStorage.setItem(`pending_achievement_${currentUserId}`, achievementName);
+                if (isSpecial) {
+                    localStorage.setItem(`pending_achievement_special_${currentUserId}`, 'true');
+                }
+                return;
+            }
+            
+            // Показываем уведомление
+            let message = 'Новое достижение';
+            showToast(message, 'success');
+            
+            // Если есть особое достижение, показываем дополнительное уведомление
+            if (isSpecial) {
+                setTimeout(() => {
+                    showToast('Нажми на достижение, чтобы похвастаться!', 'info');
+                }, 3000);
+            }
+        }
+        
+        // Функция для проверки непрочитанных достижений при загрузке главного экрана
+        function checkPendingAchievements() {
+            const pending = localStorage.getItem(`pending_achievement_${currentUserId}`);
+            if (pending) {
+                setTimeout(() => {
+                    showToast('Новое достижение', 'success');
+                    const isSpecial = localStorage.getItem(`pending_achievement_special_${currentUserId}`);
+                    if (isSpecial === 'true') {
+                        setTimeout(() => {
+                            showToast('Нажми на достижение, чтобы похвастаться!', 'info');
+                        }, 3000);
+                    }
+                }, 1000);
+                // Очищаем после показа
+                localStorage.removeItem(`pending_achievement_${currentUserId}`);
+                localStorage.removeItem(`pending_achievement_special_${currentUserId}`);
+            }
+        }
+        
+        function loadUserAchievements() {
+            const saved = localStorage.getItem(`achievements_${currentUserId}`);
+            if (saved) {
+                userAchievements = JSON.parse(saved);
+            }
+        }
+        
+                function showAchievementInfo(achievementId) {
+            const ach = achievementsList.find(a => a.id === achievementId);
+            if (!ach) return;
+            
+            const isUnlocked = userAchievements[achievementId];
+            const statusText = isUnlocked ? '✅ Получено' : '⚪ Не получено';
+            const statusColor = isUnlocked ? '#10B981' : '#64748b';
+            
+            let rewardButton = '';
+            if (isUnlocked && ach.special) {
+                rewardButton = `
+                    <button class="achievement-reward-btn" onclick="contactAdminForAchievement('${ach.name}')">
+                        <i class="fas fa-share-alt"></i> ${ach.reward}
+                    </button>
+                `;
+            }
+            
+            const modalHtml = `
+                <div id="achievement-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2><i class="fas ${ach.icon}" style="margin-right: 8px;"></i> ${ach.name}</h2>
+                            <button class="close-btn" onclick="closeAchievementModal()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">
+                                <i class="fas ${ach.icon}" style="color: ${isUnlocked ? '#F59E0B' : '#3d3d5c'}"></i>
+                            </div>
+                            <p style="color: #94a3b8; margin-bottom: 8px;">${ach.description}</p>
+                            <p style="color: #64748b; font-size: 11px; margin-bottom: 16px;">${ach.requirement}</p>
+                            <p style="color: ${statusColor}; font-weight: 600; margin-bottom: 16px;">${statusText}</p>
+                            ${rewardButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        
+        function closeAchievementModal() {
+            const modal = document.getElementById('achievement-modal');
+            if (modal) modal.remove();
+        }
+        
+        function contactAdminForAchievement(achievementName) {
+            const message = `Я получил достижение "${achievementName}" в квесте НЕГОДЯЙ! Хочу похвастаться!`;
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.openTelegramLink(`https://t.me/undergroundmask_support?text=${encodeURIComponent(message)}`);
+            } else {
+                alert(`Поддержка: @undergroundmask_support в Telegram`);
+            }
+            closeAchievementModal();
+        }
+        
+        // Навигация
         function navigate(page, params = {}) {
             currentPage = page;
             if (params.routeId) currentRouteId = params.routeId;
             render();
         }
         
-        // === АКТИВАЦИЯ ПО QR-КОДУ ===
-        async function activateMaskByQR(maskId) {
-            console.log('=== АКТИВАЦИЯ ПО QR ===');
-            console.log('ID маски из QR:', maskId);
-            
-            if (!maskId) {
-                showToast('Не удалось распознать код маски', 'error');
+        // Активация маски с новыми уведомлениями
+        async function activateMask() {
+            if (!navigator.geolocation) {
+                showToast('Геолокация не поддерживается', 'error');
                 return;
             }
             
-            showToast('Проверка маски...', 'info');
+            showToast('Определение местоположения...', 'info');
             
-            try {
-                const tg = window.Telegram?.WebApp;
-                const user = tg?.initDataUnsafe?.user || {};
-                
-                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: currentUserId,
-                        maskId: maskId,
-                        telegramData: {
-                            chatId: user.id,
-                            username: user.username,
-                            firstName: user.first_name
-                        }
-                    })
-                });
-                
-                const result = await response.json();
-                console.log('Результат активации:', result);
-                
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    }
-                    showActivatedMask(result.mask);
-                    await loadInitialData();
-                    navigate('main');
-                } else {
-                    showToast(result.message, 'error');
-                    if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-                    }
-                }
-            } catch (error) {
-                console.error('Activation error:', error);
-                showToast('Ошибка активации. Попробуйте снова.', 'error');
-            }
-        }
-        
-                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
-        function startQRScan() {
-            console.log('startQRScan вызван');
-            
-            if (!window.Telegram?.WebApp) {
-                showToast('Это приложение работает только в Telegram', 'error');
-                return;
-            }
-            
-            const tg = window.Telegram.WebApp;
-            
-            // Проверяем поддержку сканера
-            if (!tg.showScanQrPopup && !tg.openScanQrPopup) {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
-                console.log('Сканер не поддерживается');
-                return;
-            }
-            
-            showToast('Наведите камеру на QR-код', 'info');
-            
-            // Используем современный метод showScanQrPopup
-            if (tg.showScanQrPopup) {
-                tg.showScanQrPopup((scannedText) => {
-                    console.log('Отсканировано (showScanQrPopup):', scannedText);
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код', 'error');
-                        return true;
-                    }
-                    processScannedQR(scannedText);
-                    return true;
-                }, (error) => {
-                    console.error('Ошибка сканера:', error);
-                    showToast('Ошибка запуска сканера', 'error');
-                });
-            }
-            // fallback на старый метод
-            else if (tg.openScanQrPopup) {
-                tg.openScanQrPopup({
-                    text: 'Наведите камеру на QR-код маски'
-                }, (scannedText) => {
-                    console.log('Отсканировано (openScanQrPopup):', scannedText);
-                    if (!scannedText) {
-                        showToast('Не удалось распознать код', 'error');
-                        return;
-                    }
-                    processScannedQR(scannedText);
-                });
-            }
-        }
-        
-        function processScannedQR(scannedText) {
-            console.log('processScannedQR:', scannedText);
-            
-            let maskId = null;
-            
-            // Парсим ID маски из ссылки вида https://domain.com/m/17
-            if (scannedText.includes('/m/')) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
                 try {
-                    const url = new URL(scannedText);
-                    const pathParts = url.pathname.split('/');
-                    maskId = pathParts[pathParts.length - 1];
+                    const tg = window.Telegram?.WebApp;
+                    const user = tg?.initDataUnsafe?.user || {};
+                    
+                    const res = await fetch(`${API_BASE}/masks/activate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: currentUserId,
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            telegramData: {
+                                chatId: user.id,
+                                username: user.username,
+                                firstName: user.first_name
+                            }
+                        })
+                    });
+                    
+                                        const result = await res.json();
+                    console.log('Результат активации:', result);
+                    
+                    if (result.success) {
+    // Успешная активация
+    showToast(`Вы успешно активировали маску!`, 'success');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+    // Показываем контент маски
+    showActivatedMask(result.mask);
+    await loadInitialData();
+} else if (result.error === 'already_activated') {
+    // Уже активирована
+    showToast(`Вы уже активировали эту маску!`, 'warning');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+    }
+} else if (result.error === 'too_far') {
+    // Слишком далеко
+    showToast(`Вы слишком далеко (${result.distance}м). Подойдите ближе (в радиусе 30м)`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else if (result.error === 'no_mask_nearby') {
+    // Нет маски рядом
+    showToast(`Рядом нет масок!`, 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+} else {
+    showToast(result.message || 'Ошибка активации', 'error');
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+}
                 } catch (e) {
-                    maskId = scannedText;
+                    console.error('Activation error:', e);
+                    showToast('Ошибка активации. Попробуйте еще раз.', 'error');
                 }
-            } else {
-                maskId = scannedText;
-            }
-            
-            console.log('ID маски после парсинга:', maskId);
-            
-            if (maskId) {
-                activateMaskByQR(maskId);
-            } else {
-                showToast('Не удалось определить маску', 'error');
-            }
+            }, (error) => {
+                let message = 'Не удалось определить местоположение';
+                if (error.code === error.PERMISSION_DENIED) {
+                    message = 'Разрешите доступ к геолокации в настройках';
+                }
+                showToast(message, 'error');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000
+            });
         }
         
-        function showActivatedMask(mask) {
+        let lastActivatedMask = null;
+        
+                function showActivatedMask(mask) {
+            // Показываем карточку активированной маски
             const successDiv = document.getElementById('activation-success');
             const formDiv = document.getElementById('activation-form');
             if (successDiv && formDiv) {
@@ -1230,6 +1933,7 @@
         }
         
         function resetActivation() {
+            lastActivatedMask = null;
             const successDiv = document.getElementById('activation-success');
             const formDiv = document.getElementById('activation-form');
             if (successDiv && formDiv) {
@@ -1244,79 +1948,109 @@
             const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
             const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
             
+            // Проверяем непрочитанные достижения при загрузке главного экрана
             checkPendingAchievements();
+    
+    return `
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 24px;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;" ondblclick="location.href='/admin.html'">
+                            <img src="/images/logo.png" alt="НЕГОДЯЙ" style="max-width: 100%; height: auto; width: 200px; cursor: pointer;" onerror="this.style.display='none'">
+                        </div>
+                <p style="font-size: 14px; color: #64748b; margin-top: 8px;">Туристический квест по Калининграду</p>
+            </div>
             
-            return `
-                <div class="container">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;" ondblclick="location.href='/admin.html'">
-                            <img src="/images/logo.png" alt="НЕГОДЯЙ" style="max-width: 100%; height: auto; width: 200px;" onerror="this.style.display='none'">
-                        </div>
-                        <p style="font-size: 14px; color: #64748b; margin-top: 8px;">Туристический квест по Калининграду</p>
-                    </div>
-                    
-                    <div class="progress-section">
-                        <div class="progress-header">
-                            <span>Активированные маски</span>
-                            <span>${progress.activatedMasks} из ${progress.totalMasks}</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${masksPercent}%; background: #10B981;"></div>
-                        </div>
-                        <div class="progress-header" style="margin-top: 12px;">
-                            <span>Пройденные маршруты</span>
-                            <span>${progress.completedRoutes} из ${progress.totalRoutes}</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${routesPercent}%; background: #8B5CF6;"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="menu-grid">
-                        <button class="menu-item" onclick="showMapChooser()">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);"><i class="fas fa-map-marked-alt"></i></div>
-                            <div class="menu-label">Вся карта</div>
-                        </button>
-                        <button class="menu-item" onclick="navigate('routes')">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"><i class="fas fa-route"></i></div>
-                            <div class="menu-label">Маршруты</div>
-                        </button>
-                        <button class="menu-item" onclick="navigate('catalog')">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
-                            <div class="menu-label">Локации</div>
-                        </button>
-                        <button class="menu-item" onclick="navigate('activate')">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
-                            <div class="menu-label">Активировать маску</div>
-                        </button>
-                        <button class="menu-item" onclick="navigate('achievements')">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-trophy"></i></div>
-                            <div class="menu-label">Достижения</div>
-                        </button>
-                        <button class="menu-item" onclick="openSupport()">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-headset"></i></div>
-                            <div class="menu-label">Поддержка</div>
-                        </button>
-                    </div>
-                    
-                    <!-- Политика конфиденциальности внизу -->
-                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #2d2d44;">
-                        <a href="#" onclick="showPrivacyPopup(); return false;" style="color: #64748b; font-size: 12px; text-decoration: none;">Политика конфиденциальности</a>
-                    </div>
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span>Активированные маски</span>
+                    <span>${progress.activatedMasks} из ${progress.totalMasks}</span>
                 </div>
-            `;
-        }
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${masksPercent}%; background: #10B981;"></div>
+                </div>
+                <div class="progress-header" style="margin-top: 12px;">
+                    <span>Пройденные маршруты</span>
+                    <span>${progress.completedRoutes} из ${progress.totalRoutes}</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${routesPercent}%; background: #8B5CF6;"></div>
+                </div>
+            </div>
+            
+            <div class="menu-grid">
+    <button class="menu-item" onclick="showMapChooser()">
+    <div class="menu-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB);"><i class="fas fa-map-marked-alt"></i></div>
+    <div class="menu-label">Вся карта</div>
+</button>
+    <button class="menu-item" onclick="navigate('routes')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"><i class="fas fa-route"></i></div>
+        <div class="menu-label">Маршруты</div>
+    </button>
+    <button class="menu-item" onclick="navigate('catalog')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-list"></i></div>
+        <div class="menu-label">Каталог масок</div>
+    </button>
+    <button class="menu-item" onclick="navigate('activate')">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #10B981, #059669);"><i class="fas fa-qrcode"></i></div>
+        <div class="menu-label">Активировать маску</div>
+    </button>
+    <button class="menu-item" onclick="navigate('achievements')">
+    <div class="menu-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);"><i class="fas fa-trophy"></i></div>
+    <div class="menu-label">Достижения</div>
+</button>
+    <button class="menu-item" onclick="openSupport()">
+        <div class="menu-icon" style="background: linear-gradient(135deg, #6B7280, #4B5563);"><i class="fas fa-headset"></i></div>
+        <div class="menu-label">Поддержка</div>
+    </button>
+</div>
+                    
+                                <!-- Политика конфиденциальности внизу -->
+            <div style="text-align: center; margin-top: 5px;">
+                <a href="#" onclick="showPrivacyPopup(); return false;" style="color: #64748b; font-size: 12px; text-decoration: none;">Политика конфиденциальности</a>
+            </div>
+        </div>
+    `;
+}
         
-        function renderRoutesList() {
-            if (appState.routes.length === 0) {
-                return `<div class="container"><div class="spinner"></div><p style="text-align: center; color: #64748b;">Загрузка маршрутов...</p></div>`;
+        // Рендер списка маршрутов
+                        function renderRoutesList() {
+            const filteredRoutes = getFilteredRoutes();
+            
+            // Текст на кнопке фильтра
+            let filterText = '';
+            if (currentFilter === 'all') filterText = 'Все';
+            else if (currentFilter === 'completed') filterText = 'Пройдены';
+            else if (currentFilter === 'uncompleted') filterText = 'Не пройдены';
+            
+            if (filteredRoutes.length === 0) {
+                return `
+                    <div class="container">
+                        <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                                                <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Выбери маршрут</h1>
+                            <button class="filter-btn filter-${currentFilter}" onclick="cycleFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                        <div class="progress-section" style="margin-bottom: 20px;">
+                            <div class="progress-header">
+                                <span>Общий прогресс по маршрутам</span>
+                                <span>${appState.progress.completedRoutes} из ${appState.progress.totalRoutes}</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${appState.progress.totalRoutes > 0 ? (appState.progress.completedRoutes / appState.progress.totalRoutes * 100) : 0}%; background: #8B5CF6;"></div>
+                            </div>
+                        </div>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет маршрутов в этом разделе</p>
+                    </div>
+                `;
             }
             
             let html = `
                 <div class="container">
                     <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <div class="route-header-with-filter">
-                        <h1 class="page-title" style="margin: 0;">Выбери маршрут для изучения</h1>
+                                       <div class="route-header-with-filter">
+                        <h1 class="page-title" style="margin: 0;">Выбери маршрут</h1>
                         <button class="filter-btn filter-${currentFilter}" onclick="cycleFilter()">
                             <i class="fas fa-filter"></i>
                         </button>
@@ -1334,11 +2068,9 @@
                     </div>
             `;
             
-            const filteredRoutes = getFilteredRoutes();
-            
             for (const route of filteredRoutes) {
                 html += `
-                    <div class="route-card ${route.isCompleted ? 'completed-route' : ''}" onclick="showRouteMapChooser('${route.id}')">
+                                        <div class="route-card ${route.isCompleted ? 'completed-route' : ''}" onclick="showRouteMapChooser('${route.id}')">
                         <div class="route-image" style="background-color: ${route.color || '#3B82F6'}">
                             <i class="fas fa-route"></i>
                             ${route.isCompleted ? '<div class="completed-badge"><i class="fas fa-check"></i></div>' : ''}
@@ -1372,8 +2104,277 @@
         function renderRouteDetail() {
             return `<div class="container"><div class="spinner"></div></div>`;
         }
+
+                // Функция для получения отфильтрованных масок
+               function getFilteredMasks() {
+            const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
+            
+            console.log('Активированные ID:', activatedIds);
+            console.log('Все маски:', appState.masks.map(m => ({ id: m.id, name: m.name })));
+            
+            if (currentMaskFilter === 'all') {
+                return appState.masks;
+            } else if (currentMaskFilter === 'activated') {
+                return appState.masks.filter(mask => activatedIds.has(mask.id));
+            } else if (currentMaskFilter === 'notactivated') {
+                return appState.masks.filter(mask => !activatedIds.has(mask.id));
+            }
+            return appState.masks;
+        }
         
-        function renderCatalog() {
+        // Функция для переключения фильтра масок
+        function cycleMaskFilter() {
+            if (currentMaskFilter === 'all') {
+                currentMaskFilter = 'activated';
+                showToast('Показаны активированные маски', 'info');
+            } else if (currentMaskFilter === 'activated') {
+                currentMaskFilter = 'notactivated';
+                showToast('Показаны не активированные маски', 'info');
+            } else if (currentMaskFilter === 'notactivated') {
+                currentMaskFilter = 'all';
+                showToast('Показаны все маски', 'info');
+            }
+            renderCatalog();
+            render();
+        }
+
+                // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
+        function getMaskImages(maskId) {
+            // Первое фото из папки images
+            const firstImage = `/images/${maskId}.jpg`;
+            // Второе фото (заглушка)
+            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
+            // Третье фото (заглушка)
+            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+            
+            return [firstImage, secondImage, thirdImage];
+        }
+        
+        let currentGalleryIndex = 0;
+        let galleryImages = [];
+        let isFullscreen = false;
+        let fullscreenCurrentIndex = 0;
+        
+                function renderGallery(maskId, containerId) {
+            const images = getMaskImages(maskId);
+            galleryImages = images;
+            
+            let slidesHtml = '';
+            let dotsHtml = '';
+            
+            images.forEach((img, index) => {
+                slidesHtml += `<div class="gallery-slide" style="background-image: url('${img}');"></div>`;
+                dotsHtml += `<div class="gallery-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlide(${index})"></div>`;
+            });
+            
+            const galleryHtml = `
+                <div class="gallery-container" id="gallery-container-${containerId}">
+                    <div class="gallery-slides" id="gallery-slides-${containerId}" style="transform: translateX(0%);">
+                        ${slidesHtml}
+                    </div>
+                    <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlide()">‹</div>
+                    <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlide()">›</div>
+                    <div class="gallery-nav" id="gallery-nav-${containerId}">
+                        ${dotsHtml}
+                    </div>
+                </div>
+            `;
+            
+            // Добавляем обработчики свайпа после рендера
+            setTimeout(() => {
+                const container = document.getElementById(`gallery-container-${containerId}`);
+                if (container) {
+                    addSwipeToGallery(container);
+                }
+            }, 50);
+            
+            return galleryHtml;
+        }
+
+                function addSwipeToGallery(container) {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            container.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                const deltaX = touchEndX - touchStartX;
+                
+                if (Math.abs(deltaX) > 50) {
+                    if (deltaX > 0) {
+                        // Свайп вправо — предыдущее фото
+                        prevSlide();
+                    } else {
+                        // Свайп влево — следующее фото
+                        nextSlide();
+                    }
+                }
+            });
+        }
+        
+        function updateGalleryDots() {
+            const dots = document.querySelectorAll('.gallery-dot');
+            dots.forEach((dot, i) => {
+                if (i === currentGalleryIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function prevSlide() {
+            if (currentGalleryIndex > 0) {
+                currentGalleryIndex--;
+                const slides = document.querySelector('.gallery-slides');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentGalleryIndex * 100}%)`;
+                }
+                updateGalleryDots();
+            }
+        }
+        
+        function nextSlide() {
+            if (currentGalleryIndex < galleryImages.length - 1) {
+                currentGalleryIndex++;
+                const slides = document.querySelector('.gallery-slides');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentGalleryIndex * 100}%)`;
+                }
+                updateGalleryDots();
+            }
+        }
+        
+        function goToSlide(index) {
+            currentGalleryIndex = index;
+            const slides = document.querySelector('.gallery-slides');
+            if (slides) {
+                slides.style.transform = `translateX(-${currentGalleryIndex * 100}%)`;
+            }
+            updateGalleryDots();
+        }
+        
+                function openFullscreen(startIndex) {
+            isFullscreen = true;
+            fullscreenCurrentIndex = startIndex;
+            
+            let fullscreenSlides = '';
+            galleryImages.forEach((img, index) => {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('${img}');"></div>`;
+            });
+            
+            let fullscreenDots = '';
+            galleryImages.forEach((img, index) => {
+                fullscreenDots += `<div class="fullscreen-dot ${index === startIndex ? 'active' : ''}" onclick="goToFullscreenSlide(${index})"></div>`;
+            });
+            
+            const fullscreenHtml = `
+                <div id="fullscreen-modal" class="fullscreen-modal">
+                    <div class="fullscreen-close" onclick="closeFullscreen()">✕</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-left" onclick="prevFullscreenSlide()">‹</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-right" onclick="nextFullscreenSlide()">›</div>
+                    <div class="fullscreen-slides" id="fullscreen-slides" style="transform: translateX(-${startIndex * 100}%);">
+                        ${fullscreenSlides}
+                    </div>
+                    <div class="fullscreen-nav">
+                        ${fullscreenDots}
+                    </div>
+                    <div class="fullscreen-counter">${startIndex + 1} / ${galleryImages.length}</div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
+            
+            // Добавляем обработчики свайпа для полноэкранного режима
+            setTimeout(() => {
+                const modal = document.getElementById('fullscreen-modal');
+                if (modal) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+                    
+                    modal.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                    });
+                    
+                    modal.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        const deltaX = touchEndX - touchStartX;
+                        
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                prevFullscreenSlide();
+                            } else {
+                                nextFullscreenSlide();
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        function closeFullscreen() {
+            const modal = document.getElementById('fullscreen-modal');
+            if (modal) modal.remove();
+            isFullscreen = false;
+        }
+        
+        function prevFullscreenSlide() {
+            if (fullscreenCurrentIndex > 0) {
+                fullscreenCurrentIndex--;
+                const slides = document.getElementById('fullscreen-slides');
+                if (slides) {
+                    slides.style.transform = `translateX(-${fullscreenCurrentIndex * 100}%)`;
+                }
+                updateFullscreenDots();
+                updateFullscreenCounter();
+            }
+        }
+        
+        function nextFullscreenSlide() {
+            if (fullscreenCurrentIndex < galleryImages.length - 1) {
+                fullscreenCurrentIndex++;
+                const slides = document.getElementById('fullscreen-slides');
+                if (slides) {
+                    slides.style.transform = `translateX(-${fullscreenCurrentIndex * 100}%)`;
+                }
+                updateFullscreenDots();
+                updateFullscreenCounter();
+            }
+        }
+        
+        function goToFullscreenSlide(index) {
+            fullscreenCurrentIndex = index;
+            const slides = document.getElementById('fullscreen-slides');
+            if (slides) {
+                slides.style.transform = `translateX(-${fullscreenCurrentIndex * 100}%)`;
+            }
+            updateFullscreenDots();
+            updateFullscreenCounter();
+        }
+        
+        function updateFullscreenDots() {
+            const dots = document.querySelectorAll('.fullscreen-dot');
+            dots.forEach((dot, i) => {
+                if (i === fullscreenCurrentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function updateFullscreenCounter() {
+            const counter = document.querySelector('.fullscreen-counter');
+            if (counter) {
+                counter.textContent = `${fullscreenCurrentIndex + 1} / ${galleryImages.length}`;
+            }
+        }
+        
+        // Рендер каталога
+                        function renderCatalog() {
             const filteredMasks = getFilteredMasks();
             const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
             const activatedCount = appState.activations.length;
@@ -1384,7 +2385,7 @@
             else if (currentMaskFilter === 'activated') filterClass = 'filter-completed';
             else if (currentMaskFilter === 'notactivated') filterClass = 'filter-uncompleted';
             
-            if (!filteredMasks || filteredMasks.length === 0) {
+            if (filteredMasks.length === 0) {
                 return `
                     <div class="container">
                         <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
@@ -1411,7 +2412,7 @@
             let masksHtml = '';
             for (const mask of filteredMasks) {
                 const isActivated = activatedIds.has(mask.id);
-                masksHtml += `
+                                masksHtml += `
                     <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
@@ -1438,6 +2439,7 @@
                         </button>
                     </div>
                     
+                    <!-- Прогресс по локациям -->
                     <div class="progress-section" style="margin-bottom: 20px;">
                         <div class="progress-header">
                             <span>Прогресс по локациям</span>
@@ -1453,7 +2455,8 @@
             `;
         }
         
-        function renderActivate() {
+        // Рендер активации
+                        function renderActivate() {
             const progress = appState.progress;
             const masksPercent = progress.totalMasks > 0 ? (progress.activatedMasks / progress.totalMasks * 100) : 0;
             const routesPercent = progress.totalRoutes > 0 ? (progress.completedRoutes / progress.totalRoutes * 100) : 0;
@@ -1509,9 +2512,9 @@
                         </div>
                         
                         <div id="activation-form">
-                            <button class="btn btn-success" onclick="startQRScan()" style="margin-bottom: 20px;">
-                                <i class="fas fa-camera"></i> Отсканировать QR-код
-                            </button>
+                            <button class="btn btn-primary" onclick="startQRScan()">
+    <i class="fas fa-qrcode"></i> Отсканировать QR-код маски
+</button>
                         </div>
                         
                         <div id="activation-success" class="hidden" style="background: #252542; border-radius: 20px; padding: 24px; text-align: left;">
@@ -1532,7 +2535,103 @@
                 </div>
             `;
         }
+
+                // === QR-СКАНЕР И АКТИВАЦИЯ ===
         
+        function startQRScan() {
+            if (!window.Telegram?.WebApp?.showScanQrPopup) {
+                showToast('Сканер QR-кодов поддерживается только в Telegram', 'error');
+                return;
+            }
+            
+            showToast('Наведите камеру на QR-код маски', 'info');
+            
+            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
+                if (!scannedText) {
+                    showToast('Не удалось распознать QR-код', 'error');
+                    return;
+                }
+                
+                console.log('Отсканировано:', scannedText);
+                
+                // Извлекаем ID маски из URL
+                let maskId = null;
+                
+                // Пробуем извлечь из URL вида https://domain.com/m/17
+                const urlMatch = scannedText.match(/\/m\/(\d+)/);
+                if (urlMatch) {
+                    maskId = urlMatch[1];
+                } else {
+                    // Если просто ID
+                    maskId = scannedText;
+                }
+                
+                if (!maskId) {
+                    showToast('Неверный QR-код маски', 'error');
+                    return;
+                }
+                
+                activateMaskByQR(maskId);
+                return true;
+            });
+        }
+        
+        async function activateMaskByQR(maskId) {
+            showToast('Проверка маски...', 'info');
+            
+            try {
+                const tg = window.Telegram?.WebApp;
+                const user = tg?.initDataUnsafe?.user || {};
+                
+                // Сначала получаем список масок, чтобы найти правильный ID
+                const masksRes = await fetch(`${API_BASE}/masks/list`);
+                const masks = await masksRes.json();
+                
+                // Ищем маску по ID или QR-коду
+                const mask = masks.find(m => m.id === maskId || m.qrCode === maskId);
+                
+                if (!mask) {
+                    showToast('Маска с таким QR-кодом не найдена', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        maskId: mask.id,
+                        telegramData: {
+                            chatId: user.id,
+                            username: user.username,
+                            firstName: user.first_name
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    // Показываем контент активированной маски
+                    showActivatedMask(result.mask);
+                    await loadInitialData();
+                } else {
+                    showToast(result.message, 'error');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    }
+                }
+            } catch (error) {
+                console.error('Activation error:', error);
+                showToast('Ошибка активации. Попробуйте снова.', 'error');
+            }
+        }
+        
+        // Рендер политики
         function renderPrivacy() {
             return `
                 <div class="container">
@@ -1540,15 +2639,18 @@
                     <h1 class="page-title">Политика конфиденциальности</h1>
                     
                     <div class="privacy-text">
-                        <p><strong>НЕГОДЯЙ</strong> — туристический квест по Калининграду.</p>
+                        <p><strong>Underground Mask</strong> — туристический квест по Калининграду.</p>
                         <br>
                         <p>Мы собираем только следующие данные:</p>
                         <ul style="margin-left: 20px; margin-top: 10px;">
                             <li>Ваш Telegram ID (для идентификации)</li>
+                            <li>Геолокацию (только при активации маски)</li>
                             <li>Дату и время активации масок</li>
                         </ul>
                         <br>
                         <p>Мы не передаём ваши данные третьим лицам.</p>
+                        <br>
+                        <p>Геолокация используется исключительно для проверки нахождения рядом с маской.</p>
                         <br>
                         <p>Вы можете удалить свои данные, написав в поддержку.</p>
                         <br>
@@ -1557,28 +2659,69 @@
                 </div>
             `;
         }
-        
-        function renderMap() {
-            return `
-                <div class="container">
-                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <h1 class="page-title">Карта масок</h1>
-                    <div style="background: #252542; border-radius: 16px; padding: 40px; text-align: center;">
-                        <i class="fas fa-map-marked-alt" style="font-size: 48px; color: #3B82F6; margin-bottom: 16px;"></i>
-                        <p>Для просмотра карты перейдите по ссылке:</p>
-                        <a href="https://yandex.ru/maps/?ll=20.463649,54.679629&z=14" target="_blank" style="color: #3B82F6;">Открыть Яндекс.Карты</a>
-                    </div>
-                </div>
-            `;
+
+                // Функция для получения отфильтрованных достижений
+        function getFilteredAchievements() {
+            if (currentAchievementFilter === 'all') {
+                return achievementsList;
+            } else if (currentAchievementFilter === 'unlocked') {
+                return achievementsList.filter(ach => userAchievements[ach.id] === true);
+            } else if (currentAchievementFilter === 'locked') {
+                return achievementsList.filter(ach => userAchievements[ach.id] !== true);
+            }
+            return achievementsList;
         }
         
-        function renderAchievements() {
+        // Функция для переключения фильтра достижений
+        function cycleAchievementFilter() {
+            if (currentAchievementFilter === 'all') {
+                currentAchievementFilter = 'unlocked';
+                showToast('Показаны полученные достижения', 'info');
+            } else if (currentAchievementFilter === 'unlocked') {
+                currentAchievementFilter = 'locked';
+                showToast('Показаны не полученные достижения', 'info');
+            } else if (currentAchievementFilter === 'locked') {
+                currentAchievementFilter = 'all';
+                showToast('Показаны все достижения', 'info');
+            }
+            renderAchievements();
+            render();
+        }
+
+                // Рендер страницы достижений (пока пустая)
+                                function renderAchievements() {
+            const filteredAchievements = getFilteredAchievements();
             let achievementsHtml = '';
             let unlockedCount = 0;
             
+            // Подсчитываем общее количество полученных (для отображения на кнопке)
             for (const ach of achievementsList) {
+                if (userAchievements[ach.id]) unlockedCount++;
+            }
+            
+            // Определяем цвет кнопки фильтра
+            let filterClass = '';
+            if (currentAchievementFilter === 'all') filterClass = 'filter-all';
+            else if (currentAchievementFilter === 'unlocked') filterClass = 'filter-completed';
+            else if (currentAchievementFilter === 'locked') filterClass = 'filter-uncompleted';
+            
+            if (filteredAchievements.length === 0) {
+                return `
+                    <div class="container">
+                        <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                        <div class="route-header-with-filter">
+                            <h1 class="page-title" style="margin: 0;">Достижения</h1>
+                            <button class="filter-btn ${filterClass}" onclick="cycleAchievementFilter()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">Нет достижений в этом разделе</p>
+                    </div>
+                `;
+            }
+            
+            for (const ach of filteredAchievements) {
                 const isUnlocked = userAchievements[ach.id];
-                if (isUnlocked) unlockedCount++;
                 
                 achievementsHtml += `
                     <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}" onclick="showAchievementInfo('${ach.id}')">
@@ -1599,11 +2742,11 @@
             return `
                 <div class="container">
                     <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
-                    <div class="achievements-header">
+                    <div class="route-header-with-filter">
                         <h1 class="page-title" style="margin: 0;">Достижения</h1>
-                        <div class="achievements-stats">
-                            <span class="achievements-count">${unlockedCount} / ${achievementsList.length}</span>
-                        </div>
+                        <button class="filter-btn ${filterClass}" onclick="cycleAchievementFilter()">
+                            <i class="fas fa-filter"></i>
+                        </button>
                     </div>
                     
                     <div class="achievements-grid">
@@ -1613,22 +2756,179 @@
             `;
         }
         
+        // Рендер карты
+        function renderMap() {
+            return `
+                <div class="container">
+                    <button class="back-button" onclick="navigate('main')"><i class="fas fa-arrow-left"></i> Назад</button>
+                    <h1 class="page-title">Карта масок</h1>
+                    <div style="background: #252542; border-radius: 16px; padding: 40px; text-align: center;">
+                        <i class="fas fa-map-marked-alt" style="font-size: 48px; color: #3B82F6; margin-bottom: 16px;"></i>
+                        <p>Для просмотра карты перейдите по ссылке:</p>
+                        <a href="https://yandex.ru/maps/?ll=20.463649,54.679629&z=14" target="_blank" style="color: #3B82F6;">Открыть Яндекс.Карты</a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Открыть локацию на карте
         function openLocation(lat, lng) {
             window.open(`https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`, '_blank');
         }
         
+        // Открыть маршрут на карте
         function openRouteOnMap(routeId) {
             const route = appState.routes.find(r => r.id === routeId);
             if (!route) {
                 alert('Маршрут не найден');
                 return;
             }
+            
             const lat = route.centerLat || 54.679629;
             const lng = route.centerLng || 20.463649;
             const zoom = route.zoom || 14;
-            window.open(`https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`, '_blank');
+            
+            const url = `https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`;
+            window.open(url, '_blank');
+        }
+
+                // Показать выбор карты для маршрута
+        function showRouteMapChooser(routeId) {
+            const route = appState.routes.find(r => r.id === routeId);
+            if (!route) {
+                showToast('Маршрут не найден', 'error');
+                return;
+            }
+            
+            // Координаты центра маршрута (если есть, иначе центр Калининграда)
+            const lat = route.centerLat || 54.679629;
+            const lng = route.centerLng || 20.463649;
+            const zoom = route.zoom || 14;
+            
+            const modalHtml = `
+                <div id="route-map-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2>${escapeHtml(route.name)}</h2>
+                            <button class="close-btn" onclick="closeRouteMapChooser()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
+                            <button class="map-choice-btn" onclick="openYandexMapsForRoute(${lat}, ${lng}, ${zoom})">
+                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
+                                Яндекс.Карты
+                            </button>
+                            <button class="map-choice-btn" onclick="openGoogleMapsForRoute(${lat}, ${lng})" style="margin-top: 12px;">
+                                <i class="fab fa-google" style="color: #4285F4;"></i>
+                                Google Maps
+                            </button>
+                            <button class="map-choice-btn" onclick="open2GISForRoute(${lat}, ${lng})" style="margin-top: 12px;">
+                                <i class="fas fa-building" style="color: #00A0E3;"></i>
+                                2GIS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                        // Добавляем кнопку "Наверх" внутри модального окна
+            setTimeout(() => {
+                const modalContainer = document.querySelector('#info-modal .modal-container');
+                if (modalContainer && !document.getElementById('scroll-top-btn-modal')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.id = 'scroll-top-btn-modal';
+                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    scrollBtn.style.cssText = `
+                        position: sticky;
+                        bottom: 20px;
+                        left: calc(100% - 70px);
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 25px;
+                        background: rgba(100, 116, 139, 0.5);
+                        backdrop-filter: blur(4px);
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1001;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                        margin-bottom: 10px;
+                    `;
+                    
+                    scrollBtn.onclick = () => {
+                        const modalContent = document.querySelector('#info-modal .modal-container');
+                        if (modalContent) {
+                            modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                    };
+                    
+                    scrollBtn.onmouseenter = () => {
+                        scrollBtn.style.transform = 'scale(1.05)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
+                    };
+                    scrollBtn.onmouseleave = () => {
+                        scrollBtn.style.transform = 'scale(1)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
+                    };
+                    
+                    modalContainer.appendChild(scrollBtn);
+                    
+                    // Обработчик прокрутки для модального окна
+                    modalContainer.addEventListener('scroll', () => {
+                        if (modalContainer.scrollTop > 300) {
+                            scrollBtn.style.display = 'flex';
+                        } else {
+                            scrollBtn.style.display = 'none';
+                        }
+                    });
+                }
+            }, 100);
         }
         
+        // Закрыть окно выбора карты для маршрута
+        function closeRouteMapChooser() {
+            const modal = document.getElementById('route-map-modal');
+            if (modal) modal.remove();
+        }
+        
+        // Открыть Яндекс.Карты для маршрута
+        function openYandexMapsForRoute(lat, lng, zoom) {
+            const url = `https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
+        
+        // Открыть Google Maps для маршрута
+        function openGoogleMapsForRoute(lat, lng) {
+            const url = `https://www.google.com/maps?q=${lat},${lng}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
+        
+        // Открыть 2GIS для маршрута
+        function open2GISForRoute(lat, lng) {
+            const url = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            window.open(url, '_blank');
+            closeRouteMapChooser();
+        }
+        
+        function openMapForRoute(lat, lng) {
+            if (lat && lng) {
+                window.open(`https://yandex.ru/maps/?pt=${lng},${lat}&z=16&l=map`, '_blank');
+            } else {
+                window.open(`https://yandex.ru/maps/?ll=20.463649,54.679629&z=14`, '_blank');
+            }
+        }
+        
+        // Покупка маски
         function buyMask(maskName) {
             const message = `Привет! Хочу купить маску "${maskName}"`;
             if (window.Telegram?.WebApp) {
@@ -1637,127 +2937,213 @@
                 alert(`Для покупки маски "${maskName}" напишите в Telegram: @undergroundmask_shop`);
             }
         }
+
+                function closeModal() {
+            const modal = document.getElementById('info-modal');
+            if (modal) modal.remove();
+        }
         
+        // Простая информация о маске (для каталога)
         function showSimpleMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
-            const modalHtml = `
-                <div id="info-modal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+                       const modalHtml = `
+                <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
                         <div class="modal-header">
                             <h2>${escapeHtml(mask.name)}</h2>
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <div class="main-photo">
-                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
+                            <div onclick="openFullscreen(0)">
+                                ${renderGallery(mask.id, 'maskinfo')}
                             </div>
-                            <div class="action-buttons-small">
+                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
                                 </button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                    <i class="fas fa-directions"></i>
-                                    <span>Маршрут</span>
-                                </button>
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+    <i class="fas fa-directions"></i>
+    <span>Маршрут</span>
+</button>
                             </div>
-                            <p style="color: #94a3b8; line-height: 1.6; margin: 16px 0;">${escapeHtml(mask.description || 'Нет описания')}</p>
+                            </div>
+                            <p style="color: #94a3b8; line-height: 1.6; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
                     </div>
                 </div>
             `;
+            
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Добавляем проверку прокрутки для модального окна
+            setTimeout(() => {
+                const modal = document.getElementById('info-modal');
+                if (modal) {
+                    modal.addEventListener('scroll', function() {
+                        const btn = document.getElementById('scrollTopBtn');
+                        if (!btn) return;
+                        if (modal.scrollTop > 300) {
+                            btn.classList.add('show');
+                            btn.onclick = () => {
+                                modal.scrollTo({ top: 0, behavior: 'smooth' });
+                            };
+                        } else {
+                            btn.classList.remove('show');
+                            btn.onclick = () => scrollToTop();
+                        }
+                    });
+                }
+            }, 100);
         }
         
-        function showExtendedMaskInfo(maskId) {
+        // Расширенная информация о маске (для активированных)
+                                                        function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
-            // Функция для создания карусели для вкладки
-            function getGalleryForTab(tabName) {
-                let gallerySlides = '';
-                let galleryDots = '';
-                for (let i = 1; i <= 5; i++) {
-                    gallerySlides += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');" onclick="event.stopPropagation(); openFullscreenForTab('${tabName}', ${i - 1})"></div>`;
-                    galleryDots += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
-                }
-                
-                return `
-                    <div class="gallery-container" id="gallery-container-${tabName}">
-                        <div class="gallery-slides" id="gallery-slides-${tabName}" style="transform: translateX(0%);">
-                            ${gallerySlides}
-                        </div>
-                        <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlideExtendedTab('${tabName}')">‹</div>
-                        <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlideExtendedTab('${tabName}')">›</div>
-                        <div class="gallery-nav" id="gallery-nav-${tabName}">
-                            ${galleryDots}
-                        </div>
-                    </div>
-                `;
-            }
+            // Сохраняем текущую маску глобально
+            window.currentExtendedMask = mask;
+            window.currentExtendedTab = 'present';
             
+            // Тексты для разных эпох (оставляем как есть)
             const texts = {
-                present: `Современный Калининград — это удивительное сочетание европейской архитектуры и российской культуры. Город, который пережил возрождение и стал одним из самых привлекательных туристических центров России...`,
-                ussr: `Советский период (1945-1991) стал временем тяжёлых испытаний для Кафедрального собора. После штурма Кёнигсберга в апреле 1945 года здание собора было практически полностью разрушено...`,
-                past: `Изначально Кафедральный собор был заложен в 1333 году по инициативе епископа Иоганна Кларе. Строительство велось в течение нескольких десятилетий...`
+                present: `Современный Калининград — это удивительное сочетание европейской архитектуры и российской культуры. Город, который пережил возрождение и стал одним из самых привлекательных туристических центров России.
+
+Кафедральный собор сегодня — это не только памятник истории, но и действующая концертная площадка с мировым именем. Здесь проходят органные концерты, фестивали классической музыки, джазовые вечера и выставки современного искусства.
+
+Собор открыт для посещения ежедневно с 10:00 до 18:00. Вход на территорию бесплатный, но за посещение музея и концерты взимается плата. На территории собора также находится могила Иммануила Канта, которая является местом паломничества для философов со всего мира.
+
+В летнее время на площади перед собором проводятся уличные концерты, ярмарки и фестивали. Это место стало настоящим культурным сердцем Калининграда, куда стремятся попасть как туристы, так и местные жители.
+
+Собор также выполняет функцию культурно-просветительского центра. Здесь работают выставки, посвящённые истории города, архитектуре, а также проводятся лекции и мастер-классы. Особенно популярны ночные экскурсии, когда собор подсвечивается и предстаёт в совершенно ином, загадочном свете.
+
+Рядом с собором находится скульптурный парк, где можно увидеть работы современных художников. Это место идеально подходит для прогулок, фотосессий и спокойного отдыха у воды.
+
+С каждым годом собор посещает всё больше туристов. В 2023 году количество посетителей превысило 500 000 человек. Это говорит о том, что интерес к истории и культуре Калининграда не угасает, а наоборот, растёт.`,
+                
+                ussr: `Советский период (1945-1991) стал временем тяжёлых испытаний для Кафедрального собора. После штурма Кёнигсберга в апреле 1945 года здание собора было практически полностью разрушено. Крыша отсутствовала, внутренние интерьеры были уничтожены пожарами, а стены сохранились лишь частично.
+
+Долгие годы, вплоть до 1990-х, собор стоял в руинах, напоминая о страшных событиях войны. Местные жители обходили его стороной, а среди развалин можно было найти лишь бродяг и любителей острых ощущений. Власти не спешили восстанавливать собор, считая его "немецким наследием", не достойным внимания.
+
+Тем не менее, именно в эти годы начали проводиться первые археологические раскопки на территории собора. Учёные обнаружили множество артефактов: фрагменты средневековых фресок, старинные монеты, элементы убранства и, конечно, захоронения.
+
+В 1960-х годах были проведены противоаварийные работы, чтобы остановить дальнейшее разрушение стен. Однако полноценная реставрация началась только в 1992 году, когда собор передали Калининградской епархии.
+
+Важно отметить, что именно в советское время начали формироваться первые туристические маршруты, включающие осмотр руин собора. Хотя состояние здания было плачевным, оно привлекало внимание своей исторической значимостью.
+
+В 1970-х годах была проведена расчистка территории вокруг собора, что позволило сделать его доступным для посетителей. Именно тогда появилась знаменитая смотровая площадка, с которой открывается потрясающий вид на реку Преголя и остров Канта.
+
+Несмотря на разруху, собор оставался символом стойкости и напоминанием о том, что даже из пепла можно возродиться. Его образ часто использовался в литературе и кино, становясь метафорой послевоенного возрождения.
+
+В 1980-е годы были проведены консервационные работы, которые позволили сохранить оставшиеся фрагменты фресок и кладки. Эти работы стали предтечей масштабной реставрации, начавшейся уже в постсоветское время.`,
+                
+                past: `Изначально Кафедральный собор был заложен в 1333 году по инициативе епископа Иоганна Кларе. Строительство велось в течение нескольких десятилетий, и к концу XIV века собор приобрёл свой знаменитый готический облик. Высота башен достигала 50 метров, а длина здания — 88 метров.
+
+Собор стал главной святыней Кёнигсберга. Здесь проходили богослужения, коронации и важнейшие городские церемонии. В XVI веке, с приходом Реформации, собор стал лютеранской церковью, оставаясь при этом важным культурным центром.
+
+В 1544 году герцог Альбрехт Бранденбургский основал при соборе "Кнайпхофскую библиотеку", которая стала одним из первых книгохранилищ региона. В её фондах хранились уникальные манускрипты, инкунабулы и старопечатные книги.
+
+Именно здесь, у стен собора, в 1724 году был похоронен великий философ Иммануил Кант. Его могила находится у северо-восточной стены собора и является объектом паломничества для философов со всего мира. Надгробие было установлено в 1804 году и сохранилось до наших дней.
+
+В XVIII веке в соборе был установлен орган, считавшийся одним из лучших в Европе. К сожалению, оригинальный орган не сохранился, но современный инструмент, установленный в 2008 году, полностью воссоздаёт звучание своего предшественника.
+
+В XIX веке собор приобрёл свой современный вид: были достроены башни, установлены часы-куранты, проведены масштабные реставрационные работы. Тогда же появился знаменитый витраж "Кёнигсбергский собор", который сегодня можно увидеть в музее.
+
+В 1880-х годах собор был электрифицирован, а в 1900-х — проведено отопление. Это сделало возможным проведение богослужений в зимнее время.
+
+К началу XX века собор стал одним из символов Кёнигсберга. Его изображение можно было увидеть на открытках, марках и сувенирах. Он был местом притяжения туристов и гордостью горожан.
+
+К сожалению, в августе 1944 года, во время бомбардировки Кёнигсберга британской авиацией, собор сильно пострадал. Пожар уничтожил крышу, интерьеры и большую часть внутреннего убранства. После войны здание оставалось в руинах вплоть до начала реставрации в 1990-х годах.
+
+Сегодня Кафедральный собор — это не только восстановленный памятник архитектуры, но и символ возрождения Калининграда. Он напоминает о богатой истории региона, о трагических событиях прошлого и о надежде на мирное будущее.`
             };
             
+            // Заголовки для разных эпох
             const titles = {
                 present: `Современный Калининград`,
                 ussr: `Советский период (1945-1991)`,
                 past: `Кёнигсберг (1333-1945)`
             };
             
+            // Функция для создания карусели с полнофункциональными фото
+            function createGalleryForTab(tabName) {
+                let slidesHtml = '';
+                let dotsHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
+                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
+                }
+                
+                return `
+                    <div class="gallery-container" id="gallery-container-${tabName}">
+                        <div class="gallery-slides" id="gallery-slides-${tabName}" style="transform: translateX(0%);">
+                            ${slidesHtml}
+                        </div>
+                        <div class="gallery-arrow gallery-arrow-left" onclick="event.stopPropagation(); prevSlideExtendedTab('${tabName}')">‹</div>
+                        <div class="gallery-arrow gallery-arrow-right" onclick="event.stopPropagation(); nextSlideExtendedTab('${tabName}')">›</div>
+                        <div class="gallery-nav" id="gallery-nav-${tabName}">
+                            ${dotsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            
             const modalHtml = `
-                <div id="info-modal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+                <div id="info-modal" class="modal-overlay">
                     <div class="modal-container">
                         <div class="modal-header">
                             <h2>${escapeHtml(mask.name)}</h2>
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
+                            <!-- Главное фото (без onclick) -->
                             <div class="main-photo">
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
                             
+                            <!-- Описание -->
                             <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 16px;">${escapeHtml(mask.description || 'Нет описания')}</p>
                             
-                            <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
+                            <!-- Кнопки -->
+                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>10.000₽</span>
                                 </button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-directions"></i>
                                     <span>Маршрут</span>
                                 </button>
                             </div>
                             
+                            <!-- 3 квадратные кнопки-вкладки -->
                             <div style="display: flex; gap: 12px; margin-bottom: 20px;">
                                 <button class="tab-button present-tab active" onclick="switchTab('present')" style="flex: 1; background: #3B82F6; color: white; border: none; border-radius: 12px; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">Настоящее</button>
                                 <button class="tab-button ussr-tab" onclick="switchTab('ussr')" style="flex: 1; background: #252542; color: #94a3b8; border: none; border-radius: 12px; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">СССР</button>
                                 <button class="tab-button past-tab" onclick="switchTab('past')" style="flex: 1; background: #252542; color: #94a3b8; border: none; border-radius: 12px; padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">Прошлое</button>
                             </div>
                             
+                            <!-- Контейнер для контента вкладок -->
                             <div id="tab-content-container">
                                 <div id="present-content" style="display: block;">
-                                    ${getGalleryForTab('present')}
+                                    ${createGalleryForTab('present')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.present}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.present}</p>
                                     </div>
                                 </div>
                                 <div id="ussr-content" style="display: none;">
-                                    ${getGalleryForTab('ussr')}
+                                    ${createGalleryForTab('ussr')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.ussr}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.ussr}</p>
                                     </div>
                                 </div>
                                 <div id="past-content" style="display: none;">
-                                    ${getGalleryForTab('past')}
+                                    ${createGalleryForTab('past')}
                                     <div class="history-text" style="margin-top: 16px;">
                                         <h3 style="color: #fff; margin-bottom: 12px;">${titles.past}</h3>
                                         <p style="color: #94a3b8; line-height: 1.6;">${texts.past}</p>
@@ -1771,19 +3157,37 @@
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
+            // Сохраняем ID маски для полноэкранного режима
             window.currentFullscreenMaskId = mask.id;
             
-            // Инициализация каруселей и кнопки "Наверх"
+                        // Инициализация каруселей и кнопки "Наверх"
             setTimeout(() => {
+                // Инициализируем карусели для всех вкладок
                 ['present', 'ussr', 'past'].forEach(tab => {
+                    // Убеждаемся, что глобальные переменные для индексов существуют
                     if (window[`currentIndex_${tab}`] === undefined) {
                         window[`currentIndex_${tab}`] = 0;
                     }
                     
+                    // Добавляем нажатие на фото для открытия полноэкранного режима
+                    const slides = document.querySelectorAll(`#gallery-container-${tab} .gallery-slide`);
+                    slides.forEach((slide, idx) => {
+                        slide.style.cursor = 'pointer';
+                        slide.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openFullscreenForTab(tab, idx);
+                        });
+                    });
+                    
+                    // Добавляем обработчики свайпа для галереи
                     const container = document.getElementById(`gallery-container-${tab}`);
                     if (container) {
                         let touchStartX = 0;
                         let touchEndX = 0;
+                        
+                        // Удаляем старые обработчики, чтобы не дублировать
+                        container.removeEventListener('touchstart', null);
+                        container.removeEventListener('touchend', null);
                         
                         container.addEventListener('touchstart', (e) => {
                             touchStartX = e.changedTouches[0].screenX;
@@ -1795,6 +3199,7 @@
                             
                             if (Math.abs(deltaX) > 50) {
                                 if (deltaX > 0) {
+                                    // Свайп вправо - предыдущее фото
                                     if (window[`currentIndex_${tab}`] > 0) {
                                         window[`currentIndex_${tab}`]--;
                                         const slidesEl = document.getElementById(`gallery-slides-${tab}`);
@@ -1804,6 +3209,7 @@
                                         updateDotsForTab(tab, window[`currentIndex_${tab}`]);
                                     }
                                 } else {
+                                    // Свайп влево - следующее фото
                                     if (window[`currentIndex_${tab}`] < 4) {
                                         window[`currentIndex_${tab}`]++;
                                         const slidesEl = document.getElementById(`gallery-slides-${tab}`);
@@ -1817,6 +3223,7 @@
                         });
                     }
                     
+                    // Добавляем обработчики для стрелок
                     const leftArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-left`);
                     const rightArrow = document.querySelector(`#gallery-container-${tab} .gallery-arrow-right`);
                     
@@ -1904,63 +3311,8 @@
             }, 200);
         }
         
-        function updateDotsForTab(tab, index) {
-            const dots = document.querySelectorAll(`#gallery-nav-${tab} .gallery-dot`);
-            dots.forEach((dot, i) => {
-                if (i === index) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        }
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.style.background = '#252542';
-                btn.style.color = '#94a3b8';
-            });
-            document.querySelector(`.${tab}-tab`).style.background = '#3B82F6';
-            document.querySelector(`.${tab}-tab`).style.color = 'white';
-            
-            document.getElementById('present-content').style.display = 'none';
-            document.getElementById('ussr-content').style.display = 'none';
-            document.getElementById('past-content').style.display = 'none';
-            document.getElementById(`${tab}-content`).style.display = 'block';
-        }
-        
-        function prevSlideExtendedTab(tab) {
-            if (window[`currentIndex_${tab}`] > 0) {
-                window[`currentIndex_${tab}`]--;
-                const slides = document.getElementById(`gallery-slides-${tab}`);
-                if (slides) {
-                    slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
-                }
-                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
-            }
-        }
-        
-        function nextSlideExtendedTab(tab) {
-            if (window[`currentIndex_${tab}`] < 4) {
-                window[`currentIndex_${tab}`]++;
-                const slides = document.getElementById(`gallery-slides-${tab}`);
-                if (slides) {
-                    slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
-                }
-                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
-            }
-        }
-        
-        function goToSlideExtendedTab(tab, index) {
-            window[`currentIndex_${tab}`] = index;
-            const slides = document.getElementById(`gallery-slides-${tab}`);
-            if (slides) {
-                slides.style.transform = `translateX(-${index * 100}%)`;
-            }
-            updateDotsForTab(tab, index);
-        }
-        
-        function openFullscreenForTab(tab, startIndex) {
+        // Функция для открытия полноэкранного режима из карусели
+                function openFullscreenForTab(tab, startIndex) {
             const maskId = window.currentFullscreenMaskId;
             const currentIndex = window[`currentIndex_${tab}`] || startIndex;
             
@@ -1991,6 +3343,11 @@
             
             document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
             
+            // Сохраняем текущий индекс для полноэкранного режима
+            window.fullscreenCurrentTab = tab;
+            window.fullscreenCurrentIndex = currentIndex;
+            
+            // Добавляем свайп для полноэкранного режима
             setTimeout(() => {
                 const modal = document.getElementById('fullscreen-modal-extended');
                 if (modal) {
@@ -2007,35 +3364,161 @@
                         
                         if (Math.abs(deltaX) > 50) {
                             if (deltaX > 0) {
-                                if (window[`currentIndex_${tab}`] > 0) {
-                                    window[`currentIndex_${tab}`]--;
+                                // Свайп вправо - предыдущее
+                                if (window.fullscreenCurrentIndex > 0) {
+                                    window.fullscreenCurrentIndex--;
                                     const slides = document.getElementById('fullscreen-slides-extended');
                                     if (slides) {
-                                        slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                                     }
-                                    updateFullscreenDotsExtendedTab(window[`currentIndex_${tab}`]);
-                                    updateFullscreenCounterExtendedTab(window[`currentIndex_${tab}`]);
-                                    const slidesEl = document.getElementById(`gallery-slides-${tab}`);
-                                    if (slidesEl) {
-                                        slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
-                                    }
-                                    updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                                    updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                                    // Обновляем индекс вкладки
+                                    window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
                                 }
                             } else {
-                                if (window[`currentIndex_${tab}`] < 4) {
-                                    window[`currentIndex_${tab}`]++;
+                                // Свайп влево - следующее
+                                if (window.fullscreenCurrentIndex < 4) {
+                                    window.fullscreenCurrentIndex++;
                                     const slides = document.getElementById('fullscreen-slides-extended');
                                     if (slides) {
-                                        slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                                        slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                                     }
-                                    updateFullscreenDotsExtendedTab(window[`currentIndex_${tab}`]);
-                                    updateFullscreenCounterExtendedTab(window[`currentIndex_${tab}`]);
-                                    const slidesEl = document.getElementById(`gallery-slides-${tab}`);
-                                    if (slidesEl) {
-                                        slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
-                                    }
-                                    updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                                    updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                                    updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                                    // Обновляем индекс вкладки
+                                    window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
                                 }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        // Переключение вкладок
+        function switchTab(tab) {
+            // Обновляем активную вкладку визуально
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.style.background = '#252542';
+                btn.style.color = '#94a3b8';
+            });
+            document.querySelector(`.${tab}-tab`).style.background = '#3B82F6';
+            document.querySelector(`.${tab}-tab`).style.color = 'white';
+            
+            // Показываем нужный контент
+            document.getElementById('present-content').style.display = 'none';
+            document.getElementById('ussr-content').style.display = 'none';
+            document.getElementById('past-content').style.display = 'none';
+            document.getElementById(`${tab}-content`).style.display = 'block';
+            
+            window.currentExtendedTab = tab;
+        }
+        
+        // Функции для управления каруселями в каждой вкладке
+        let currentIndex_present = 0;
+        let currentIndex_ussr = 0;
+        let currentIndex_past = 0;
+        const imagesCount = 5;
+        
+                function updateDotsForTab(tab, index) {
+            const dots = document.querySelectorAll(`#gallery-nav-${tab} .gallery-dot`);
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function prevSlideExtendedTab(tab) {
+            let currentIndex = window[`currentIndex_${tab}`];
+            if (currentIndex > 0) {
+                currentIndex--;
+                window[`currentIndex_${tab}`] = currentIndex;
+                const slides = document.getElementById(`gallery-slides-${tab}`);
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+                }
+                updateDotsForTab(tab, currentIndex);
+            }
+        }
+        
+        function nextSlideExtendedTab(tab) {
+            let currentIndex = window[`currentIndex_${tab}`];
+            if (currentIndex < imagesCount - 1) {
+                currentIndex++;
+                window[`currentIndex_${tab}`] = currentIndex;
+                const slides = document.getElementById(`gallery-slides-${tab}`);
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+                }
+                updateDotsForTab(tab, currentIndex);
+            }
+        }
+        
+        function goToSlideExtendedTab(tab, index) {
+            window[`currentIndex_${tab}`] = index;
+            const slides = document.getElementById(`gallery-slides-${tab}`);
+            if (slides) {
+                slides.style.transform = `translateX(-${index * 100}%)`;
+            }
+            updateDotsForTab(tab, index);
+        }
+        
+        // Полноэкранный режим для вкладок
+        function openFullscreenExtendedTab(tab, startIndex) {
+            const maskId = window.currentFullscreenMaskId;
+            window[`currentIndex_${tab}`] = startIndex;
+            
+            let fullscreenSlides = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            }
+            
+            let fullscreenDots = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === startIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtendedTab('${tab}', ${i - 1})"></div>`;
+            }
+            
+            const fullscreenHtml = `
+                <div id="fullscreen-modal-extended" class="fullscreen-modal">
+                    <div class="fullscreen-close" onclick="closeFullscreenExtendedTab()">✕</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-left" onclick="prevFullscreenSlideExtendedTab('${tab}')">‹</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-right" onclick="nextFullscreenSlideExtendedTab('${tab}')">›</div>
+                    <div class="fullscreen-slides" id="fullscreen-slides-extended" style="transform: translateX(-${startIndex * 100}%);">
+                        ${fullscreenSlides}
+                    </div>
+                    <div class="fullscreen-nav" id="fullscreen-nav-extended">
+                        ${fullscreenDots}
+                    </div>
+                    <div class="fullscreen-counter" id="fullscreen-counter-extended">${startIndex + 1} / 5</div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
+            
+            // Добавляем свайп для полноэкранного режима
+            setTimeout(() => {
+                const modal = document.getElementById('fullscreen-modal-extended');
+                if (modal) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+                    
+                    modal.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                    });
+                    
+                    modal.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        const deltaX = touchEndX - touchStartX;
+                        
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                prevFullscreenSlideExtendedTab(tab);
+                            } else {
+                                nextFullscreenSlideExtendedTab(tab);
                             }
                         }
                     });
@@ -2048,37 +3531,43 @@
             if (modal) modal.remove();
         }
         
-        function prevFullscreenSlideExtendedTab(tab) {
-            if (window[`currentIndex_${tab}`] > 0) {
-                window[`currentIndex_${tab}`]--;
+                function prevFullscreenSlideExtendedTab(tab) {
+            if (window.fullscreenCurrentIndex > 0) {
+                window.fullscreenCurrentIndex--;
                 const slides = document.getElementById('fullscreen-slides-extended');
                 if (slides) {
-                    slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                    slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateFullscreenDotsExtendedTab(window[`currentIndex_${tab}`]);
-                updateFullscreenCounterExtendedTab(window[`currentIndex_${tab}`]);
+                updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                // Синхронизируем с индексом вкладки
+                window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                // Синхронизируем карусель вкладки
                 const slidesEl = document.getElementById(`gallery-slides-${tab}`);
                 if (slidesEl) {
-                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                    slidesEl.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                updateDotsForTab(tab, window.fullscreenCurrentIndex);
             }
         }
         
         function nextFullscreenSlideExtendedTab(tab) {
-            if (window[`currentIndex_${tab}`] < 4) {
-                window[`currentIndex_${tab}`]++;
+            if (window.fullscreenCurrentIndex < 4) {
+                window.fullscreenCurrentIndex++;
                 const slides = document.getElementById('fullscreen-slides-extended');
                 if (slides) {
-                    slides.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                    slides.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateFullscreenDotsExtendedTab(window[`currentIndex_${tab}`]);
-                updateFullscreenCounterExtendedTab(window[`currentIndex_${tab}`]);
+                updateFullscreenDotsExtendedTab(window.fullscreenCurrentIndex);
+                updateFullscreenCounterExtendedTab(window.fullscreenCurrentIndex);
+                // Синхронизируем с индексом вкладки
+                window[`currentIndex_${tab}`] = window.fullscreenCurrentIndex;
+                // Синхронизируем карусель вкладки
                 const slidesEl = document.getElementById(`gallery-slides-${tab}`);
                 if (slidesEl) {
-                    slidesEl.style.transform = `translateX(-${window[`currentIndex_${tab}`] * 100}%)`;
+                    slidesEl.style.transform = `translateX(-${window.fullscreenCurrentIndex * 100}%)`;
                 }
-                updateDotsForTab(tab, window[`currentIndex_${tab}`]);
+                updateDotsForTab(tab, window.fullscreenCurrentIndex);
             }
         }
         
@@ -2090,11 +3579,6 @@
             }
             updateFullscreenDotsExtendedTab(index);
             updateFullscreenCounterExtendedTab(index);
-            const slidesEl = document.getElementById(`gallery-slides-${tab}`);
-            if (slidesEl) {
-                slidesEl.style.transform = `translateX(-${index * 100}%)`;
-            }
-            updateDotsForTab(tab, index);
         }
         
         function updateFullscreenDotsExtendedTab(currentIndex) {
@@ -2111,156 +3595,52 @@
         function updateFullscreenCounterExtendedTab(currentIndex) {
             const counter = document.getElementById('fullscreen-counter-extended');
             if (counter) {
-                counter.textContent = `${currentIndex + 1} / 5`;
+                counter.textContent = `${currentIndex + 1} / ${imagesCount}`;
             }
         }
-        
-        function closeModal() {
-            const modal = document.getElementById('info-modal');
-            if (modal) modal.remove();
-        }
-        
-        function getFilteredRoutes() {
-            if (currentFilter === 'all') {
-                return appState.routes;
-            } else if (currentFilter === 'completed') {
-                return appState.routes.filter(route => route.isCompleted === true);
-            } else if (currentFilter === 'uncompleted') {
-                return appState.routes.filter(route => route.isCompleted === false);
-            }
-            return appState.routes;
-        }
-        
-        function showRouteMapChooser(routeId) {
-            const route = appState.routes.find(r => r.id === routeId);
-            if (!route) {
-                showToast('Маршрут не найден', 'error');
-                return;
-            }
+
+                        // Показать выбор карты для конкретной маски (из карточки)
+                                function showMaskMapChooser(lat, lng, maskName, maskId) {
+            console.log('=== showMaskMapChooser вызван ===');
+            console.log('maskId:', maskId);
+            console.log('Все маски в appState:', appState.masks);
             
-            const lat = route.centerLat || 54.679629;
-            const lng = route.centerLng || 20.463649;
-            const zoom = route.zoom || 14;
+            // Ищем маску в актуальных данных
+            let mask = appState.masks.find(m => m.id === maskId);
             
-            const modalHtml = `
-                <div id="route-map-modal" class="modal-overlay" onclick="if(event.target === this) closeRouteMapChooser()">
-                    <div class="modal-container" style="max-width: 350px;">
-                        <div class="modal-header">
-                            <h2>${escapeHtml(route.name)}</h2>
-                            <button class="close-btn" onclick="closeRouteMapChooser()">&times;</button>
-                        </div>
-                        <div class="modal-content" style="padding: 20px;">
-                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
-                            <button class="map-choice-btn" onclick="openYandexMapsForRoute(${lat}, ${lng}, ${zoom})">
-                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
-                                Яндекс.Карты
-                            </button>
-                            <button class="map-choice-btn" onclick="openGoogleMapsForRoute(${lat}, ${lng})" style="margin-top: 12px;">
-                                <i class="fab fa-google" style="color: #4285F4;"></i>
-                                Google Maps
-                            </button>
-                            <button class="map-choice-btn" onclick="open2GISForRoute(${lat}, ${lng})" style="margin-top: 12px;">
-                                <i class="fas fa-building" style="color: #00A0E3;"></i>
-                                2GIS
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        function closeRouteMapChooser() {
-            const modal = document.getElementById('route-map-modal');
-            if (modal) modal.remove();
-        }
-        
-        function openYandexMapsForRoute(lat, lng, zoom) {
-            window.open(`https://yandex.ru/maps/?ll=${lng},${lat}&z=${zoom}`, '_blank');
-            closeRouteMapChooser();
-        }
-        
-        function openGoogleMapsForRoute(lat, lng) {
-            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-            closeRouteMapChooser();
-        }
-        
-        function open2GISForRoute(lat, lng) {
-            window.open(`https://2gis.ru/kaliningrad/search/${lat},${lng}`, '_blank');
-            closeRouteMapChooser();
-        }
-        
-        function showMapChooser() {
-            const modalHtml = `
-                <div id="map-modal" class="modal-overlay" onclick="if(event.target === this) closeMapChooser()">
-                    <div class="modal-container" style="max-width: 350px;">
-                        <div class="modal-header">
-                            <h2>Выберите карту</h2>
-                            <button class="close-btn" onclick="closeMapChooser()">&times;</button>
-                        </div>
-                        <div class="modal-content" style="padding: 20px;">
-                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
-                            <button class="map-choice-btn" onclick="openYandexMaps()">
-                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
-                                Яндекс.Карты
-                            </button>
-                            <button class="map-choice-btn" onclick="openGoogleMaps()" style="margin-top: 12px;">
-                                <i class="fab fa-google" style="color: #4285F4;"></i>
-                                Google Maps
-                            </button>
-                            <button class="map-choice-btn" onclick="open2GIS()" style="margin-top: 12px;">
-                                <i class="fas fa-building" style="color: #00A0E3;"></i>
-                                2GIS
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        function closeMapChooser() {
-            const modal = document.getElementById('map-modal');
-            if (modal) modal.remove();
-        }
-        
-        function openYandexMaps() {
-            window.open('https://yandex.ru/maps/?ll=20.463649,54.679629&z=14', '_blank');
-            closeMapChooser();
-        }
-        
-        function openGoogleMaps() {
-            window.open('https://www.google.com/maps?q=54.679629,20.463649', '_blank');
-            closeMapChooser();
-        }
-        
-        function open2GIS() {
-            window.open('https://2gis.ru/kaliningrad', '_blank');
-            closeMapChooser();
-        }
-        
-        function showMaskMapChooser(lat, lng, maskName, maskId) {
-            const mask = appState.masks.find(m => m.id === maskId);
-            
+            // Если не нашли, пробуем перезагрузить маски
             if (!mask) {
-                console.error('Маска не найдена:', maskId);
-                const yandexLink = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
-                const googleLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                const twoGisLink = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
-                openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink);
+                console.log('Маска не найдена, перезагружаем маски...');
+                loadMasks().then(() => {
+                    mask = appState.masks.find(m => m.id === maskId);
+                    if (mask) {
+                        console.log('Маска найдена после перезагрузки:', mask.name);
+                        showMapChooserWithMask(mask, lat, lng, maskName);
+                    } else {
+                        console.error('Маска всё равно не найдена!');
+                        openMapChooserFallback(maskName, lat, lng);
+                    }
+                });
                 return;
             }
             
+            showMapChooserWithMask(mask, lat, lng, maskName);
+        }
+        
+        function showMapChooserWithMask(mask, lat, lng, maskName) {
+            // Используем ссылки из маски (именно те, что вы ввели в админке)
             const yandexLink = mask.yandexMapLink || `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
             const googleLink = mask.googleMapLink || `https://www.google.com/maps?q=${lat},${lng}`;
             const twoGisLink = mask.twoGisLink || `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
             
-            console.log('Маска:', mask.name);
-            console.log('Яндекс ссылка из админки:', mask.yandexMapLink);
-            console.log('Google ссылка из админки:', mask.googleMapLink);
-            console.log('2GIS ссылка из админки:', mask.twoGisLink);
+            console.log('=== ОТКРЫВАЕМ КАРТЫ ДЛЯ МАСКИ ===');
+            console.log('Название:', mask.name);
+            console.log('Яндекс ссылка (из админки):', mask.yandexMapLink);
+            console.log('Google ссылка (из админки):', mask.googleMapLink);
+            console.log('2GIS ссылка (из админки):', mask.twoGisLink);
+            console.log('Итоговая Яндекс:', yandexLink);
+            console.log('Итоговая Google:', googleLink);
+            console.log('Итоговая 2GIS:', twoGisLink);
             
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
@@ -2291,7 +3671,11 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
-        function openMapChooserFallback(maskName, yandexLink, googleLink, twoGisLink) {
+        function openMapChooserFallback(maskName, lat, lng) {
+            const yandexLink = `https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`;
+            const googleLink = `https://www.google.com/maps?q=${lat},${lng}`;
+            const twoGisLink = `https://2gis.ru/kaliningrad/search/${lat},${lng}`;
+            
             const modalHtml = `
                 <div id="mask-map-modal" class="modal-overlay" onclick="if(event.target === this) closeMaskMapChooser()">
                     <div class="modal-container" style="max-width: 350px;">
@@ -2318,11 +3702,6 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        function closeMaskMapChooser() {
-            const modal = document.getElementById('mask-map-modal');
-            if (modal) modal.remove();
         }
         
         function openCustomYandexMaps(url) {
@@ -2343,24 +3722,35 @@
             closeMaskMapChooser();
         }
         
-        function openSupport() {
+        // Закрыть модальное окно
+                function closeMaskMapChooser() {
+            const modal = document.getElementById('mask-map-modal');
+            if (modal) modal.remove();
+        }
+        
+        // Открыть поддержку
+                function openSupport() {
             const modalHtml = `
-                <div id="support-modal" class="modal-overlay" onclick="if(event.target === this) closeSupportModal()">
+                <div id="support-modal" class="modal-overlay">
                     <div class="modal-container" style="max-width: 400px;">
                         <div class="modal-header">
                             <h2>Поддержка</h2>
                             <button class="close-btn" onclick="closeSupportModal()">&times;</button>
                         </div>
                         <div class="modal-content" style="padding: 20px;">
+                            <!-- Кнопка связи с администратором -->
                             <button class="support-contact-btn" onclick="contactAdmin()">
                                 <i class="fas fa-headset"></i>
                                 Связаться с администратором
                             </button>
                             
+                            <!-- Разделитель -->
                             <div style="height: 1px; background: #2d2d44; margin: 20px 0;"></div>
                             
+                            <!-- Заголовок раздела информации -->
                             <h3 style="color: #fff; margin-bottom: 16px; font-size: 16px;">О приложении</h3>
                             
+                            <!-- Список кнопок с описанием -->
                             <div class="info-list">
                                 <div class="info-item">
                                     <div class="info-icon"><i class="fas fa-map-marked-alt"></i></div>
@@ -2390,7 +3780,7 @@
                                     <div class="info-icon"><i class="fas fa-qrcode"></i></div>
                                     <div class="info-text">
                                         <strong>Активировать маску</strong>
-                                        <span>Активация масок через QR-код. Отслеживает прогресс и сохраняет историю активаций</span>
+                                        <span>Активация масок через геолокацию. Отслеживает прогресс и сохраняет историю активаций</span>
                                     </div>
                                 </div>
                                 
@@ -2398,7 +3788,7 @@
                                     <div class="info-icon"><i class="fas fa-trophy"></i></div>
                                     <div class="info-text">
                                         <strong>Достижения</strong>
-                                        <span>Ваши награды и достижения за пройденные маршруты и активированные маски</span>
+                                        <span>Ваши награды и достижения за пройденные маршруты и активированные маски (в разработке)</span>
                                     </div>
                                 </div>
                                 
@@ -2411,6 +3801,7 @@
                                 </div>
                             </div>
                             
+                            <!-- Версия приложения -->
                             <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid #2d2d44;">
                                 <span style="font-size: 11px; color: #3d3d5c;">Версия 1.0.0 | НЕГОДЯЙ</span>
                             </div>
@@ -2422,23 +3813,26 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
         
+        // Закрыть окно поддержки
         function closeSupportModal() {
             const modal = document.getElementById('support-modal');
             if (modal) modal.remove();
         }
         
+        // Связаться с администратором
         function contactAdmin() {
             if (window.Telegram?.WebApp) {
-                window.Telegram.WebApp.openTelegramLink('https://t.me/negodiai');
+                window.Telegram.WebApp.openTelegramLink('https://t.me/undergroundmask_support');
             } else {
-                alert('Поддержка: @negodiai в Telegram');
+                alert('Поддержка: @undergroundmask_support в Telegram');
             }
             closeSupportModal();
-        }
+        }     
         
+        // Показать всплывающее окно с политикой конфиденциальности
         function showPrivacyPopup() {
             const modalHtml = `
-                <div id="privacy-modal" class="modal-overlay" onclick="if(event.target === this) closePrivacyPopup()">
+                <div id="privacy-modal" class="modal-overlay">
                     <div class="modal-container" style="max-width: 400px;">
                         <div class="modal-header">
                             <h2>Политика конфиденциальности</h2>
@@ -2470,12 +3864,72 @@
             
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
-        
+
+        // Закрыть всплывающее окно политики
         function closePrivacyPopup() {
             const modal = document.getElementById('privacy-modal');
             if (modal) modal.remove();
         }
+
+                // Показать выбор карты
+        function showMapChooser() {
+            const modalHtml = `
+                <div id="map-modal" class="modal-overlay">
+                    <div class="modal-container" style="max-width: 350px;">
+                        <div class="modal-header">
+                            <h2>Выберите карту</h2>
+                            <button class="close-btn" onclick="closeMapChooser()">&times;</button>
+                        </div>
+                        <div class="modal-content" style="padding: 20px;">
+                            <p style="color: #64748b; margin-bottom: 16px; text-align: center;">Выберите карту для навигации</p>
+                            <button class="map-choice-btn" onclick="openYandexMaps()">
+                                <i class="fab fa-yandex" style="color: #FC3F1D;"></i>
+                                Яндекс.Карты
+                            </button>
+                            <button class="map-choice-btn" onclick="openGoogleMaps()" style="margin-top: 12px;">
+                                <i class="fab fa-google" style="color: #4285F4;"></i>
+                                Google Maps
+                            </button>
+                            <button class="map-choice-btn" onclick="open2GIS()" style="margin-top: 12px;">
+                                <i class="fas fa-building" style="color: #00A0E3;"></i>
+                                2GIS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Закрыть окно выбора карты
+        function closeMapChooser() {
+            const modal = document.getElementById('map-modal');
+            if (modal) modal.remove();
+        }
+
+        // Открыть Яндекс.Карты (центр Калининграда)
+        function openYandexMaps() {
+            const url = 'https://yandex.ru/maps/?ll=20.463649,54.679629&z=14';
+            window.open(url, '_blank');
+            closeMapChooser();
+        }
+
+                // Открыть Google Maps (центр Калининграда)
+        function openGoogleMaps() {
+            const url = 'https://www.google.com/maps?q=54.679629,20.463649';
+            window.open(url, '_blank');
+            closeMapChooser();
+        }
         
+        // Открыть 2GIS (Калининград)
+        function open2GIS() {
+            const url = 'https://2gis.ru/kaliningrad';
+            window.open(url, '_blank');
+            closeMapChooser();
+        }
+        
+        // Экранирование HTML
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -2486,9 +3940,99 @@
             });
         }
         
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        // === ОБРАБОТЧИК СВАЙПОВ (смахивание вправо для возврата) ===
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        
+        function handleTouchStart(event) {
+            touchStartX = event.changedTouches[0].screenX;
+            touchStartY = event.changedTouches[0].screenY;
         }
+        
+                function handleTouchEnd(event) {
+            touchEndX = event.changedTouches[0].screenX;
+            touchEndY = event.changedTouches[0].screenY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Если свайп вправо (deltaX > 50) и не слишком по диагонали
+            if (deltaX > 50 && Math.abs(deltaY) < 100) {
+                // Проверяем, не на главной ли мы странице
+                if (currentPage !== 'main') {
+                    // Сохраняем текущий HTML перед переходом
+                    const currentHtml = document.getElementById('app').innerHTML;
+                    const nextPage = 'main';
+                    const nextHtml = (() => {
+                        // Временный рендер главной страницы
+                        const savedPage = currentPage;
+                        currentPage = nextPage;
+                        const html = renderMainMenu();
+                        currentPage = savedPage;
+                        return html;
+                    })();
+                    
+                    // Создаём контейнер для анимации
+                    const container = document.getElementById('app');
+                    const oldDiv = document.createElement('div');
+                    const newDiv = document.createElement('div');
+                    
+                    oldDiv.innerHTML = currentHtml;
+                    newDiv.innerHTML = nextHtml;
+                    
+                    oldDiv.style.position = 'absolute';
+                    oldDiv.style.top = '0';
+                    oldDiv.style.left = '0';
+                    oldDiv.style.width = '100%';
+                    oldDiv.style.minHeight = '100vh';
+                    oldDiv.style.transition = 'transform 0.3s ease';
+                    oldDiv.style.transform = 'translateX(0)';
+                    
+                    newDiv.style.position = 'absolute';
+                    newDiv.style.top = '0';
+                    newDiv.style.left = '0';
+                    newDiv.style.width = '100%';
+                    newDiv.style.minHeight = '100vh';
+                    newDiv.style.transition = 'transform 0.3s ease';
+                    newDiv.style.transform = 'translateX(-100%)'; // Начинаем слева (за экраном)
+                    
+                    container.style.position = 'relative';
+                    container.style.minHeight = '100vh';
+                    container.innerHTML = '';
+                    container.appendChild(newDiv);
+                    container.appendChild(oldDiv);
+                    
+                    // Запускаем анимацию через 10мс для гарантии
+                    setTimeout(() => {
+                        oldDiv.style.transform = 'translateX(100%)';  // Старый уезжает вправо
+                        newDiv.style.transform = 'translateX(0)';      // Новый приезжает слева
+                    }, 10);
+                    
+                    // После анимации переходим на главную страницу
+                    setTimeout(() => {
+                        navigate('main');
+                        container.style.position = '';
+                        container.style.minHeight = '';
+                    }, 300);
+                }
+            }
+        }
+        
+        // Добавляем обработчики к контейнеру приложения
+                function enableSwipeToGoBack() {
+            const appDiv = document.getElementById('app');
+            if (appDiv) {
+                appDiv.removeEventListener('touchstart', handleTouchStart);
+                appDiv.removeEventListener('touchend', handleTouchEnd);
+                appDiv.addEventListener('touchstart', handleTouchStart);
+                appDiv.addEventListener('touchend', handleTouchEnd);
+            }
+        }
+
+                // === КНОПКА "НАВЕРХ" ===
         
         let scrollTimeout = null;
         
@@ -2498,6 +4042,7 @@
             
             const scrollY = window.scrollY || window.pageYOffset;
             
+            // Показываем кнопку ТОЛЬКО если прокрутили больше 300px
             if (scrollY > 300) {
                 btn.classList.add('show');
             } else {
@@ -2505,261 +4050,25 @@
             }
         }
         
-        // === ФИЛЬТРЫ ===
-        let currentFilter = 'all';
-        let currentMaskFilter = 'all';
-        
-        function getFilteredRoutes() {
-            if (currentFilter === 'all') {
-                return appState.routes;
-            } else if (currentFilter === 'completed') {
-                return appState.routes.filter(route => route.isCompleted === true);
-            } else if (currentFilter === 'uncompleted') {
-                return appState.routes.filter(route => route.isCompleted === false);
-            }
-            return appState.routes;
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
         
-        function cycleFilter() {
-            if (currentFilter === 'all') {
-                currentFilter = 'completed';
-                showToast('Показаны пройденные маршруты', 'info');
-            } else if (currentFilter === 'completed') {
-                currentFilter = 'uncompleted';
-                showToast('Показаны непройденные маршруты', 'info');
-            } else if (currentFilter === 'uncompleted') {
-                currentFilter = 'all';
-                showToast('Показаны все маршруты', 'info');
-            }
-            render();
-        }
-        
-        function getFilteredMasks() {
-            const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
-            
-            if (currentMaskFilter === 'all') {
-                return appState.masks;
-            } else if (currentMaskFilter === 'activated') {
-                return appState.masks.filter(mask => activatedIds.has(mask.id));
-            } else if (currentMaskFilter === 'notactivated') {
-                return appState.masks.filter(mask => !activatedIds.has(mask.id));
-            }
-            return appState.masks;
-        }
-        
-        function cycleMaskFilter() {
-            if (currentMaskFilter === 'all') {
-                currentMaskFilter = 'activated';
-                showToast('Показаны активированные маски', 'info');
-            } else if (currentMaskFilter === 'activated') {
-                currentMaskFilter = 'notactivated';
-                showToast('Показаны не активированные маски', 'info');
-            } else if (currentMaskFilter === 'notactivated') {
-                currentMaskFilter = 'all';
-                showToast('Показаны все маски', 'info');
-            }
-            render();
-        }
-        
-        // === ДОСТИЖЕНИЯ ===
-        let userAchievements = {
-            firstMask: false, threeMasks: false, fiveMasks: false, dozenMasks: false,
-            fiftyMasks: false, hundredMasks: false, twoFiftyMasks: false, fiveHundredMasks: false,
-            firstRoute: false, threeRoutes: false, sixRoutes: false, tenRoutes: false,
-            fifteenRoutes: false, twentyFourRoutes: false, photographer: false,
-            historian: false, modernist: false, epochExplorer: false,
-            audioLover: false, negodjai: false
-        };
-        
-        const achievementsList = [
-            { id: 'firstMask', name: 'Первая маска', icon: 'fa-star', description: 'Первый шаг в мире НЕГОДЯЙ', requirement: 'Активировать 1 маску', special: false },
-            { id: 'threeMasks', name: 'Знакомство с городом', icon: 'fa-city', description: 'Вы начали исследовать Калининград', requirement: 'Активировать 3 маски', special: false },
-            { id: 'fiveMasks', name: 'Любознательный турист', icon: 'fa-binoculars', description: 'Уже полпути к первой дюжине', requirement: 'Активировать 5 масок', special: false },
-            { id: 'dozenMasks', name: 'Первая дюжина', icon: 'fa-list', description: 'Дюжина масок собрана!', requirement: 'Активировать 12 масок', special: false },
-            { id: 'fiftyMasks', name: 'Полтинник', icon: 'fa-chart-line', description: 'Серьёзный результат!', requirement: 'Активировать 50 масок', special: false },
-            { id: 'hundredMasks', name: 'Первая сотня', icon: 'fa-gem', description: 'Настоящий коллекционер!', requirement: 'Активировать 100 масок', special: true, reward: 'Похвастаться негодяю' },
-            { id: 'twoFiftyMasks', name: 'Исследователь', icon: 'fa-compass', description: 'Вы знаете город как свои пять пальцев', requirement: 'Активировать 250 масок', special: false },
-            { id: 'fiveHundredMasks', name: 'Легенда', icon: 'fa-crown', description: 'Все маски города покорились вам!', requirement: 'Активировать 500 масок', special: true, reward: 'Похвастаться негодяю' },
-            { id: 'firstRoute', name: 'Первый маршрут', icon: 'fa-route', description: 'Первое путешествие завершено', requirement: 'Пройти 1 маршрут', special: false },
-            { id: 'threeRoutes', name: 'Любитель прогулок', icon: 'fa-person-walking', description: 'Вы уже профи в городских прогулках', requirement: 'Пройти 3 маршрута', special: false },
-            { id: 'sixRoutes', name: 'Опытный путешественник', icon: 'fa-map', description: 'Половина маршрутов позади', requirement: 'Пройти 6 маршрутов', special: false },
-            { id: 'tenRoutes', name: 'Мастер маршрутов', icon: 'fa-trophy', description: 'Десятка! Почти всё позади', requirement: 'Пройти 10 маршрутов', special: true, reward: 'Похвастаться негодяю' },
-            { id: 'fifteenRoutes', name: 'Покоритель города', icon: 'fa-mountain-city', description: 'Осталось совсем немного', requirement: 'Пройти 15 маршрутов', special: false },
-            { id: 'twentyFourRoutes', name: 'Король маршрутов', icon: 'fa-crown', description: 'Все маршруты завершены!', requirement: 'Пройти 24 маршрута', special: true, reward: 'Запросить подарок-маску' },
-            { id: 'photographer', name: 'Фотограф', icon: 'fa-camera', description: 'Вы не просто проходите, а запоминаете', requirement: 'Сделать фото 10 масок', special: false },
-            { id: 'historian', name: 'Историк', icon: 'fa-landmark', description: 'Интерес к истории города', requirement: 'Активировать все маски категории "Прошлое"', special: false },
-            { id: 'modernist', name: 'Современник', icon: 'fa-building', description: 'Ценитель современности', requirement: 'Активировать все маски категории "Настоящее"', special: false },
-            { id: 'epochExplorer', name: 'Исследователь эпох', icon: 'fa-clock', description: 'Мастер всех времён', requirement: 'Получить достижения "Историк" и "Современник"', special: false },
-            { id: 'audioLover', name: 'Аудиолюбитель', icon: 'fa-headphones', description: 'Любите слушать истории', requirement: 'Прослушать 10 аудиогидов', special: false },
-            { id: 'negodjai', name: 'НЕГОДЯЙ', icon: 'fa-mask', description: 'Абсолютный чемпион!', requirement: 'Получить все достижения', special: true, reward: 'Похвастаться негодяю' }
-        ];
-        
-        function checkAchievements() {
-            const activatedCount = appState.activations.length;
-            const completedRoutesCount = appState.progress.completedRoutes;
-            let changed = false;
-            
-            if (activatedCount >= 1 && !userAchievements.firstMask) { userAchievements.firstMask = true; changed = true; showAchievementToast('Первая маска'); }
-            if (activatedCount >= 3 && !userAchievements.threeMasks) { userAchievements.threeMasks = true; changed = true; showAchievementToast('Знакомство с городом'); }
-            if (activatedCount >= 5 && !userAchievements.fiveMasks) { userAchievements.fiveMasks = true; changed = true; showAchievementToast('Любознательный турист'); }
-            if (activatedCount >= 12 && !userAchievements.dozenMasks) { userAchievements.dozenMasks = true; changed = true; showAchievementToast('Первая дюжина'); }
-            if (activatedCount >= 50 && !userAchievements.fiftyMasks) { userAchievements.fiftyMasks = true; changed = true; showAchievementToast('Полтинник'); }
-            if (activatedCount >= 100 && !userAchievements.hundredMasks) { userAchievements.hundredMasks = true; changed = true; showAchievementToast('Первая сотня', true); }
-            if (activatedCount >= 250 && !userAchievements.twoFiftyMasks) { userAchievements.twoFiftyMasks = true; changed = true; showAchievementToast('Исследователь'); }
-            if (activatedCount >= 500 && !userAchievements.fiveHundredMasks) { userAchievements.fiveHundredMasks = true; changed = true; showAchievementToast('Легенда', true); }
-            if (completedRoutesCount >= 1 && !userAchievements.firstRoute) { userAchievements.firstRoute = true; changed = true; showAchievementToast('Первый маршрут'); }
-            if (completedRoutesCount >= 3 && !userAchievements.threeRoutes) { userAchievements.threeRoutes = true; changed = true; showAchievementToast('Любитель прогулок'); }
-            if (completedRoutesCount >= 6 && !userAchievements.sixRoutes) { userAchievements.sixRoutes = true; changed = true; showAchievementToast('Опытный путешественник'); }
-            if (completedRoutesCount >= 10 && !userAchievements.tenRoutes) { userAchievements.tenRoutes = true; changed = true; showAchievementToast('Мастер маршрутов', true); }
-            if (completedRoutesCount >= 15 && !userAchievements.fifteenRoutes) { userAchievements.fifteenRoutes = true; changed = true; showAchievementToast('Покоритель города'); }
-            if (completedRoutesCount >= 24 && !userAchievements.twentyFourRoutes) { userAchievements.twentyFourRoutes = true; changed = true; showAchievementToast('Король маршрутов', true); }
-            
-            if (changed) {
-                localStorage.setItem(`achievements_${currentUserId}`, JSON.stringify(userAchievements));
-            }
-        }
-        
-        function showAchievementToast(achievementName, isSpecial = false) {
-            if (currentPage !== 'main') {
-                localStorage.setItem(`pending_achievement_${currentUserId}`, achievementName);
-                if (isSpecial) {
-                    localStorage.setItem(`pending_achievement_special_${currentUserId}`, 'true');
-                }
-                return;
-            }
-            
-            showToast('Новое достижение', 'success');
-            if (isSpecial) {
-                setTimeout(() => {
-                    showToast('Нажми на достижение, чтобы похвастаться!', 'info');
-                }, 3000);
-            }
-        }
-        
-        function loadUserAchievements() {
-            const saved = localStorage.getItem(`achievements_${currentUserId}`);
-            if (saved) {
-                userAchievements = JSON.parse(saved);
-            }
-        }
-        
-        function showAchievementInfo(achievementId) {
-            const ach = achievementsList.find(a => a.id === achievementId);
-            if (!ach) return;
-            
-            const isUnlocked = userAchievements[ach.id];
-            const statusText = isUnlocked ? '✅ Получено' : '⚪ Не получено';
-            const statusColor = isUnlocked ? '#10B981' : '#64748b';
-            
-            let rewardButton = '';
-            if (isUnlocked && ach.special) {
-                rewardButton = `
-                    <button class="achievement-reward-btn" onclick="contactAdminForAchievement('${ach.name}')">
-                        <i class="fas fa-share-alt"></i> ${ach.reward}
-                    </button>
-                `;
-            }
-            
-            const modalHtml = `
-                <div id="achievement-modal" class="modal-overlay" onclick="if(event.target === this) closeAchievementModal()">
-                    <div class="modal-container" style="max-width: 350px;">
-                        <div class="modal-header">
-                            <h2><i class="fas ${ach.icon}" style="margin-right: 8px;"></i> ${ach.name}</h2>
-                            <button class="close-btn" onclick="closeAchievementModal()">&times;</button>
-                        </div>
-                        <div class="modal-content" style="padding: 20px; text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">
-                                <i class="fas ${ach.icon}" style="color: ${isUnlocked ? '#F59E0B' : '#3d3d5c'}"></i>
-                            </div>
-                            <p style="color: #94a3b8; margin-bottom: 8px;">${ach.description}</p>
-                            <p style="color: #64748b; font-size: 11px; margin-bottom: 16px;">${ach.requirement}</p>
-                            <p style="color: ${statusColor}; font-weight: 600; margin-bottom: 16px;">${statusText}</p>
-                            ${rewardButton}
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        
-        function closeAchievementModal() {
-            const modal = document.getElementById('achievement-modal');
-            if (modal) modal.remove();
-        }
-        
-        function contactAdminForAchievement(achievementName) {
-            const message = `Я получил достижение "${achievementName}" в квесте НЕГОДЯЙ! Хочу похвастаться!`;
-            if (window.Telegram?.WebApp) {
-                window.Telegram.WebApp.openTelegramLink(`https://t.me/negodiai?text=${encodeURIComponent(message)}`);
-            } else {
-                alert(`Поддержка: @negodiai в Telegram`);
-            }
-            closeAchievementModal();
-        }
-        
-        function checkPendingAchievements() {
-            const pending = localStorage.getItem(`pending_achievement_${currentUserId}`);
-            if (pending) {
-                setTimeout(() => {
-                    showToast('Новое достижение', 'success');
-                    const isSpecial = localStorage.getItem(`pending_achievement_special_${currentUserId}`);
-                    if (isSpecial === 'true') {
-                        setTimeout(() => {
-                            showToast('Нажми на достижение, чтобы похвастаться!', 'info');
-                        }, 3000);
-                    }
-                }, 1000);
-                localStorage.removeItem(`pending_achievement_${currentUserId}`);
-                localStorage.removeItem(`pending_achievement_special_${currentUserId}`);
-            }
-        }
-        
-                let touchStartX = 0;
-        let touchEndX = 0;
-        let touchStartY = 0;
-        let touchEndY = 0;
-        
-        function handleTouchStart(event) {
-            touchStartX = event.changedTouches[0].screenX;
-            touchStartY = event.changedTouches[0].screenY;
-        }
-        
-        function handleTouchEnd(event) {
-            touchEndX = event.changedTouches[0].screenX;
-            touchEndY = event.changedTouches[0].screenY;
-            
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            // Свайп вправо (deltaX > 50) и не слишком по диагонали
-            if (deltaX > 50 && Math.abs(deltaY) < 100) {
-                if (currentPage !== 'main') {
-                    navigate('main');
-                }
-            }
-        }
-        
-        function enableSwipeToGoBack() {
-            const appDiv = document.getElementById('app');
-            if (appDiv) {
-                appDiv.removeEventListener('touchstart', handleTouchStart);
-                appDiv.removeEventListener('touchend', handleTouchEnd);
-                appDiv.addEventListener('touchstart', handleTouchStart);
-                appDiv.addEventListener('touchend', handleTouchEnd);
-            }
-        }
-        
-        // === ПРОКРУТКА ===
+        // Добавляем обработчик прокрутки
         window.addEventListener('scroll', function() {
             if (scrollTimeout) clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(checkScroll, 50);
         });
         
+        // Вызываем проверку при загрузке и при изменении размера
         window.addEventListener('load', checkScroll);
         window.addEventListener('resize', checkScroll);
-        
-        // === РЕНДЕР ===
-        function render() {
+
+        // Главная функция рендеринга
+                function render() {
             const appDiv = document.getElementById('app');
             if (!appDiv) return;
             
@@ -2796,18 +4105,199 @@
             
             appDiv.innerHTML = content;
             
-            if (currentPage !== 'main') {
-                enableSwipeToGoBack();
-            }
-            
+            // Сбрасываем проверку прокрутки при смене страницы
             setTimeout(() => {
                 const btn = document.getElementById('scrollTopBtn');
                 if (btn) {
                     btn.classList.remove('show');
                 }
+                // Принудительно скроллим наверх при смене страницы
                 window.scrollTo(0, 0);
                 checkScroll();
             }, 100);
+            
+            // Включаем свайп для возврата (кроме главной)
+            if (currentPage !== 'main') {
+                enableSwipeToGoBack();
+            }
+        }
+
+                // === ФУНКЦИИ ДЛЯ КАРУСЕЛИ В КАРТОЧКЕ МАСКИ ===
+        
+        let currentExtendedIndex = 0;
+        let extendedImagesCount = 5;
+        
+        function updateExtendedDots() {
+            const dots = document.querySelectorAll('#gallery-nav-extended .gallery-dot');
+            dots.forEach((dot, i) => {
+                if (i === currentExtendedIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function prevSlideExtended() {
+            if (currentExtendedIndex > 0) {
+                currentExtendedIndex--;
+                const slides = document.getElementById('gallery-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateExtendedDots();
+            }
+        }
+        
+        function nextSlideExtended() {
+            if (currentExtendedIndex < extendedImagesCount - 1) {
+                currentExtendedIndex++;
+                const slides = document.getElementById('gallery-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateExtendedDots();
+            }
+        }
+        
+        function goToSlideExtended(index) {
+            currentExtendedIndex = index;
+            const slides = document.getElementById('gallery-slides-extended');
+            if (slides) {
+                slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+            }
+            updateExtendedDots();
+        }
+        
+        // Полноэкранный режим для карусели
+        function openFullscreenExtended(startIndex) {
+            const maskId = window.currentFullscreenMaskId || 'mask_1';
+            currentExtendedIndex = startIndex;
+            
+            let fullscreenSlides = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenSlides += `<div class="fullscreen-slide" style="background-image: url('/images/${maskId}.jpg');"></div>`;
+            }
+            
+            let fullscreenDots = '';
+            for (let i = 1; i <= 5; i++) {
+                fullscreenDots += `<div class="fullscreen-dot ${i === startIndex + 1 ? 'active' : ''}" onclick="goToFullscreenSlideExtended(${i - 1})"></div>`;
+            }
+            
+            const fullscreenHtml = `
+                <div id="fullscreen-modal-extended" class="fullscreen-modal">
+                    <div class="fullscreen-close" onclick="closeFullscreenExtended()">✕</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-left" onclick="prevFullscreenSlideExtended()">‹</div>
+                    <div class="fullscreen-arrow fullscreen-arrow-right" onclick="nextFullscreenSlideExtended()">›</div>
+                    <div class="fullscreen-slides" id="fullscreen-slides-extended" style="transform: translateX(-${startIndex * 100}%);">
+                        ${fullscreenSlides}
+                    </div>
+                    <div class="fullscreen-nav" id="fullscreen-nav-extended">
+                        ${fullscreenDots}
+                    </div>
+                    <div class="fullscreen-counter" id="fullscreen-counter-extended">${startIndex + 1} / 5</div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fullscreenHtml);
+            
+            // Добавляем свайп для полноэкранного режима
+            setTimeout(() => {
+                const modal = document.getElementById('fullscreen-modal-extended');
+                if (modal) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+                    
+                    modal.addEventListener('touchstart', (e) => {
+                        touchStartX = e.changedTouches[0].screenX;
+                    });
+                    
+                    modal.addEventListener('touchend', (e) => {
+                        touchEndX = e.changedTouches[0].screenX;
+                        const deltaX = touchEndX - touchStartX;
+                        
+                        if (Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                prevFullscreenSlideExtended();
+                            } else {
+                                nextFullscreenSlideExtended();
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        function closeFullscreenExtended() {
+            const modal = document.getElementById('fullscreen-modal-extended');
+            if (modal) modal.remove();
+        }
+        
+        function prevFullscreenSlideExtended() {
+            if (currentExtendedIndex > 0) {
+                currentExtendedIndex--;
+                const slides = document.getElementById('fullscreen-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateFullscreenDotsExtended(currentExtendedIndex);
+                updateFullscreenCounterExtended(currentExtendedIndex);
+            }
+        }
+        
+        function nextFullscreenSlideExtended() {
+            if (currentExtendedIndex < extendedImagesCount - 1) {
+                currentExtendedIndex++;
+                const slides = document.getElementById('fullscreen-slides-extended');
+                if (slides) {
+                    slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+                }
+                updateFullscreenDotsExtended(currentExtendedIndex);
+                updateFullscreenCounterExtended(currentExtendedIndex);
+            }
+        }
+        
+        function goToFullscreenSlideExtended(index) {
+            currentExtendedIndex = index;
+            const slides = document.getElementById('fullscreen-slides-extended');
+            if (slides) {
+                slides.style.transform = `translateX(-${currentExtendedIndex * 100}%)`;
+            }
+            updateFullscreenDotsExtended(currentExtendedIndex);
+            updateFullscreenCounterExtended(currentExtendedIndex);
+        }
+        
+        function updateFullscreenDotsExtended(currentIndex) {
+            const dots = document.querySelectorAll('#fullscreen-nav-extended .fullscreen-dot');
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+        
+        function updateFullscreenCounterExtended(currentIndex) {
+            const counter = document.getElementById('fullscreen-counter-extended');
+            if (counter) {
+                counter.textContent = `${currentIndex + 1} / ${extendedImagesCount}`;
+            }
+        }
+
+                function openYandexMapsForMask(lat, lng) {
+            window.open(`https://yandex.ru/maps/?pt=${lng},${lat}&z=18&l=map`, '_blank');
+            closeMaskMapChooser();
+        }
+        
+        function openGoogleMapsForMask(lat, lng) {
+            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+            closeMaskMapChooser();
+        }
+        
+        function open2GISForMask(lat, lng) {
+            window.open(`https://2gis.ru/kaliningrad/search/${lat},${lng}`, '_blank');
+            closeMaskMapChooser();
         }
         
         // Запускаем приложение
@@ -2815,41 +4305,83 @@
         
         // Делаем функции глобальными
         window.navigate = navigate;
-        window.startQRScan = startQRScan;
+        window.activateMask = activateMask;
         window.resetActivation = resetActivation;
         window.openLocation = openLocation;
+        window.openMapForRoute = openMapForRoute;
         window.buyMask = buyMask;
         window.openSupport = openSupport;
         window.showSimpleMaskInfo = showSimpleMaskInfo;
         window.showExtendedMaskInfo = showExtendedMaskInfo;
         window.closeModal = closeModal;
         window.openRouteOnMap = openRouteOnMap;
-        window.showMapChooser = showMapChooser;
-        window.closeMapChooser = closeMapChooser;
-        window.openYandexMaps = openYandexMaps;
-        window.openGoogleMaps = openGoogleMaps;
-        window.open2GIS = open2GIS;
-        window.showRouteMapChooser = showRouteMapChooser;
+window.showMapChooser = showMapChooser;
+window.closeMapChooser = closeMapChooser;
+window.openYandexMaps = openYandexMaps;
+        window.showPrivacyPopup = showPrivacyPopup;
+        window.closePrivacyPopup = closePrivacyPopup;
+                window.scrollToTop = scrollToTop;
+                        window.showRouteMapChooser = showRouteMapChooser;
         window.closeRouteMapChooser = closeRouteMapChooser;
         window.openYandexMapsForRoute = openYandexMapsForRoute;
         window.openGoogleMapsForRoute = openGoogleMapsForRoute;
         window.open2GISForRoute = open2GISForRoute;
-        window.cycleFilter = cycleFilter;
-        window.cycleMaskFilter = cycleMaskFilter;
-        window.showMaskMapChooser = showMaskMapChooser;
+                window.cycleFilter = cycleFilter;
+                        window.openGoogleMaps = openGoogleMaps;
+        window.open2GIS = open2GIS;
+                window.cycleMaskFilter = cycleMaskFilter;
+                        window.showMaskMapChooser = showMaskMapChooser;
         window.closeMaskMapChooser = closeMaskMapChooser;
-        window.scrollToTop = scrollToTop;
-        window.closeSupportModal = closeSupportModal;
+        window.openYandexMapsForMask = openYandexMapsForMask;
+        window.openGoogleMapsForMask = openGoogleMapsForMask;
+        window.open2GISForMask = open2GISForMask;
+                window.prevSlide = prevSlide;
+        window.nextSlide = nextSlide;
+        window.goToSlide = goToSlide;
+        window.openFullscreen = openFullscreen;
+        window.closeFullscreen = closeFullscreen;
+        window.prevFullscreenSlide = prevFullscreenSlide;
+        window.nextFullscreenSlide = nextFullscreenSlide;
+        window.goToFullscreenSlide = goToFullscreenSlide;
+                window.prevSlideExtended = prevSlideExtended;
+        window.nextSlideExtended = nextSlideExtended;
+        window.openFullscreenExtended = openFullscreenExtended;
+                window.prevSlideExtended = prevSlideExtended;
+        window.nextSlideExtended = nextSlideExtended;
+        window.goToSlideExtended = goToSlideExtended;
+        window.openFullscreenExtended = openFullscreenExtended;
+        window.closeFullscreenExtended = closeFullscreenExtended;
+        window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
+        window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
+        window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
+                window.switchTab = switchTab;
+        window.prevSlideExtendedTab = prevSlideExtendedTab;
+        window.nextSlideExtendedTab = nextSlideExtendedTab;
+        window.goToSlideExtendedTab = goToSlideExtendedTab;
+        window.openFullscreenExtendedTab = openFullscreenExtendedTab;
+        window.closeFullscreenExtendedTab = closeFullscreenExtendedTab;
+        window.prevFullscreenSlideExtendedTab = prevFullscreenSlideExtendedTab;
+        window.nextFullscreenSlideExtendedTab = nextFullscreenSlideExtendedTab;
+        window.goToFullscreenSlideExtendedTab = goToFullscreenSlideExtendedTab;
+                window.openFullscreenForTab = openFullscreenForTab;
+        window.closeFullscreenExtendedTab = closeFullscreenExtendedTab;
+        window.prevFullscreenSlideExtendedTab = prevFullscreenSlideExtendedTab;
+        window.nextFullscreenSlideExtendedTab = nextFullscreenSlideExtendedTab;
+        window.goToFullscreenSlideExtendedTab = goToFullscreenSlideExtendedTab;
+                window.closeSupportModal = closeSupportModal;
         window.contactAdmin = contactAdmin;
-        window.showPrivacyPopup = showPrivacyPopup;
-        window.closePrivacyPopup = closePrivacyPopup;
-        window.showAchievementInfo = showAchievementInfo;
+                window.showAchievementInfo = showAchievementInfo;
         window.closeAchievementModal = closeAchievementModal;
         window.contactAdminForAchievement = contactAdminForAchievement;
-        window.openCustomYandexMaps = openCustomYandexMaps;
-        window.openCustomGoogleMaps = openCustomGoogleMaps;
-        window.openCustom2GIS = openCustom2GIS;
-        window.activateMaskByQR = activateMaskByQR;
+                window.cycleAchievementFilter = cycleAchievementFilter;
+                        window.prevSlideExtended = prevSlideExtended;
+        window.nextSlideExtended = nextSlideExtended;
+        window.goToSlideExtended = goToSlideExtended;
+        window.openFullscreenExtended = openFullscreenExtended;
+        window.closeFullscreenExtended = closeFullscreenExtended;
+        window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
+        window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
+        window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
     </script>
 </body>
 </html>

@@ -37,118 +37,124 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Маршрут для QR-кодов (шлюз)
-app.get('/m/:id', async (req, res) => {
-    const maskId = req.params.id;
+// QR-шлюз: обрабатывает ссылки вида /m/17
+app.get('/m/:maskId', (req, res) => {
+    const maskId = req.params.maskId;
     const userAgent = req.headers['user-agent'] || '';
     
     const isTelegram = userAgent.includes('Telegram') || userAgent.includes('TelegramBot');
     const isVK = userAgent.includes('VK') || userAgent.includes('VKAndroidApp');
-    const isMax = userAgent.includes('Max'); // уточни UA у MAX
     
-    // Если пользователь уже внутри Telegram → редирект в мини-приложение с параметром
     if (isTelegram) {
-        const botUsername = 'negodiai_bot'; // имя твоего бота
+        // Перенаправляем в мини-приложение с параметром маски
+        const botUsername = 'negodiai_bot'; // ЗАМЕНИТЕ НА ИМЯ ВАШЕГО БОТА
         return res.redirect(`https://t.me/${botUsername}/app?startapp=mask_${maskId}`);
     }
     
-    // Если пользователь в VK
     if (isVK) {
-        // Ссылка на VK Mini App (замени на реальную)
-        return res.redirect(`https://vk.com/appXXXXXXXX#mask_${maskId}`);
+        return res.redirect(`https://vk.com/negodiai?w=appXXXX#mask_${maskId}`);
     }
     
-    // Иначе показываем страницу выбора платформы
-    res.send(getPlatformPage(maskId));
+    // Показываем страницу выбора платформы
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Выберите платформу | НЕГОДЯЙ</title>
+            <style>
+                body {
+                    font-family: system-ui, -apple-system, sans-serif;
+                    background: linear-gradient(180deg, #0f0f1e 0%, #1a1a2e 100%);
+                    color: #fff;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .container {
+                    max-width: 400px;
+                    width: 100%;
+                    text-align: center;
+                }
+                .logo {
+                    width: 100px;
+                    height: 100px;
+                    background: linear-gradient(135deg, #3B82F6, #2563EB);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 24px;
+                }
+                .logo i {
+                    font-size: 48px;
+                    color: white;
+                }
+                h1 {
+                    margin-bottom: 8px;
+                }
+                .subtitle {
+                    color: #64748b;
+                    margin-bottom: 32px;
+                }
+                .buttons {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    padding: 14px 20px;
+                    border-radius: 16px;
+                    text-decoration: none;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    background: #252542;
+                    color: white;
+                }
+                .btn-telegram {
+                    background: #26A5E4;
+                }
+                .btn-vk {
+                    background: #0077FF;
+                }
+                .btn-telegram:hover, .btn-vk:hover {
+                    transform: translateY(-2px);
+                    opacity: 0.9;
+                }
+                .fa-telegram, .fa-vk {
+                    font-size: 20px;
+                }
+            </style>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+        </head>
+        <body>
+            <div class="container">
+                <div class="logo">
+                    <i class="fas fa-mask"></i>
+                </div>
+                <h1>НЕГОДЯЙ</h1>
+                <p class="subtitle">Туристический квест по Калининграду</p>
+                <div class="buttons">
+                    <a href="https://t.me/negodiai_bot/app?startapp=mask_${maskId}" class="btn btn-telegram">
+                        <i class="fab fa-telegram"></i> Открыть в Telegram
+                    </a>
+                    <a href="https://vk.com/negodiai?w=appXXXX#mask_${maskId}" class="btn btn-vk">
+                        <i class="fab fa-vk"></i> Открыть в VK
+                    </a>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
 });
-
-// HTML страница выбора платформы
-function getPlatformPage(maskId) {
-    return `
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Выберите платформу | НЕГОДЯЙ</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(180deg, #0f0f1e 0%, #1a1a2e 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container { max-width: 400px; width: 100%; text-align: center; }
-        .logo {
-            width: 120px; height: 120px;
-            background: linear-gradient(135deg, #3B82F6, #2563EB);
-            border-radius: 60px;
-            display: flex;
-            align-items: center; justify-content: center;
-            margin: 0 auto 24px;
-        }
-        .logo i { font-size: 60px; color: white; }
-        h1 { font-size: 28px; margin-bottom: 8px; }
-        .subtitle { color: #64748b; margin-bottom: 32px; }
-        .platform-buttons { display: flex; flex-direction: column; gap: 16px; }
-        .platform-btn {
-            display: flex; align-items: center; gap: 16px;
-            padding: 16px 20px; background: #252542;
-            border: none; border-radius: 16px;
-            color: white; font-size: 18px; font-weight: 600;
-            cursor: pointer; transition: all 0.2s ease;
-            width: 100%; text-decoration: none;
-        }
-        .platform-btn:hover { background: #2d2d54; transform: translateY(-2px); }
-        .platform-icon {
-            width: 48px; height: 48px;
-            background: #1a1a2e; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .platform-icon i { font-size: 24px; }
-        .telegram-icon { color: #26A5E4; }
-        .vk-icon { color: #0077FF; }
-        .web-icon { color: #3B82F6; }
-        .platform-info { flex: 1; text-align: left; }
-        .platform-name { font-size: 16px; font-weight: 600; }
-        .platform-desc { font-size: 12px; color: #64748b; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo"><i class="fas fa-mask"></i></div>
-        <h1>НЕГОДЯЙ</h1>
-        <p class="subtitle">Туристический квест по Калининграду</p>
-        <div class="platform-buttons">
-            <a href="https://t.me/negodiai_bot/app?startapp=mask_${maskId}" class="platform-btn">
-                <div class="platform-icon"><i class="fab fa-telegram telegram-icon"></i></div>
-                <div class="platform-info">
-                    <div class="platform-name">Telegram</div>
-                    <div class="platform-desc">Открыть в мини-приложении</div>
-                </div>
-                <i class="fas fa-chevron-right" style="color: #64748b;"></i>
-            </a>
-            <a href="https://vk.com/appXXXXXXXX#mask_${maskId}" class="platform-btn">
-                <div class="platform-icon"><i class="fab fa-vk vk-icon"></i></div>
-                <div class="platform-info">
-                    <div class="platform-name">ВКонтакте</div>
-                    <div class="platform-desc">Открыть в VK Mini App</div>
-                </div>
-                <i class="fas fa-chevron-right" style="color: #64748b;"></i>
-            </a>
-        </div>
-        <p style="font-size: 12px; color: #3d3d5c; margin-top: 32px;">Маска #${maskId}</p>
-    </div>
-</body>
-</html>
-    `;
-}
 
 // Запускаем сервер
 app.listen(PORT, () => {
