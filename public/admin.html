@@ -803,12 +803,27 @@
                             });
                         }
                     }
-                    showMessage('Маска обновлена!', 'success');
-                    loadMasks().then(() => renderAdminPanel());
-                } else {
-                    showMessage('Ошибка обновления', 'error');
-                }
-            });
+                                        showMessage('Маска обновлена!', 'success');
+                    
+                    // Перезагружаем список масок в админке
+                    loadMasks().then(() => {
+                        renderAdminPanel();
+                        
+                        // Отправляем сообщение в основное окно (приложение) об обновлении масок
+                        try {
+                            // Если админка открыта в отдельной вкладке/окне
+                            if (window.opener && !window.opener.closed) {
+                                window.opener.postMessage('masksUpdated', '*');
+                                console.log('Сообщение отправлено в основное окно');
+                            }
+                            // Если админка открыта в iframe или том же окне
+                            if (window.parent && window.parent !== window) {
+                                window.parent.postMessage('masksUpdated', '*');
+                            }
+                        } catch (e) {
+                            console.error('Ошибка отправки сообщения:', e);
+                        }
+                    });
         }
         
         async function deleteMask(id) {

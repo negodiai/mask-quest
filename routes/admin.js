@@ -52,11 +52,13 @@ router.post('/masks', checkAdmin, async (req, res) => {
             INSERT INTO masks (id, name, description, number, 
                                "priceAmount", "isAvailable", 
                                "yandexMapLink", "googleMapLink", "twoGisLink",
-                               "present_text", "ussr_text", "past_text")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                               "present_text", "ussr_text", "past_text",
+                               latitude, longitude, address)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         `, [id, name, description, number, priceAmount, 0, 
             yandexMapLink, googleMapLink, twoGisLink,
-            present_text, ussr_text, past_text]);
+            present_text, ussr_text, past_text,
+            null, null, null]);  // latitude, longitude, address = null
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {

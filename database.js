@@ -83,8 +83,8 @@ async function initDatabase() {
                 name TEXT NOT NULL,
                 description TEXT,
                 "fullDescription" TEXT,
-                latitude REAL NOT NULL,
-                longitude REAL NOT NULL,
+                latitude REAL,
+                longitude REAL,
                 address TEXT,
                 "qrCode" TEXT UNIQUE,
                 "photoHash" TEXT,
@@ -99,6 +99,15 @@ async function initDatabase() {
                 "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+                // Убираем NOT NULL с полей latitude, longitude (если есть ограничения)
+        try {
+            await pool.query(`ALTER TABLE masks ALTER COLUMN latitude DROP NOT NULL`);
+            await pool.query(`ALTER TABLE masks ALTER COLUMN longitude DROP NOT NULL`);
+            console.log('✅ Убраны NOT NULL ограничения с latitude, longitude');
+        } catch (err) {
+            console.log('Ошибка при снятии NOT NULL:', err.message);
+        }
 
                 // Добавляем поле number, если его нет
         try {
