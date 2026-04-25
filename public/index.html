@@ -2591,14 +2591,86 @@
 
                                         let html5QrCode = null;
         
-                function startQRScan() {
+                        function createScannerContainer() {
+            // Проверяем, существует ли уже контейнер
+            let container = document.getElementById('qr-scanner-container');
+            if (container) {
+                return container;
+            }
+            
+            // Создаём контейнер
+            container = document.createElement('div');
+            container.id = 'qr-scanner-container';
+            container.className = 'scanner-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.95);
+                z-index: 10000;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            `;
+            
+            // Кнопка закрытия
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'scanner-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 32px;
+                cursor: pointer;
+                z-index: 10001;
+            `;
+            closeBtn.onclick = closeQRScanner;
+            
+            // Контейнер для сканера
+            const readerDiv = document.createElement('div');
+            readerDiv.id = 'qr-reader';
+            readerDiv.style.cssText = `
+                width: 100%;
+                max-width: 400px;
+                border-radius: 20px;
+                overflow: hidden;
+            `;
+            
+            // Текст подсказки
+            const tip = document.createElement('div');
+            tip.className = 'scanner-tip';
+            tip.textContent = 'Наведите камеру на QR-код маски';
+            tip.style.cssText = `
+                color: #94a3b8;
+                margin-top: 20px;
+                text-align: center;
+                font-size: 14px;
+            `;
+            
+            container.appendChild(closeBtn);
+            container.appendChild(readerDiv);
+            container.appendChild(tip);
+            document.body.appendChild(container);
+            
+            return container;
+        }
+        
+        function startQRScan() {
             console.log('=== ЗАПУСК СКАНЕРА ===');
             
             // Проверяем, загружена ли библиотека
             if (typeof Html5Qrcode === 'undefined') {
                 console.error('Библиотека html5-qrcode не загружена');
                 showToast('Загрузка сканера... Попробуйте ещё раз', 'error');
-                // Пытаемся загрузить библиотеку сейчас
+                // Загружаем библиотеку
                 const script = document.createElement('script');
                 script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
                 script.onload = () => {
@@ -2612,54 +2684,38 @@
                 return;
             }
             
-            const scannerContainer = document.getElementById('qr-scanner-container');
-            if (!scannerContainer) {
-                showToast('Ошибка: контейнер сканера не найден', 'error');
-                return;
-            }
-            
-            scannerContainer.classList.add('active');
+            // Создаём контейнер
+            const scannerContainer = createScannerContainer();
+            scannerContainer.style.display = 'flex';
             
             // Очищаем предыдущий контент
-            const readerElement = document.getElementById('qr-reader');
-            if (readerElement) {
-                readerElement.innerHTML = '';
+            const readerDiv = document.getElementById('qr-reader');
+            if (readerDiv) {
+                readerDiv.innerHTML = '';
             }
             
-            // Создаём элемент для сканера
-            let readerDiv = document.getElementById('qr-reader');
-            if (!readerDiv) {
-                readerDiv = document.createElement('div');
-                readerDiv.id = 'qr-reader';
-                readerDiv.style.width = '100%';
-                readerDiv.style.maxWidth = '400px';
-                scannerContainer.appendChild(readerDiv);
-            }
-            
-            // Очищаем предыдущий сканер
+            // Останавливаем предыдущий сканер
             if (window.html5QrCode) {
                 window.html5QrCode.stop().then(() => {
                     window.html5QrCode.clear();
                     window.html5QrCode = null;
-                    startScanner(readerDiv);
+                    startScanner();
                 }).catch(() => {
-                    startScanner(readerDiv);
+                    startScanner();
                 });
             } else {
-                startScanner(readerDiv);
-            }
-            
-            // Добавляем кнопку закрытия
-            if (!document.querySelector('#qr-scanner-container .scanner-close')) {
-                const closeBtn = document.createElement('button');
-                closeBtn.className = 'scanner-close';
-                closeBtn.innerHTML = '&times;';
-                closeBtn.onclick = closeQRScanner;
-                scannerContainer.appendChild(closeBtn);
+                startScanner();
             }
         }
         
-        function startScanner(readerElement) {
+        function startScanner() {
+            const readerDiv = document.getElementById('qr-reader');
+            if (!readerDiv) {
+                showToast('Ошибка: элемент сканера не найден', 'error');
+                closeQRScanner();
+                return;
+            }
+            
             if (typeof Html5Qrcode === 'undefined') {
                 showToast('Ошибка загрузки сканера', 'error');
                 closeQRScanner();
@@ -2683,7 +2739,7 @@
                     closeQRScanner();
                 },
                 (errorMessage) => {
-                    // Игнорируем
+                    // Игнорируем ошибки чтения
                 }
             ).catch((err) => {
                 console.error('Ошибка запуска камеры:', err);
@@ -2695,12 +2751,7 @@
         function closeQRScanner() {
             const scannerContainer = document.getElementById('qr-scanner-container');
             if (scannerContainer) {
-                scannerContainer.classList.remove('active');
-                // Очищаем содержимое
-                const readerDiv = document.getElementById('qr-reader');
-                if (readerDiv) {
-                    readerDiv.innerHTML = '';
-                }
+                scannerContainer.style.display = 'none';
             }
             if (window.html5QrCode) {
                 window.html5QrCode.stop().then(() => {
