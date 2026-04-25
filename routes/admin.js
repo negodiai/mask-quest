@@ -398,7 +398,7 @@ router.delete('/masks/:maskId/routes/:routeId', checkAdmin, async (req, res) => 
 
 router.get('/set-mask-numbers', checkAdmin, async (req, res) => {
     try {
-        const masks = await db.query('SELECT id FROM masks ORDER BY created_at');
+        const masks = await db.query('SELECT id FROM masks ORDER BY "createdAt"');
         for (let i = 0; i < masks.rows.length; i++) {
             await db.query('UPDATE masks SET number = $1 WHERE id = $2', [i + 1, masks.rows[i].id]);
         }
