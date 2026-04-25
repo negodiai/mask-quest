@@ -148,7 +148,7 @@ router.post('/activate-by-qr', async (req, res) => {
         if (existingResult.rows.length > 0) {
             return res.json({
                 success: false,
-                message: '⚠️ Эта маска уже активирована. Ищите следующую!',
+                message: 'Вы уже активировали эту маску',
                 activatedAt: existingResult.rows[0].activatedAt
             });
         }
@@ -164,7 +164,7 @@ router.post('/activate-by-qr', async (req, res) => {
         
         res.json({
             success: true,
-            message: `✅ Маска "${mask.name}" активирована!`,
+            message: `Маска "${mask.name}" активирована!`,
             mask: {
                 id: mask.id,
                 number: mask.number,
