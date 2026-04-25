@@ -60,6 +60,13 @@ async function runMigrations() {
             `);
             await pool.query(`ALTER TABLE user_route_progress DROP COLUMN "completedAt"`);
             await pool.query(`ALTER TABLE user_route_progress RENAME COLUMN "completedAt_new" TO "completedAt"`);
+                    // Добавляем поле для подзаголовка
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS subtitle TEXT`);
+            console.log('✅ Добавлено поле subtitle');
+        } catch (err) {
+            console.log('Поле subtitle уже существует или ошибка:', err.message);
+        }
             
             console.log('✅ Миграция completedAt завершена');
         }

@@ -55,7 +55,7 @@ async function updateUserRouteProgress(userId) {
 router.get('/list', async (req, res) => {
     try {
         const result = await db.query(`
-            SELECT id, number, name, description, "photoHash", "isAvailable", 
+            SELECT id, number, name, description, subtitle, "photoHash", "isAvailable", 
                    "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink",
                    "present_text", "ussr_text", "past_text"
             FROM masks 
@@ -68,6 +68,7 @@ router.get('/list', async (req, res) => {
             number: m.number,
             name: m.name,
             description: m.description,
+            subtitle: m.subtitle,
             photoHash: m.photoHash,
             isAvailable: m.isAvailable === 1,
             price: { amount: m.priceAmount, currency: m.priceCurrency || 'RUB' },

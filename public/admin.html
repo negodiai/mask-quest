@@ -598,12 +598,16 @@
             `).join('');
             
             showModal('Добавить маску', `
-                <div class="form-group">
+                                <div class="form-group">
                     <label>Название *</label>
                     <input type="text" id="mask-name" placeholder="Например: Берёзовая">
                 </div>
                 <div class="form-group">
-                    <label>Краткое описание</label>
+                    <label>Подзаголовок (отображается на карточке в каталоге)</label>
+                    <input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок для карточки">
+                </div>
+                <div class="form-group">
+                    <label>Краткое описание (показывается внутри модального окна)</label>
                     <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
                 </div>
                 <div class="form-group">
@@ -657,6 +661,7 @@
                 
                 const newMask = {
                     name: document.getElementById('mask-name').value,
+                    subtitle: document.getElementById('mask-subtitle').value,
                     description: document.getElementById('mask-description').value,
                     number: parseInt(document.getElementById('mask-number').value),
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
@@ -709,12 +714,16 @@
             `).join('');
             
             showModal('Редактировать маску', `
-                <div class="form-group">
+                                <div class="form-group">
                     <label>Название</label>
                     <input type="text" id="mask-name" value="${escapeHtml(mask.name)}">
                 </div>
                 <div class="form-group">
-                    <label>Краткое описание</label>
+                    <label>Подзаголовок (отображается на карточке в каталоге)</label>
+                    <input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Краткое описание (показывается внутри модального окна)</label>
                     <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
                 </div>
                 <div class="form-group">
@@ -768,6 +777,7 @@
                 
                 const updatedMask = {
                     name: document.getElementById('mask-name').value,
+                    subtitle: document.getElementById('mask-subtitle').value,
                     description: document.getElementById('mask-description').value,
                     number: parseInt(document.getElementById('mask-number').value),
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value),

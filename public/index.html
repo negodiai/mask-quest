@@ -2430,7 +2430,7 @@
                             </div>
                             <div class="card-text-content">
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
-                                <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
+                                <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.subtitle || '')}</p>
                             </div>
                         </div>
                     </div>
@@ -3177,59 +3177,92 @@
         }
         
         // Простая информация о маске (для каталога)
-        function showSimpleMaskInfo(maskId) {
+                function showSimpleMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
-                       const modalHtml = `
-                <div id="info-modal" class="modal-overlay">
-                    <div class="modal-container">
+            const modalHtml = `
+                <div id="info-modal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+                    <div class="modal-container" id="modal-container-simple">
                         <div class="modal-header">
                             <h2 style="margin-left: 8px;">${escapeHtml(mask.name)}</h2>
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <div onclick="openFullscreen(0)">
-                                ${renderGallery(mask.id, 'maskinfo')}
+                            <div class="main-photo">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
-                                                        <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
+                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 12px; padding-left: 8px; text-align: left;">${escapeHtml(mask.description || 'Нет описания')}</p>
+                            <div class="action-buttons-small">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-    <i class="fas fa-shopping-cart"></i>
-    <span>${mask.price?.amount || mask.priceAmount || 15000}₽</span>
-</button>` : ''}
-                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-    <i class="fas fa-directions"></i>
-    <span>Маршрут</span>
-</button>
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>${mask.price?.amount || mask.priceAmount || 15000}₽</span>
+                                </button>` : ''}
+                                <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}'); closeModal();" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                    <i class="fas fa-directions"></i>
+                                    <span>Маршрут</span>
+                                </button>
                             </div>
-                            </div>
-                                             <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 12px; padding-left: 8px; text-align: left;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
                     </div>
                 </div>
             `;
-            
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            // Добавляем проверку прокрутки для модального окна
+            // Добавляем кнопку "Наверх" внутри модального окна
             setTimeout(() => {
-                const modal = document.getElementById('info-modal');
-                if (modal) {
-                    modal.addEventListener('scroll', function() {
-                        const btn = document.getElementById('scrollTopBtn');
-                        if (!btn) return;
-                        if (modal.scrollTop > 300) {
-                            btn.classList.add('show');
-                            btn.onclick = () => {
-                                modal.scrollTo({ top: 0, behavior: 'smooth' });
-                            };
+                const modalContainer = document.querySelector('#info-modal .modal-container');
+                if (modalContainer && !document.getElementById('scroll-top-btn-modal')) {
+                    const scrollBtn = document.createElement('button');
+                    scrollBtn.id = 'scroll-top-btn-modal';
+                    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    scrollBtn.style.cssText = `
+                        position: sticky;
+                        bottom: 20px;
+                        left: calc(100% - 70px);
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 25px;
+                        background: rgba(100, 116, 139, 0.5);
+                        backdrop-filter: blur(4px);
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1001;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                        margin-bottom: 10px;
+                    `;
+                    
+                    scrollBtn.onclick = () => {
+                        modalContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    
+                    scrollBtn.onmouseenter = () => {
+                        scrollBtn.style.transform = 'scale(1.05)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.7)';
+                    };
+                    scrollBtn.onmouseleave = () => {
+                        scrollBtn.style.transform = 'scale(1)';
+                        scrollBtn.style.background = 'rgba(100, 116, 139, 0.5)';
+                    };
+                    
+                    modalContainer.appendChild(scrollBtn);
+                    
+                    modalContainer.addEventListener('scroll', () => {
+                        if (modalContainer.scrollTop > 300) {
+                            scrollBtn.style.display = 'flex';
                         } else {
-                            btn.classList.remove('show');
-                            btn.onclick = () => scrollToTop();
+                            scrollBtn.style.display = 'none';
                         }
                     });
                 }
-            }, 100);
+            }, 200);
         }
         
         // Расширенная информация о маске (для активированных)

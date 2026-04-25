@@ -41,7 +41,7 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
 // POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
-        name, description, number, priceAmount, 
+        name, description, subtitle, number, priceAmount, 
         yandexMapLink, googleMapLink, twoGisLink,
         present_text, ussr_text, past_text
     } = req.body;
@@ -49,16 +49,16 @@ router.post('/masks', checkAdmin, async (req, res) => {
     
     try {
         await db.query(`
-            INSERT INTO masks (id, name, description, number, 
+            INSERT INTO masks (id, name, description, subtitle, number, 
                                "priceAmount", "isAvailable", 
                                "yandexMapLink", "googleMapLink", "twoGisLink",
                                "present_text", "ussr_text", "past_text",
                                latitude, longitude, address)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        `, [id, name, description, number, priceAmount, 0, 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        `, [id, name, description, subtitle, number, priceAmount, 0, 
             yandexMapLink, googleMapLink, twoGisLink,
             present_text, ussr_text, past_text,
-            null, null, null]);  // latitude, longitude, address = null
+            null, null, null]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -83,7 +83,7 @@ router.post('/fix-dates', checkAdmin, async (req, res) => {
 // PUT /api/admin/masks/:id - обновить маску
 router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
-        name, description, number, priceAmount, isAvailable,
+        name, description, subtitle, number, priceAmount, isAvailable,
         yandexMapLink, googleMapLink, twoGisLink,
         present_text, ussr_text, past_text
     } = req.body;
@@ -91,12 +91,12 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
     try {
         await db.query(`
             UPDATE masks SET 
-                name = $1, description = $2, number = $3,
-                "priceAmount" = $4, "isAvailable" = $5,
-                "yandexMapLink" = $6, "googleMapLink" = $7, "twoGisLink" = $8,
-                "present_text" = $9, "ussr_text" = $10, "past_text" = $11
-            WHERE id = $12
-        `, [name, description, number, priceAmount, isAvailable ? 1 : 0,
+                name = $1, description = $2, subtitle = $3, number = $4,
+                "priceAmount" = $5, "isAvailable" = $6,
+                "yandexMapLink" = $7, "googleMapLink" = $8, "twoGisLink" = $9,
+                "present_text" = $10, "ussr_text" = $11, "past_text" = $12
+            WHERE id = $13
+        `, [name, description, subtitle, number, priceAmount, isAvailable ? 1 : 0,
             yandexMapLink, googleMapLink, twoGisLink,
             present_text, ussr_text, past_text, req.params.id]);
         
