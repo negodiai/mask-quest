@@ -47,7 +47,6 @@ async function updateUserRouteProgress(userId) {
                 `, [progressPercent, activatedCount, isCompleted ? new Date().toISOString() : null, userId, route.id]);
             } else if (activatedCount > 0) {
                 // Создаём новую запись
-                const { v4: uuidv4 } = require('uuid');
                 await db.query(`
                     INSERT INTO user_route_progress (id, "userId", "routeId", "progressPercent", "masksActivated", "completedAt")
                     VALUES ($1, $2, $3, $4, $5, $6)
@@ -182,18 +181,6 @@ router.get('/nearby', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-// POST /api/masks/activate - активация маски по геолокации
-router.post('/activate', async (req, res) => {
-    const { userId, maskId, latitude, longitude, telegramData } = req.body;
-    const { v4: uuidv4 } = require('uuid');
-    
-    if (!userId || !latitude || !longitude) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Не хватает данных' 
-        });
-    }
     
     const userLat = parseFloat(latitude);
     const userLng = parseFloat(longitude);
@@ -248,7 +235,7 @@ router.post('/activate', async (req, res) => {
             return res.json({
                 success: false,
                 error: 'already_activated',
-                message: 'Вы уже активировали эту маску! Ищите следующую.'
+                message: 'Вы уже активировали эту маску!'
             });
         }
         
@@ -293,6 +280,6 @@ router.post('/activate', async (req, res) => {
         console.error('Activation error:', err);
         res.status(500).json({ success: false, message: 'Ошибка активации' });
     }
-});
+;
 
 module.exports = router;

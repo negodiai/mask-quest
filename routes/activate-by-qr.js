@@ -36,7 +36,7 @@ router.post('/activate-by-qr', async (req, res) => {
         if (existingResult.rows.length > 0) {
             return res.json({
                 success: false,
-                message: 'Вы уже активировали эту маску! Ищите следующую.',
+                message: 'Вы уже активировали эту маску!',
                 activatedAt: existingResult.rows[0].activatedAt
             });
         }
