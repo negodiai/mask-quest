@@ -78,20 +78,18 @@ router.post('/fix-dates', checkAdmin, async (req, res) => {
 // PUT /api/admin/masks/:id - обновить маску
 router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
-        name, description, fullDescription, latitude, longitude, address, 
-        qrCode, priceAmount, isAvailable, yandexMapLink, googleMapLink, twoGisLink 
+        name, description, fullDescription, number, qrCode, priceAmount, isAvailable, 
+        yandexMapLink, googleMapLink, twoGisLink 
     } = req.body;
     
     try {
         await db.query(`
             UPDATE masks SET 
-                name = $1, description = $2, "fullDescription" = $3, 
-                latitude = $4, longitude = $5, address = $6, "qrCode" = $7, 
-                "priceAmount" = $8, "isAvailable" = $9, 
-                "yandexMapLink" = $10, "googleMapLink" = $11, "twoGisLink" = $12
-            WHERE id = $13
-        `, [name, description, fullDescription, latitude, longitude, address, 
-            qrCode, priceAmount, isAvailable ? 1 : 0, 
+                name = $1, description = $2, "fullDescription" = $3, number = $4,
+                "qrCode" = $5, "priceAmount" = $6, "isAvailable" = $7, 
+                "yandexMapLink" = $8, "googleMapLink" = $9, "twoGisLink" = $10
+            WHERE id = $11
+        `, [name, description, fullDescription, number, qrCode, priceAmount, isAvailable ? 1 : 0, 
             yandexMapLink, googleMapLink, twoGisLink, req.params.id]);
         
         res.json({ success: true, message: 'Маска обновлена' });
