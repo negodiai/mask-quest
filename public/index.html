@@ -588,26 +588,6 @@
             margin-top: 16px;
         }
         
-        .activated-mask-card {
-            border: 1px solid #10B981;
-            background: #1a2e1a;
-            position: relative;
-        }
-        
-        .mask-completed-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 28px;
-            height: 28px;
-            background: #10B981;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-        
         .mask-completed-badge i {
             font-size: 12px;
             color: white;
@@ -1156,47 +1136,81 @@
             }
         }
         
-        // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
         function startQRScan() {
-            showToast('Наведите камеру на QR-код маски', 'info');
-
-            if (!window.Telegram?.WebApp?.showScanQrPopup) {
-                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
+            console.log('startQRScan вызван');
+            
+            if (!window.Telegram?.WebApp) {
+                showToast('Это приложение работает только в Telegram', 'error');
                 return;
             }
-
-            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
-                if (!scannedText) {
-                    showToast('Не удалось распознать код', 'error');
-                    return;
-                }
-                
-                console.log('Отсканировано:', scannedText);
-                
-                let maskId = null;
-                
-                if (scannedText.includes('/m/')) {
-                    try {
-                        const url = new URL(scannedText);
-                        const pathParts = url.pathname.split('/');
-                        maskId = pathParts[pathParts.length - 1];
-                    } catch (e) {
-                        maskId = scannedText;
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Проверяем поддержку сканера
+            if (!tg.showScanQrPopup && !tg.openScanQrPopup) {
+                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
+                console.log('Сканер не поддерживается');
+                return;
+            }
+            
+            showToast('Наведите камеру на QR-код', 'info');
+            
+            // Используем современный метод showScanQrPopup
+            if (tg.showScanQrPopup) {
+                tg.showScanQrPopup((scannedText) => {
+                    console.log('Отсканировано (showScanQrPopup):', scannedText);
+                    if (!scannedText) {
+                        showToast('Не удалось распознать код', 'error');
+                        return true;
                     }
-                } else {
+                    processScannedQR(scannedText);
+                    return true;
+                }, (error) => {
+                    console.error('Ошибка сканера:', error);
+                    showToast('Ошибка запуска сканера', 'error');
+                });
+            }
+            // fallback на старый метод
+            else if (tg.openScanQrPopup) {
+                tg.openScanQrPopup({
+                    text: 'Наведите камеру на QR-код маски'
+                }, (scannedText) => {
+                    console.log('Отсканировано (openScanQrPopup):', scannedText);
+                    if (!scannedText) {
+                        showToast('Не удалось распознать код', 'error');
+                        return;
+                    }
+                    processScannedQR(scannedText);
+                });
+            }
+        }
+        
+        function processScannedQR(scannedText) {
+            console.log('processScannedQR:', scannedText);
+            
+            let maskId = null;
+            
+            // Парсим ID маски из ссылки вида https://domain.com/m/17
+            if (scannedText.includes('/m/')) {
+                try {
+                    const url = new URL(scannedText);
+                    const pathParts = url.pathname.split('/');
+                    maskId = pathParts[pathParts.length - 1];
+                } catch (e) {
                     maskId = scannedText;
                 }
-                
-                console.log('ID маски:', maskId);
-                
-                if (maskId) {
-                    activateMaskByQR(maskId);
-                } else {
-                    showToast('Не удалось определить маску', 'error');
-                }
-                
-                return true;
-            });
+            } else {
+                maskId = scannedText;
+            }
+            
+            console.log('ID маски после парсинга:', maskId);
+            
+            if (maskId) {
+                activateMaskByQR(maskId);
+            } else {
+                showToast('Не удалось определить маску', 'error');
+            }
         }
         
         function showActivatedMask(mask) {
@@ -2700,30 +2714,27 @@
             }
         }
         
-        // === ОБРАБОТЧИК СВАЙПОВ ===
-        let touchStartX = 0;
+                let touchStartX = 0;
         let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
         
         function handleTouchStart(event) {
             touchStartX = event.changedTouches[0].screenX;
+            touchStartY = event.changedTouches[0].screenY;
         }
         
         function handleTouchEnd(event) {
             touchEndX = event.changedTouches[0].screenX;
-            const deltaX = touchEndX - touchStartX;
+            touchEndY = event.changedTouches[0].screenY;
             
-            if (deltaX > 50 && Math.abs(deltaX - (touchEndY - touchStartY)) < 100) {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Свайп вправо (deltaX > 50) и не слишком по диагонали
+            if (deltaX > 50 && Math.abs(deltaY) < 100) {
                 if (currentPage !== 'main') {
-                    const appDiv = document.getElementById('app');
-                    if (appDiv) {
-                        appDiv.style.transform = 'translateX(100%)';
-                        setTimeout(() => {
-                            appDiv.style.transform = '';
-                            navigate('main');
-                        }, 300);
-                    } else {
-                        navigate('main');
-                    }
+                    navigate('main');
                 }
             }
         }
@@ -2736,17 +2747,6 @@
                 appDiv.addEventListener('touchstart', handleTouchStart);
                 appDiv.addEventListener('touchend', handleTouchEnd);
             }
-        }
-        
-        let touchStartY = 0;
-        let touchEndY = 0;
-        
-        function handleTouchStartY(event) {
-            touchStartY = event.changedTouches[0].screenY;
-        }
-        
-        function handleTouchEndY(event) {
-            touchEndY = event.changedTouches[0].screenY;
         }
         
         // === ПРОКРУТКА ===
