@@ -589,17 +589,15 @@
             }
         }
         
-                async function showAddMaskModal() {
-            const maskRoutes = allRoutes.map(r => ({ id: r.id, name: r.name, checked: false }));
-            
-            const routesHtml = maskRoutes.map(route => `
+                        async function showAddMaskModal() {
+            const routesHtml = allRoutes.map(route => `
                 <label class="route-checkbox">
                     <input type="checkbox" value="${route.id}" class="route-checkbox-input">
                     <span>${escapeHtml(route.name)}</span>
                 </label>
             `).join('');
             
-                        showModal('Добавить маску', `
+            showModal('Добавить маску', `
                 <div class="form-group">
                     <label>Название *</label>
                     <input type="text" id="mask-name" placeholder="Например: Берёзовая">
@@ -609,12 +607,8 @@
                     <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Полное описание</label>
-                    <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
-                </div>
-                <div class="form-group">
                     <label>Номер маски (QR-код) *</label>
-                    <input type="number" id="mask-number" placeholder="1, 2, 3..." value="${masks.length + 1}">
+                    <input type="number" id="mask-number" placeholder="1, 2, 3...">
                     <small style="color: #64748b;">Этот номер будет использоваться в QR-коде и для активации</small>
                 </div>
                 <div class="form-group">
@@ -633,6 +627,22 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
                 </div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 12px;">📖 Тексты для карточки маски</h3>
+                
+                <div class="form-group">
+                    <label>Настоящее</label>
+                    <textarea id="mask-present_text" placeholder="Текст для вкладки 'Настоящее' (Современный Калининград)" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>СССР</label>
+                    <textarea id="mask-ussr_text" placeholder="Текст для вкладки 'СССР' (Советский период)" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Прошлое</label>
+                    <textarea id="mask-past_text" placeholder="Текст для вкладки 'Прошлое' (Кёнигсберг)" rows="4"></textarea>
+                </div>
+                
                 <div class="form-group">
                     <label>Добавить в маршруты</label>
                     <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
@@ -645,22 +655,17 @@
                     selectedRoutes.push(cb.value);
                 });
                 
-                const maskNumber = parseInt(document.getElementById('mask-number').value);
-                
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
-                    fullDescription: document.getElementById('mask-fullDescription').value,
-                    number: maskNumber,
-                    latitude: 0,  // Заглушка, не используется
-                    longitude: 0, // Заглушка, не используется
-                    address: '',
-                    qrCode: `mask_${maskNumber}`,
+                    number: parseInt(document.getElementById('mask-number').value),
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
-                    isAvailable: false,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value,
                     googleMapLink: document.getElementById('mask-googleMapLink').value,
-                    twoGisLink: document.getElementById('mask-twoGisLink').value
+                    twoGisLink: document.getElementById('mask-twoGisLink').value,
+                    present_text: document.getElementById('mask-present_text').value,
+                    ussr_text: document.getElementById('mask-ussr_text').value,
+                    past_text: document.getElementById('mask-past_text').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
@@ -686,10 +691,10 @@
                     showMessage('Ошибка добавления', 'error');
                 }
             });
-                }
+        }
 
         
-                        async function editMask(id) {
+                                async function editMask(id) {
             const mask = masks.find(m => m.id === id);
             if (!mask) return;
             
@@ -713,12 +718,8 @@
                     <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Полное описание</label>
-                    <textarea id="mask-fullDescription">${escapeHtml(mask.fullDescription || '')}</textarea>
-                </div>
-                <div class="form-group">
                     <label>Номер маски (QR-код)</label>
-                    <input type="number" id="mask-number" value="${mask.number || ''}" placeholder="1, 2, 3...">
+                    <input type="number" id="mask-number" value="${mask.number || ''}">
                     <small style="color: #64748b;">Этот номер будет использоваться в QR-коде и для активации</small>
                 </div>
                 <div class="form-group">
@@ -727,16 +728,32 @@
                 </div>
                 <div class="form-group">
                     <label>Яндекс.Карты (ссылка)</label>
-                    <input type="text" id="mask-yandexMapLink" value="${escapeHtml(mask.yandexMapLink || '')}" placeholder="https://yandex.ru/maps/...">
+                    <input type="text" id="mask-yandexMapLink" value="${escapeHtml(mask.yandexMapLink || '')}">
                 </div>
                 <div class="form-group">
                     <label>Google Maps (ссылка)</label>
-                    <input type="text" id="mask-googleMapLink" value="${escapeHtml(mask.googleMapLink || '')}" placeholder="https://maps.google.com/...">
+                    <input type="text" id="mask-googleMapLink" value="${escapeHtml(mask.googleMapLink || '')}">
                 </div>
                 <div class="form-group">
                     <label>2GIS (ссылка)</label>
-                    <input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}" placeholder="https://2gis.ru/...">
+                    <input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}">
                 </div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 12px;">📖 Тексты для карточки маски</h3>
+                
+                <div class="form-group">
+                    <label>Настоящее</label>
+                    <textarea id="mask-present_text" rows="4">${escapeHtml(mask.present_text || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>СССР</label>
+                    <textarea id="mask-ussr_text" rows="4">${escapeHtml(mask.ussr_text || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Прошлое</label>
+                    <textarea id="mask-past_text" rows="4">${escapeHtml(mask.past_text || '')}</textarea>
+                </div>
+                
                 <div class="form-group">
                     <label>Добавить в маршруты</label>
                     <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
@@ -749,19 +766,18 @@
                     selectedRoutes.push(cb.value);
                 });
                 
-                const maskNumber = parseInt(document.getElementById('mask-number').value);
-                
                 const updatedMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
-                    fullDescription: document.getElementById('mask-fullDescription').value,
-                    number: maskNumber,
-                    qrCode: `mask_${maskNumber}`,
+                    number: parseInt(document.getElementById('mask-number').value),
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value),
                     isAvailable: mask.isAvailable,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value,
                     googleMapLink: document.getElementById('mask-googleMapLink').value,
-                    twoGisLink: document.getElementById('mask-twoGisLink').value
+                    twoGisLink: document.getElementById('mask-twoGisLink').value,
+                    present_text: document.getElementById('mask-present_text').value,
+                    ussr_text: document.getElementById('mask-ussr_text').value,
+                    past_text: document.getElementById('mask-past_text').value
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
@@ -771,11 +787,8 @@
                 });
                 
                 if (res.ok) {
-                    // Обновляем связи с маршрутами
-                    const currentRoutes = maskRouteIds;
-                    // Добавляем новые связи
                     for (const routeId of selectedRoutes) {
-                        if (!currentRoutes.has(routeId)) {
+                        if (!maskRouteIds.has(routeId)) {
                             await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -783,8 +796,7 @@
                             });
                         }
                     }
-                    // Удаляем старые связи
-                    for (const routeId of currentRoutes) {
+                    for (const routeId of maskRouteIds) {
                         if (!selectedRoutes.includes(routeId)) {
                             await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, {
                                 method: 'DELETE'

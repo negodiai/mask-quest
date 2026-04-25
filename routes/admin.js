@@ -41,19 +41,22 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
 // POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
-        name, description, fullDescription, number, latitude, longitude, address, 
-        qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
+        name, description, number, priceAmount, 
+        yandexMapLink, googleMapLink, twoGisLink,
+        present_text, ussr_text, past_text
     } = req.body;
     const id = uuidv4();
     
     try {
         await db.query(`
-            INSERT INTO masks (id, name, description, "fullDescription", number, latitude, longitude, 
-                               address, "qrCode", "priceAmount", "isAvailable", 
-                               "yandexMapLink", "googleMapLink", "twoGisLink")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        `, [id, name, description, fullDescription, number, latitude || 0, longitude || 0, 
-            address || '', qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
+            INSERT INTO masks (id, name, description, number, 
+                               "priceAmount", "isAvailable", 
+                               "yandexMapLink", "googleMapLink", "twoGisLink",
+                               "present_text", "ussr_text", "past_text")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `, [id, name, description, number, priceAmount, 0, 
+            yandexMapLink, googleMapLink, twoGisLink,
+            present_text, ussr_text, past_text]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -78,19 +81,22 @@ router.post('/fix-dates', checkAdmin, async (req, res) => {
 // PUT /api/admin/masks/:id - обновить маску
 router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
-        name, description, fullDescription, number, qrCode, priceAmount, isAvailable, 
-        yandexMapLink, googleMapLink, twoGisLink 
+        name, description, number, priceAmount, isAvailable,
+        yandexMapLink, googleMapLink, twoGisLink,
+        present_text, ussr_text, past_text
     } = req.body;
     
     try {
         await db.query(`
             UPDATE masks SET 
-                name = $1, description = $2, "fullDescription" = $3, number = $4,
-                "qrCode" = $5, "priceAmount" = $6, "isAvailable" = $7, 
-                "yandexMapLink" = $8, "googleMapLink" = $9, "twoGisLink" = $10
-            WHERE id = $11
-        `, [name, description, fullDescription, number, qrCode, priceAmount, isAvailable ? 1 : 0, 
-            yandexMapLink, googleMapLink, twoGisLink, req.params.id]);
+                name = $1, description = $2, number = $3,
+                "priceAmount" = $4, "isAvailable" = $5,
+                "yandexMapLink" = $6, "googleMapLink" = $7, "twoGisLink" = $8,
+                "present_text" = $9, "ussr_text" = $10, "past_text" = $11
+            WHERE id = $12
+        `, [name, description, number, priceAmount, isAvailable ? 1 : 0,
+            yandexMapLink, googleMapLink, twoGisLink,
+            present_text, ussr_text, past_text, req.params.id]);
         
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
