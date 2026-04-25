@@ -1831,6 +1831,109 @@
             if (params.routeId) currentRouteId = params.routeId;
             render();
         }
+
+                // === АКТИВАЦИЯ ПО QR-КОДУ (новая функция) ===
+        async function activateMaskByQR(maskId) {
+            console.log('=== АКТИВАЦИЯ ПО QR ===');
+            console.log('ID маски из QR:', maskId);
+            
+            if (!maskId) {
+                showToast('Не удалось распознать код маски', 'error');
+                return;
+            }
+            
+            showToast('Проверка маски...', 'info');
+            
+            try {
+                const tg = window.Telegram?.WebApp;
+                const user = tg?.initDataUnsafe?.user || {};
+                
+                const response = await fetch(`${API_BASE}/masks/activate-by-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        maskId: maskId,
+                        telegramData: {
+                            chatId: user.id,
+                            username: user.username,
+                            firstName: user.first_name
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Результат активации:', result);
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    // Показываем карточку активированной маски
+                    showActivatedMask(result.mask);
+                    // Обновляем данные пользователя
+                    await loadInitialData();
+                    // Переключаемся на главную, чтобы показать прогресс
+                    navigate('main');
+                } else {
+                    showToast(result.message, 'error');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    }
+                }
+            } catch (error) {
+                console.error('Activation error:', error);
+                showToast('Ошибка активации. Попробуйте снова.', 'error');
+            }
+        }
+
+                // === ЗАПУСК СКАНЕРА QR-КОДОВ ===
+        function startQRScan() {
+            showToast('Наведите камеру на QR-код маски', 'info');
+
+            if (!window.Telegram?.WebApp?.showScanQrPopup) {
+                showToast('Ваша версия Telegram не поддерживает сканер QR-кодов', 'error');
+                return;
+            }
+
+            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
+                if (!scannedText) {
+                    showToast('Не удалось распознать код', 'error');
+                    return;
+                }
+                
+                console.log('Отсканировано:', scannedText);
+                
+                // Парсим ID маски из ссылки вида https://domain.com/m/17
+                let maskId = null;
+                
+                // Проверяем, является ли сканированный текст ссылкой на наш сайт
+                if (scannedText.includes('/m/')) {
+                    try {
+                        const url = new URL(scannedText);
+                        const pathParts = url.pathname.split('/');
+                        maskId = pathParts[pathParts.length - 1];
+                    } catch (e) {
+                        // Если не получилось распарсить как URL, пробуем как есть
+                        maskId = scannedText;
+                    }
+                } else {
+                    // Если просто ID маски (старый формат)
+                    maskId = scannedText;
+                }
+                
+                console.log('ID маски:', maskId);
+                
+                if (maskId) {
+                    activateMaskByQR(maskId);
+                } else {
+                    showToast('Не удалось определить маску', 'error');
+                }
+                
+                return true;
+            });
+        }
         
         // Активация маски с новыми уведомлениями
         async function activateMask() {
@@ -2139,19 +2242,15 @@
         }
 
                 // === ГАЛЕРЕЯ ДЛЯ МАСКИ ===
-                function getMaskImages(maskId) {
-            // Находим маску в данных
-            const mask = appState.masks.find(m => m.id === maskId);
-            
-            // Если есть фото из админки, используем его
-            if (mask && mask.photoHash) {
-                const photoUrl = `/images/${mask.photoHash}`;
-                return [photoUrl, photoUrl, photoUrl, photoUrl, photoUrl];
-            }
-            
-            // Иначе заглушка
+        function getMaskImages(maskId) {
+            // Первое фото из папки images
             const firstImage = `/images/${maskId}.jpg`;
-            return [firstImage, firstImage, firstImage, firstImage, firstImage];
+            // Второе фото (заглушка)
+            const secondImage = `/images/${maskId}.jpg`; // пока дублируем
+            // Третье фото (заглушка)
+            const thirdImage = `/images/${maskId}.jpg`; // пока дублируем
+            
+            return [firstImage, secondImage, thirdImage];
         }
         
         let currentGalleryIndex = 0;
@@ -2160,21 +2259,7 @@
         let fullscreenCurrentIndex = 0;
         
                 function renderGallery(maskId, containerId) {
-            // Находим маску в данных
-            const mask = appState.masks.find(m => m.id === maskId);
-            
-            // Если есть фото из админки, используем его, иначе заглушку
-            let images = [];
-            if (mask && mask.photoHash) {
-                // Используем фото из админки (повторяем 5 раз для галереи)
-                for (let i = 0; i < 5; i++) {
-                    images.push(`/images/${mask.photoHash}`);
-                }
-            } else {
-                // Заглушка
-                images = getMaskImages(maskId);
-            }
-            
+            const images = getMaskImages(maskId);
             galleryImages = images;
             
             let slidesHtml = '';
@@ -2434,11 +2519,9 @@
                     <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
-                                                        <div class="mask-image">
-                                ${mask.photoHash ? 
-                                    `<img src="/images/${mask.photoHash}" style="width: 100%; height: 100%; object-fit: cover;">` :
-                                    `<i class="fas fa-mask" style="font-size: 32px; color: #3d3d5c;"></i>`
-                                }
+                            <div class="mask-image">
+                                <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div style="flex: 1;">
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
@@ -4307,6 +4390,7 @@ window.openYandexMaps = openYandexMaps;
         window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
         window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
+                window.activateMaskByQR = activateMaskByQR;
     </script>
 </body>
 </html>
