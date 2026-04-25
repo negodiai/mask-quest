@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <!-- Яндекс.Карты API -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=5f1366e2-a11d-413e-b05a-165bce31ed4a&lang=ru_RU"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -335,6 +336,54 @@
                 opacity: 1;
                 transform: translateX(-50%) translateY(0);
             }
+        }
+
+                .scanner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .scanner-container.active {
+            display: flex;
+        }
+        
+        .scanner-header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .scanner-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+        }
+        
+        #qr-reader {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .scanner-tip {
+            color: #94a3b8;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
         }
         
         .status-message {
@@ -1402,6 +1451,13 @@
 </head>
 <body>
         <div id="app">
+                <div id="qr-scanner-container" class="scanner-container">
+        <div class="scanner-header">
+            <button class="scanner-close" onclick="closeQRScanner()">&times;</button>
+        </div>
+        <div id="qr-reader"></div>
+        <div class="scanner-tip">Наведите камеру на QR-код маски</div>
+    </div>
         <div class="spinner"></div>
     </div>
     
@@ -1915,8 +1971,7 @@
         
         let lastActivatedMask = null;
         
-                function showActivatedMask(mask) {
-            // Показываем карточку активированной маски
+                        function showActivatedMask(mask) {
             const successDiv = document.getElementById('activation-success');
             const formDiv = document.getElementById('activation-form');
             if (successDiv && formDiv) {
@@ -2536,79 +2591,117 @@
             `;
         }
 
-                        function startQRScan() {
-            console.log('=== ЗАПУСК СКАНЕРА ===');
+                                let html5QrCode = null;
+        
+        function startQRScan() {
+            console.log('=== ЗАПУСК СКАНЕРА (html5-qrcode) ===');
             
-            // Проверяем, что мы в Telegram
-            if (!window.Telegram || !window.Telegram.WebApp) {
-                showToast('Это приложение работает только в Telegram', 'error');
+            const scannerContainer = document.getElementById('qr-scanner-container');
+            if (!scannerContainer) {
+                console.error('Контейнер сканера не найден');
                 return;
             }
             
-            const tg = window.Telegram.WebApp;
+            scannerContainer.classList.add('active');
             
-            // Проверяем поддержку сканера
-            if (typeof tg.showScanQrPopup !== 'function') {
-                showToast('Сканер QR-кодов не поддерживается в этой версии Telegram', 'error');
-                console.log('showScanQrPopup не поддерживается');
-                return;
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    startScanner();
+                }).catch(() => startScanner());
+            } else {
+                startScanner();
             }
             
-            showToast('Наведите камеру на QR-код маски', 'info');
-            
-            // Запускаем сканер
-            tg.showScanQrPopup(
-                (scannedText) => {
-                    // Успешное сканирование
-                    console.log('Отсканировано:', scannedText);
-                    
-                    if (!scannedText) {
-                        showToast('Не удалось распознать QR-код', 'error');
-                        return;
+            function startScanner() {
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+                
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText, decodedResult) => {
+                        console.log('Отсканировано:', decodedText);
+                        handleQRScan(decodedText);
+                        closeQRScanner();
+                    },
+                    (errorMessage) => {
+                        // Ошибки чтения - игнорируем
+                        // console.log(errorMessage);
                     }
-                    
-                    // Извлекаем ID маски
-                    let maskId = null;
-                    
-                    // Пробуем извлечь из URL вида https://domain.com/m/17
-                    const urlMatch = scannedText.match(/\/m\/(\d+)/);
-                    if (urlMatch) {
-                        maskId = urlMatch[1];
-                    } else {
-                        // Если просто ID
-                        maskId = scannedText;
-                    }
-                    
-                    if (!maskId) {
-                        showToast('Неверный QR-код маски', 'error');
-                        return;
-                    }
-                    
-                    console.log('ID маски для активации:', maskId);
-                    activateMaskByQR(maskId);
-                    return true;
-                },
-                (error) => {
-                    // Ошибка или отмена
-                    console.log('Ошибка сканера или отмена:', error);
-                    showToast('Сканирование отменено', 'info');
-                }
-            );
+                ).catch((err) => {
+                    console.error('Ошибка запуска камеры:', err);
+                    showToast('Не удалось запустить камеру. Проверьте разрешения.', 'error');
+                    closeQRScanner();
+                });
+            }
         }
         
-        async function activateMaskByQR(maskId) {
+        function closeQRScanner() {
+            const scannerContainer = document.getElementById('qr-scanner-container');
+            if (scannerContainer) {
+                scannerContainer.classList.remove('active');
+            }
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                }).catch(() => {});
+                html5QrCode = null;
+            }
+        }
+        
+        function handleQRScan(scannedText) {
+            console.log('Обработка QR:', scannedText);
+            
+            if (!scannedText) {
+                showToast('Не удалось распознать QR-код', 'error');
+                return;
+            }
+            
+            // Извлекаем ID маски из URL
+            let maskId = null;
+            
+            // Пробуем извлечь из URL вида https://domain.com/m/17
+            const urlMatch = scannedText.match(/\/m\/(\d+|[a-f0-9\-]+)/);
+            if (urlMatch) {
+                maskId = urlMatch[1];
+            } else {
+                // Если просто ID
+                maskId = scannedText;
+            }
+            
+            if (!maskId) {
+                showToast('Неверный QR-код маски', 'error');
+                return;
+            }
+            
+            console.log('ID маски для активации:', maskId);
+            activateMaskByQR(maskId);
+        }
+        
+                async function activateMaskByQR(maskId) {
             showToast('Проверка маски...', 'info');
             
             try {
                 const tg = window.Telegram?.WebApp;
                 const user = tg?.initDataUnsafe?.user || {};
                 
-                // Сначала получаем список масок, чтобы найти правильный ID
+                // Получаем список масок
                 const masksRes = await fetch(`${API_BASE}/masks/list`);
                 const masks = await masksRes.json();
                 
                 // Ищем маску по ID или QR-коду
-                const mask = masks.find(m => m.id === maskId || m.qrCode === maskId);
+                let mask = masks.find(m => m.id === maskId || m.qrCode === maskId);
+                
+                // Если не нашли по ID, пробуем найти по числовому ID
+                if (!mask && !isNaN(maskId)) {
+                    mask = masks.find(m => m.id === `mask_${maskId}` || m.qrCode === `MASK_${maskId}`);
+                }
                 
                 if (!mask) {
                     showToast('Маска с таким QR-кодом не найдена', 'error');
@@ -2636,7 +2729,6 @@
                     if (window.Telegram?.WebApp?.HapticFeedback) {
                         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
                     }
-                    // Показываем контент активированной маски
                     showActivatedMask(result.mask);
                     await loadInitialData();
                 } else {
@@ -4402,6 +4494,8 @@ window.openYandexMaps = openYandexMaps;
         window.prevFullscreenSlideExtended = prevFullscreenSlideExtended;
         window.nextFullscreenSlideExtended = nextFullscreenSlideExtended;
         window.goToFullscreenSlideExtended = goToFullscreenSlideExtended;
+                window.startQRScan = startQRScan;
+        window.closeQRScanner = closeQRScanner;
     </script>
 </body>
 </html>
