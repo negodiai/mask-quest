@@ -3184,9 +3184,9 @@
                             </div>
                                                         <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                    <i class="fas fa-shopping-cart"></i>
-                                    <span>10.000₽</span>
-                                </button>` : ''}
+    <i class="fas fa-shopping-cart"></i>
+    <span>${mask.price?.amount || mask.priceAmount || 15000}₽</span>
+</button>` : ''}
                                 <button class="btn-small-catalog" onclick="showMaskMapChooser(${mask.latitude}, ${mask.longitude}, '${escapeHtml(mask.name)}', '${mask.id}');" style="background: #2d2d44; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
     <i class="fas fa-directions"></i>
     <span>Маршрут</span>
@@ -3286,7 +3286,7 @@
                             
                             <!-- Кнопки -->
                                                         <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
-                                ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; ...">
+                                ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
     <i class="fas fa-shopping-cart"></i>
     <span>${mask.price?.amount || mask.priceAmount || 15000}₽</span>
 </button>` : ''}
