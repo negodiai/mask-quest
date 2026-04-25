@@ -47,7 +47,7 @@ app.get('/m/:maskId', (req, res) => {
     
     if (isTelegram) {
         // Перенаправляем в мини-приложение с параметром маски
-        const botUsername = 'negodiai_bot'; // ЗАМЕНИТЕ НА ИМЯ ВАШЕГО БОТА
+        const botUsername = 'negodiai_quest_bot';
         return res.redirect(`https://t.me/${botUsername}/app?startapp=mask_${maskId}`);
     }
     

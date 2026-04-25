@@ -2536,44 +2536,64 @@
             `;
         }
 
-                // === QR-СКАНЕР И АКТИВАЦИЯ ===
-        
-        function startQRScan() {
-            if (!window.Telegram?.WebApp?.showScanQrPopup) {
-                showToast('Сканер QR-кодов поддерживается только в Telegram', 'error');
+                        function startQRScan() {
+            console.log('=== ЗАПУСК СКАНЕРА ===');
+            
+            // Проверяем, что мы в Telegram
+            if (!window.Telegram || !window.Telegram.WebApp) {
+                showToast('Это приложение работает только в Telegram', 'error');
+                return;
+            }
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Проверяем поддержку сканера
+            if (typeof tg.showScanQrPopup !== 'function') {
+                showToast('Сканер QR-кодов не поддерживается в этой версии Telegram', 'error');
+                console.log('showScanQrPopup не поддерживается');
                 return;
             }
             
             showToast('Наведите камеру на QR-код маски', 'info');
             
-            window.Telegram.WebApp.showScanQrPopup((scannedText) => {
-                if (!scannedText) {
-                    showToast('Не удалось распознать QR-код', 'error');
-                    return;
+            // Запускаем сканер
+            tg.showScanQrPopup(
+                (scannedText) => {
+                    // Успешное сканирование
+                    console.log('Отсканировано:', scannedText);
+                    
+                    if (!scannedText) {
+                        showToast('Не удалось распознать QR-код', 'error');
+                        return;
+                    }
+                    
+                    // Извлекаем ID маски
+                    let maskId = null;
+                    
+                    // Пробуем извлечь из URL вида https://domain.com/m/17
+                    const urlMatch = scannedText.match(/\/m\/(\d+)/);
+                    if (urlMatch) {
+                        maskId = urlMatch[1];
+                    } else {
+                        // Если просто ID
+                        maskId = scannedText;
+                    }
+                    
+                    if (!maskId) {
+                        showToast('Неверный QR-код маски', 'error');
+                        return;
+                    }
+                    
+                    console.log('ID маски для активации:', maskId);
+                    activateMaskByQR(maskId);
+                    return true;
+                },
+                (error) => {
+                    // Ошибка или отмена
+                    console.log('Ошибка сканера или отмена:', error);
+                    showToast('Сканирование отменено', 'info');
                 }
-                
-                console.log('Отсканировано:', scannedText);
-                
-                // Извлекаем ID маски из URL
-                let maskId = null;
-                
-                // Пробуем извлечь из URL вида https://domain.com/m/17
-                const urlMatch = scannedText.match(/\/m\/(\d+)/);
-                if (urlMatch) {
-                    maskId = urlMatch[1];
-                } else {
-                    // Если просто ID
-                    maskId = scannedText;
-                }
-                
-                if (!maskId) {
-                    showToast('Неверный QR-код маски', 'error');
-                    return;
-                }
-                
-                activateMaskByQR(maskId);
-                return true;
-            });
+            );
         }
         
         async function activateMaskByQR(maskId) {
