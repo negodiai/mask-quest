@@ -70,6 +70,7 @@
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 12px;
+            overflow: hidden;
         }
         
         .progress-section {
@@ -2418,9 +2419,9 @@
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
-                            <div style="flex: 1;">
-                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
-                                <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
+                                                        <div style="flex: 1; padding: 4px 8px 4px 0;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 15px;">${escapeHtml(mask.name)}</h4>
+                                <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.3;">${escapeHtml(mask.description || '')}</p>
                             </div>
                         </div>
                     </div>
