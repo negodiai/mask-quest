@@ -803,7 +803,7 @@
                             });
                         }
                     }
-                                        showMessage('Маска обновлена!', 'success');
+                                                            showMessage('Маска обновлена!', 'success');
                     
                     // Перезагружаем список масок в админке
                     loadMasks().then(() => {
@@ -824,6 +824,10 @@
                             console.error('Ошибка отправки сообщения:', e);
                         }
                     });
+                } else {
+                    showMessage('Ошибка обновления', 'error');
+                }
+            });
         }
         
         async function deleteMask(id) {
