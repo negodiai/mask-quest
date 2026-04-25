@@ -468,8 +468,7 @@
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    <div style="font-size: 12px; color: #64748b;">
-                        <div>📍 ${mask.latitude}, ${mask.longitude}</div>
+                                        <div style="font-size: 12px; color: #64748b;">
                         <div>📝 ${escapeHtml(mask.description || 'Без описания')}</div>
                         <div style="margin-top: 8px;">
                             ${mask.isAvailable ? '<span class="badge badge-published">✅ Опубликована</span>' : '<span class="badge badge-draft">📝 Черновик</span>'}
@@ -600,7 +599,7 @@
                 </label>
             `).join('');
             
-            showModal('Добавить маску', `
+                        showModal('Добавить маску', `
                 <div class="form-group">
                     <label>Название *</label>
                     <input type="text" id="mask-name" placeholder="Например: Берёзовая">
@@ -614,20 +613,9 @@
                     <textarea id="mask-fullDescription" placeholder="Полное описание (после активации)"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Широта *</label>
-                    <input type="text" id="mask-latitude" placeholder="54.679629">
-                </div>
-                <div class="form-group">
-                    <label>Долгота *</label>
-                    <input type="text" id="mask-longitude" placeholder="20.463649">
-                </div>
-                <div class="form-group">
-                    <label>Адрес</label>
-                    <input type="text" id="mask-address" placeholder="ул. Берёзовая">
-                </div>
-                <div class="form-group">
-                    <label>QR-код (уникальный) *</label>
-                    <input type="text" id="mask-qrCode" placeholder="MASK_001">
+                    <label>Номер маски (QR-код) *</label>
+                    <input type="number" id="mask-number" placeholder="1, 2, 3..." value="${masks.length + 1}">
+                    <small style="color: #64748b;">Этот номер будет использоваться в QR-коде и для активации</small>
                 </div>
                 <div class="form-group">
                     <label>Цена (₽)</label>
@@ -657,14 +645,17 @@
                     selectedRoutes.push(cb.value);
                 });
                 
+                const maskNumber = parseInt(document.getElementById('mask-number').value);
+                
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     description: document.getElementById('mask-description').value,
                     fullDescription: document.getElementById('mask-fullDescription').value,
-                    latitude: parseFloat(document.getElementById('mask-latitude').value),
-                    longitude: parseFloat(document.getElementById('mask-longitude').value),
-                    address: document.getElementById('mask-address').value,
-                    qrCode: document.getElementById('mask-qrCode').value,
+                    number: maskNumber,
+                    latitude: 0,  // Заглушка, не используется
+                    longitude: 0, // Заглушка, не используется
+                    address: '',
+                    qrCode: `mask_${maskNumber}`,
                     priceAmount: parseInt(document.getElementById('mask-priceAmount').value) || 15000,
                     isAvailable: false,
                     yandexMapLink: document.getElementById('mask-yandexMapLink').value,
@@ -695,7 +686,8 @@
                     showMessage('Ошибка добавления', 'error');
                 }
             });
-        }
+                }
+
         
                 async function editMask(id) {
             const mask = masks.find(m => m.id === id);

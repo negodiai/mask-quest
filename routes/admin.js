@@ -41,19 +41,19 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
 // POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
-        name, description, fullDescription, latitude, longitude, address, 
+        name, description, fullDescription, number, latitude, longitude, address, 
         qrCode, priceAmount, yandexMapLink, googleMapLink, twoGisLink 
     } = req.body;
     const id = uuidv4();
     
     try {
         await db.query(`
-            INSERT INTO masks (id, name, description, "fullDescription", latitude, longitude, 
+            INSERT INTO masks (id, name, description, "fullDescription", number, latitude, longitude, 
                                address, "qrCode", "priceAmount", "isAvailable", 
                                "yandexMapLink", "googleMapLink", "twoGisLink")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        `, [id, name, description, fullDescription, latitude, longitude, address, 
-            qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        `, [id, name, description, fullDescription, number, latitude || 0, longitude || 0, 
+            address || '', qrCode, priceAmount, 0, yandexMapLink, googleMapLink, twoGisLink]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
