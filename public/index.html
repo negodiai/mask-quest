@@ -2763,11 +2763,12 @@
             }
         }
         
-        function handleQRScan(scannedText) {
+                function handleQRScan(scannedText) {
             console.log('Обработка QR:', scannedText);
             
             if (!scannedText) {
                 showToast('Не удалось распознать QR-код', 'error');
+                closeQRScanner();
                 return;
             }
             
@@ -2784,23 +2785,37 @@
             
             if (!maskNumber) {
                 showToast('Неверный QR-код. Нужен номер маски.', 'error');
+                closeQRScanner();
                 return;
             }
             
             console.log('Номер маски для активации:', maskNumber);
+            
+            // Закрываем сканер перед активацией
+            closeQRScanner();
+            
+            // Активируем маску
             activateMaskByQR(maskNumber);
         }
         
-        function closeQRScanner() {
+                function closeQRScanner() {
+            console.log('Закрываем сканер');
+            
             const scannerContainer = document.getElementById('qr-scanner-container');
             if (scannerContainer) {
-                scannerContainer.classList.remove('active');
+                scannerContainer.style.display = 'none';
             }
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                }).catch(() => {});
-                html5QrCode = null;
+            
+            if (window.html5QrCode) {
+                window.html5QrCode.stop().then(() => {
+                    if (window.html5QrCode) {
+                        window.html5QrCode.clear();
+                    }
+                    window.html5QrCode = null;
+                }).catch((err) => {
+                    console.log('Ошибка остановки сканера:', err);
+                    window.html5QrCode = null;
+                });
             }
         }
         
@@ -2833,7 +2848,7 @@
             activateMaskByQR(maskNumber);
         }
         
-                        async function activateMaskByQR(maskNumber) {
+                                async function activateMaskByQR(maskNumber) {
             showToast('Проверка маски...', 'info');
             
             try {
@@ -2852,6 +2867,7 @@
                 
                 if (!mask) {
                     showToast(`Маска с номером ${maskNumber} не найдена`, 'error');
+                    closeQRScanner(); // Закрываем сканер при ошибке
                     return;
                 }
                 
@@ -2873,6 +2889,9 @@
                 
                 const result = await response.json();
                 
+                // Закрываем сканер в любом случае после получения ответа
+                closeQRScanner();
+                
                 if (result.success) {
                     showToast(result.message, 'success');
                     if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -2886,6 +2905,7 @@
             } catch (error) {
                 console.error('Activation error:', error);
                 showToast('Ошибка активации', 'error');
+                closeQRScanner();
             }
         }
         
