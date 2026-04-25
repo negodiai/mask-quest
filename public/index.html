@@ -70,6 +70,7 @@
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 12px;
+            min-height: 120px;
         }
         
         .progress-section {
@@ -620,9 +621,9 @@
         .modal-container {
             background: #1a1a2e;
             border-radius: 24px;
-            max-width: 500px;
+            max-width: 550px;  /* было 500px */
             width: 100%;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
         
@@ -2418,9 +2419,9 @@
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
-                            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start;">
+                            <div style="flex: 1;">
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(mask.name)}</h4>
-                                <p style="font-size: 13px; color: #64748b; margin: 0; margin-top: -4px;">${escapeHtml(mask.description || '')}</p>
+                                <p style="font-size: 13px; color: #64748b; margin: 0;">${escapeHtml(mask.description || '')}</p>
                             </div>
                         </div>
                     </div>
