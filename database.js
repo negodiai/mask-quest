@@ -197,12 +197,13 @@ async function initDatabase() {
         // Запускаем миграции для преобразования существующих данных
         await runMigrations();
 
-                // Добавляем новые поля для текстов эпох
+                        // Добавляем новые поля для текстов эпох и подзаголовка
         try {
             await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS present_text TEXT`);
             await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS ussr_text TEXT`);
             await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS past_text TEXT`);
-            console.log('✅ Добавлены поля present_text, ussr_text, past_text');
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS subtitle TEXT`);
+            console.log('✅ Добавлены поля present_text, ussr_text, past_text, subtitle');
         } catch (err) {
             console.log('Поля уже существуют или ошибка:', err.message);
         }
