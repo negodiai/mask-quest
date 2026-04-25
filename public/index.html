@@ -1596,7 +1596,7 @@
         }
         
         // Загрузка начальных данных
-                async function loadInitialData() {
+                        async function loadInitialData() {
             await Promise.all([
                 loadProgress(),
                 loadMasks(),
@@ -1604,6 +1604,24 @@
                 loadActivations()
             ]);
             loadUserAchievements();
+            
+            // Если масок или маршрутов нет, сбрасываем недостижимые достижения
+            if (appState.masks.length === 0 || appState.routes.length === 0) {
+                let changed = false;
+                // Сбрасываем достижения, которые требуют масок/маршрутов
+                if (userAchievements.firstMask && appState.masks.length === 0) {
+                    userAchievements.firstMask = false;
+                    changed = true;
+                }
+                if (userAchievements.firstRoute && appState.routes.length === 0) {
+                    userAchievements.firstRoute = false;
+                    changed = true;
+                }
+                if (changed) {
+                    localStorage.setItem(`achievements_${currentUserId}`, JSON.stringify(userAchievements));
+                }
+            }
+            
             checkAchievements();
             render();
         }
@@ -1685,80 +1703,98 @@
 
                 // === СИСТЕМА ДОСТИЖЕНИЙ ===
                 // === СИСТЕМА ДОСТИЖЕНИЙ ===
-        function checkAchievements() {
+                function checkAchievements() {
             const activatedCount = appState.activations.length;
             const completedRoutesCount = appState.progress.completedRoutes;
+            const totalMasks = appState.masks.length;
+            const totalRoutes = appState.routes.length;
             let changed = false;
             
-            // Подсчёт масок по категориям (для историка и современника)
-            // Для демо: считаем, что маски 1-5 относятся к "Прошлому", 6-10 к "Настоящему"
-            const pastMasks = ['mask_1', 'mask_2', 'mask_3', 'mask_4', 'mask_5'];
-            const presentMasks = ['mask_6', 'mask_7', 'mask_8', 'mask_9', 'mask_10'];
-            
-            const activatedMaskIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
-            
-            const pastActivated = pastMasks.filter(id => activatedMaskIds.has(id)).length;
-            const presentActivated = presentMasks.filter(id => activatedMaskIds.has(id)).length;
-            const totalPast = pastMasks.length;
-            const totalPresent = presentMasks.length;
-            
-            // Фотограф: считаем, что у каждой маски есть фото (для демо)
-            const hasPhotos = activatedCount >= 10;
-            
-            // Аудиолюбитель: для демо, считаем что после 10 активаций есть аудиогиды
-            const hasAudio = activatedCount >= 10;
-            
-            // Маски
-            if (activatedCount >= 1 && !userAchievements.firstMask) { userAchievements.firstMask = true; changed = true; showAchievementToast('Первая маска'); }
-            if (activatedCount >= 3 && !userAchievements.threeMasks) { userAchievements.threeMasks = true; changed = true; showAchievementToast('Знакомство с городом'); }
-            if (activatedCount >= 5 && !userAchievements.fiveMasks) { userAchievements.fiveMasks = true; changed = true; showAchievementToast('Любознательный турист'); }
-            if (activatedCount >= 12 && !userAchievements.dozenMasks) { userAchievements.dozenMasks = true; changed = true; showAchievementToast('Первая дюжина'); }
-            if (activatedCount >= 50 && !userAchievements.fiftyMasks) { userAchievements.fiftyMasks = true; changed = true; showAchievementToast('Полтинник'); }
-            if (activatedCount >= 100 && !userAchievements.hundredMasks) { userAchievements.hundredMasks = true; changed = true; showAchievementToast('Первая сотня', true); }
-            if (activatedCount >= 250 && !userAchievements.twoFiftyMasks) { userAchievements.twoFiftyMasks = true; changed = true; showAchievementToast('Исследователь'); }
-            if (activatedCount >= 500 && !userAchievements.fiveHundredMasks) { userAchievements.fiveHundredMasks = true; changed = true; showAchievementToast('Легенда', true); }
+            // Сначала сбрасываем достижения, которые больше не актуальны
+            // (если пользователь достиг числа большего, чем есть масок/маршрутов)
+            if (userAchievements.fiveHundredMasks && totalMasks < 500) {
+                userAchievements.fiveHundredMasks = false;
+                changed = true;
+            }
+            if (userAchievements.twoFiftyMasks && totalMasks < 250) {
+                userAchievements.twoFiftyMasks = false;
+                changed = true;
+            }
+            if (userAchievements.hundredMasks && totalMasks < 100) {
+                userAchievements.hundredMasks = false;
+                changed = true;
+            }
+            if (userAchievements.fiftyMasks && totalMasks < 50) {
+                userAchievements.fiftyMasks = false;
+                changed = true;
+            }
+            if (userAchievements.dozenMasks && totalMasks < 12) {
+                userAchievements.dozenMasks = false;
+                changed = true;
+            }
+            if (userAchievements.fiveMasks && totalMasks < 5) {
+                userAchievements.fiveMasks = false;
+                changed = true;
+            }
+            if (userAchievements.threeMasks && totalMasks < 3) {
+                userAchievements.threeMasks = false;
+                changed = true;
+            }
+            if (userAchievements.firstMask && totalMasks < 1) {
+                userAchievements.firstMask = false;
+                changed = true;
+            }
             
             // Маршруты
-            if (completedRoutesCount >= 1 && !userAchievements.firstRoute) { userAchievements.firstRoute = true; changed = true; showAchievementToast('Первый маршрут'); }
-            if (completedRoutesCount >= 3 && !userAchievements.threeRoutes) { userAchievements.threeRoutes = true; changed = true; showAchievementToast('Любитель прогулок'); }
-            if (completedRoutesCount >= 6 && !userAchievements.sixRoutes) { userAchievements.sixRoutes = true; changed = true; showAchievementToast('Опытный путешественник'); }
-            if (completedRoutesCount >= 10 && !userAchievements.tenRoutes) { userAchievements.tenRoutes = true; changed = true; showAchievementToast('Мастер маршрутов', true); }
-            if (completedRoutesCount >= 15 && !userAchievements.fifteenRoutes) { userAchievements.fifteenRoutes = true; changed = true; showAchievementToast('Покоритель города'); }
-            if (completedRoutesCount >= 24 && !userAchievements.twentyFourRoutes) { userAchievements.twentyFourRoutes = true; changed = true; showAchievementToast('Король маршрутов', true); }
+            if (userAchievements.twentyFourRoutes && totalRoutes < 24) {
+                userAchievements.twentyFourRoutes = false;
+                changed = true;
+            }
+            if (userAchievements.fifteenRoutes && totalRoutes < 15) {
+                userAchievements.fifteenRoutes = false;
+                changed = true;
+            }
+            if (userAchievements.tenRoutes && totalRoutes < 10) {
+                userAchievements.tenRoutes = false;
+                changed = true;
+            }
+            if (userAchievements.sixRoutes && totalRoutes < 6) {
+                userAchievements.sixRoutes = false;
+                changed = true;
+            }
+            if (userAchievements.threeRoutes && totalRoutes < 3) {
+                userAchievements.threeRoutes = false;
+                changed = true;
+            }
+            if (userAchievements.firstRoute && totalRoutes < 1) {
+                userAchievements.firstRoute = false;
+                changed = true;
+            }
             
-            // Фотограф (10 масок с фото)
-            if (hasPhotos && !userAchievements.photographer) { 
+            // Маски (проверка по количеству)
+            if (activatedCount >= 1 && !userAchievements.firstMask && totalMasks >= 1) { userAchievements.firstMask = true; changed = true; showAchievementToast('Первая маска'); }
+            if (activatedCount >= 3 && !userAchievements.threeMasks && totalMasks >= 3) { userAchievements.threeMasks = true; changed = true; showAchievementToast('Знакомство с городом'); }
+            if (activatedCount >= 5 && !userAchievements.fiveMasks && totalMasks >= 5) { userAchievements.fiveMasks = true; changed = true; showAchievementToast('Любознательный турист'); }
+            if (activatedCount >= 12 && !userAchievements.dozenMasks && totalMasks >= 12) { userAchievements.dozenMasks = true; changed = true; showAchievementToast('Первая дюжина'); }
+            if (activatedCount >= 50 && !userAchievements.fiftyMasks && totalMasks >= 50) { userAchievements.fiftyMasks = true; changed = true; showAchievementToast('Полтинник'); }
+            if (activatedCount >= 100 && !userAchievements.hundredMasks && totalMasks >= 100) { userAchievements.hundredMasks = true; changed = true; showAchievementToast('Первая сотня', true); }
+            if (activatedCount >= 250 && !userAchievements.twoFiftyMasks && totalMasks >= 250) { userAchievements.twoFiftyMasks = true; changed = true; showAchievementToast('Исследователь'); }
+            if (activatedCount >= 500 && !userAchievements.fiveHundredMasks && totalMasks >= 500) { userAchievements.fiveHundredMasks = true; changed = true; showAchievementToast('Легенда', true); }
+            
+            // Маршруты
+            if (completedRoutesCount >= 1 && !userAchievements.firstRoute && totalRoutes >= 1) { userAchievements.firstRoute = true; changed = true; showAchievementToast('Первый маршру트'); }
+            if (completedRoutesCount >= 3 && !userAchievements.threeRoutes && totalRoutes >= 3) { userAchievements.threeRoutes = true; changed = true; showAchievementToast('Любитель прогулок'); }
+            if (completedRoutesCount >= 6 && !userAchievements.sixRoutes && totalRoutes >= 6) { userAchievements.sixRoutes = true; changed = true; showAchievementToast('Опытный путешественник'); }
+            if (completedRoutesCount >= 10 && !userAchievements.tenRoutes && totalRoutes >= 10) { userAchievements.tenRoutes = true; changed = true; showAchievementToast('Мастер маршрутов', true); }
+            if (completedRoutesCount >= 15 && !userAchievements.fifteenRoutes && totalRoutes >= 15) { userAchievements.fifteenRoutes = true; changed = true; showAchievementToast('Покоритель города'); }
+            if (completedRoutesCount >= 24 && !userAchievements.twentyFourRoutes && totalRoutes >= 24) { userAchievements.twentyFourRoutes = true; changed = true; showAchievementToast('Король маршрутов', true); }
+            
+            // Другие достижения (зависят от наличия масок)
+            const hasPhotos = activatedCount >= 10 && totalMasks >= 10;
+            if (hasPhotos && !userAchievements.photographer && totalMasks >= 10) { 
                 userAchievements.photographer = true; 
                 changed = true; 
                 showAchievementToast('Фотограф'); 
-            }
-            
-            // Историк (все маски из категории "Прошлое")
-            if (pastActivated === totalPast && totalPast > 0 && !userAchievements.historian) { 
-                userAchievements.historian = true; 
-                changed = true; 
-                showAchievementToast('Историк'); 
-            }
-            
-            // Современник (все маски из категории "Настоящее")
-            if (presentActivated === totalPresent && totalPresent > 0 && !userAchievements.modernist) { 
-                userAchievements.modernist = true; 
-                changed = true; 
-                showAchievementToast('Современник'); 
-            }
-            
-            // Исследователь эпох (есть и Историк, и Современник)
-            if (userAchievements.historian && userAchievements.modernist && !userAchievements.epochExplorer) { 
-                userAchievements.epochExplorer = true; 
-                changed = true; 
-                showAchievementToast('Исследователь эпох'); 
-            }
-            
-            // Аудиолюбитель (10 аудиогидов)
-            if (hasAudio && !userAchievements.audioLover) { 
-                userAchievements.audioLover = true; 
-                changed = true; 
-                showAchievementToast('Аудиолюбитель'); 
             }
             
             // НЕГОДЯЙ (все достижения)
