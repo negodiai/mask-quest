@@ -6,46 +6,67 @@ const { v4: uuidv4 } = require('uuid');
 // Функция обновления прогресса маршрутов для пользователя
 async function updateUserRouteProgress(userId) {
     try {
-        const routesResult = await db.query('SELECT id FROM routes WHERE "isActive" = 1');
+        console.log(`🔄 Обновление прогресса для пользователя ${userId}`);
+        
+        // Получаем все маршруты (только опубликованные)
+        const routesResult = await db.query('SELECT id FROM routes WHERE "isAvailable" = 1');
         const routes = routesResult.rows;
         
+        // Получаем все активированные маски пользователя
         const activationsResult = await db.query(
             'SELECT "maskId" FROM user_activations WHERE "userId" = $1',
             [userId]
         );
         const activatedMaskIds = new Set(activationsResult.rows.map(r => r.maskId));
         
+        // Получаем все связи маршрутов и масок
         const routeMasksResult = await db.query('SELECT * FROM route_masks');
         const routeMasks = routeMasksResult.rows;
         
         for (const route of routes) {
+            // Маски в этом маршруте
             const masksInRoute = routeMasks.filter(rm => rm.routeId === route.id);
             const totalMasks = masksInRoute.length;
+            
+            // Активированные маски в этом маршруте
             const activatedCount = masksInRoute.filter(rm => activatedMaskIds.has(rm.maskId)).length;
             
             const progressPercent = totalMasks > 0 ? Math.round((activatedCount / totalMasks) * 100) : 0;
             const isCompleted = activatedCount === totalMasks && totalMasks > 0;
             
+            // Проверяем, есть ли уже запись прогресса
             const existingResult = await db.query(
                 'SELECT * FROM user_route_progress WHERE "userId" = $1 AND "routeId" = $2',
                 [userId, route.id]
             );
             
             if (existingResult.rows.length > 0) {
+                // Обновляем существующую запись
                 await db.query(`
                     UPDATE user_route_progress 
-                    SET "progressPercent" = $1, "masksActivated" = $2, "completedAt" = $3
+                    SET "progressPercent" = $1, "masksActivated" = $2, 
+                        "completedAt" = $3
                     WHERE "userId" = $4 AND "routeId" = $5
                 `, [progressPercent, activatedCount, isCompleted ? new Date().toISOString() : null, userId, route.id]);
-            } else if (activatedCount > 0) {
+                
+                if (isCompleted) {
+                    console.log(`✅ Маршрут ${route.id} завершён для пользователя ${userId}`);
+                }
+            } else {
+                // Создаём новую запись
+                const { v4: uuidv4 } = require('uuid');
                 await db.query(`
                     INSERT INTO user_route_progress (id, "userId", "routeId", "progressPercent", "masksActivated", "completedAt")
                     VALUES ($1, $2, $3, $4, $5, $6)
                 `, [uuidv4(), userId, route.id, progressPercent, activatedCount, isCompleted ? new Date().toISOString() : null]);
+                
+                if (isCompleted) {
+                    console.log(`✅ Маршрут ${route.id} завершён для пользователя ${userId}`);
+                }
             }
         }
         
-        console.log(`Прогресс маршрутов обновлён для пользователя ${userId}`);
+        console.log(`✅ Прогресс маршрутов обновлён для пользователя ${userId}`);
     } catch (err) {
         console.error('Ошибка обновления прогресса маршрутов:', err);
     }

@@ -270,13 +270,15 @@ router.get('/stats', checkAdmin, async (req, res) => {
         `);
         stats.popularRoutes = popularRoutesRes.rows || [];
         
-        // 7. Пройдено маршрутов (всего записей с completedAt)
+                // Пройденные маршруты (всего завершённых маршрутов)
         const completedRoutesRes = await db.query(`
             SELECT COUNT(*) as count 
             FROM user_route_progress 
             WHERE "completedAt" IS NOT NULL
         `);
         stats.completedRoutesTotal = parseInt(completedRoutesRes.rows[0]?.count) || 0;
+        
+        console.log('📊 Пройдено маршрутов (completedAt NOT NULL):', stats.completedRoutesTotal);
         
         // 8. Активные за 7 дней (просто считаем активации за последние 7 дней)
         // Простой подсчёт без сложных преобразований
@@ -420,6 +422,48 @@ router.get('/set-mask-numbers', checkAdmin, async (req, res) => {
         res.json({ success: true, message: `Маскам присвоены номера 1-${masks.rows.length}` });
     } catch (err) {
         console.error('Set mask numbers error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Инициализация прогресса для всех пользователей
+router.post('/init-progress', checkAdmin, async (req, res) => {
+    try {
+        const { v4: uuidv4 } = require('uuid');
+        
+        // Получаем всех пользователей, у которых есть активации
+        const users = await db.query('SELECT DISTINCT "userId" FROM user_activations');
+        
+        // Получаем все маршруты
+        const routes = await db.query('SELECT id FROM routes WHERE "isAvailable" = 1');
+        
+        let created = 0;
+        
+        for (const user of users.rows) {
+            for (const route of routes.rows) {
+                // Проверяем, есть ли уже запись прогресса
+                const existing = await db.query(
+                    'SELECT * FROM user_route_progress WHERE "userId" = $1 AND "routeId" = $2',
+                    [user.userId, route.id]
+                );
+                
+                if (existing.rows.length === 0) {
+                    const newId = uuidv4();
+                    await db.query(`
+                        INSERT INTO user_route_progress (id, "userId", "routeId", "progressPercent", "masksActivated", "completedAt")
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                    `, [newId, user.userId, route.id, 0, 0, null]);
+                    created++;
+                }
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Прогресс инициализирован для ${users.rows.length} пользователей, создано ${created} записей`
+        });
+    } catch (err) {
+        console.error('Init progress error:', err);
         res.status(500).json({ error: err.message });
     }
 });

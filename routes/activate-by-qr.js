@@ -42,11 +42,15 @@ router.post('/activate-by-qr', async (req, res) => {
         }
         
         // Создаём активацию
-        const activationId = uuidv4();
+            const activationId = uuidv4();
+        const now = new Date().toISOString();
         await db.query(`
-            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData")
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [activationId, userId, mask.id, null, null, JSON.stringify(telegramData || {})]);
+            INSERT INTO user_activations (id, "userId", "maskId", latitude, longitude, "telegramData", "activatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [activationId, userId, mask.id, null, null, JSON.stringify(telegramData || {}), now]);
+        
+        // Обновляем прогресс маршрутов
+        await updateUserRouteProgress(userId);
         
         res.json({
             success: true,
