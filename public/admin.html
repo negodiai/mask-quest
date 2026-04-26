@@ -317,12 +317,48 @@
             background: #2e1a1a;
             color: #EF4444;
         }
+
+                /* Кнопка "Наверх" для админки */
+        .admin-scroll-top-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: rgba(100, 116, 139, 0.5);
+            backdrop-filter: blur(4px);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .admin-scroll-top-btn:hover {
+            transform: scale(1.05);
+            background: rgba(100, 116, 139, 0.7);
+        }
+        
+        .admin-scroll-top-btn.show {
+            display: flex;
+        }
     </style>
 </head>
 <body>
-    <div class="container" id="app">
+        <div class="container" id="app">
         <div class="spinner">Загрузка админ-панели...</div>
     </div>
+    
+    <!-- Кнопка "Наверх" для админки -->
+    <button id="adminScrollTopBtn" class="admin-scroll-top-btn" onclick="adminScrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
 
     <script>
         const API_BASE = window.location.origin + '/api';
@@ -453,6 +489,11 @@
                 </div>
             `;
             document.getElementById('app').innerHTML = html;
+
+            // Сброс проверки прокрутки при переключении вкладок
+            setTimeout(() => {
+                adminCheckScroll();
+            }, 100);
         }
         
         function renderMasksList() {
@@ -1064,6 +1105,32 @@
             });
         }
 
+        // === КНОПКА "НАВЕРХ" ДЛЯ АДМИНКИ ===
+        
+        function adminCheckScroll() {
+            const btn = document.getElementById('adminScrollTopBtn');
+            if (!btn) return;
+            
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            if (scrollY > 300) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
+        
+        function adminScrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Добавляем обработчик прокрутки
+        window.addEventListener('scroll', adminCheckScroll);
+        window.addEventListener('load', adminCheckScroll);
+
                 async function refreshData() {
             showMessage('Обновление данных...', 'info');
             await Promise.all([
@@ -1074,6 +1141,8 @@
             renderAdminPanel();
             showMessage('Данные обновлены', 'success');
         }
+
+        window.adminScrollToTop = adminScrollToTop;
         
         init();
     </script>
