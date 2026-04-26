@@ -833,6 +833,7 @@
                     ${mask.photoHash ? `<div id="current-photo" style="margin-bottom: 10px;">
                         <img src="${mask.photoHash}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
                         <button type="button" onclick="document.getElementById('current-photo').remove()" style="background: #EF4444; color: white; border: none; border-radius: 8px; padding: 4px 8px; margin-left: 10px; cursor: pointer;">Удалить</button>
+                        <button type="button" onclick="deleteMaskPhoto('${mask.id}')" style="background: #EF4444; color: white; border: none; border-radius: 8px; padding: 4px 8px; margin-left: 10px; cursor: pointer;">Удалить фото</button>
                     </div>` : ''}
                     <input type="file" id="mask-photo" accept="image/*">
                     <div id="photo-preview" style="margin-top: 10px; display: none;">
@@ -895,10 +896,13 @@
                         const formData = new FormData();
                         formData.append('photo', photoFile);
                         
-                        await fetch(`${API_BASE}/admin/masks/${id}/upload-photo?userId=${currentUserId}`, {
+                        const uploadRes = await fetch(`${API_BASE}/admin/masks/${id}/upload-photo?userId=${currentUserId}`, {
                             method: 'POST',
                             body: formData
                         });
+                        
+                        const uploadResult = await uploadRes.json();
+                        console.log('Результат загрузки фото:', uploadResult);
                     }
                     
                     for (const routeId of selectedRoutes) {
@@ -942,6 +946,21 @@
                     showMessage('Ошибка обновления', 'error');
                 }
             });
+        }
+
+                async function deleteMaskPhoto(maskId) {
+            if (!confirm('Удалить фото маски?')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/delete-photo?userId=${currentUserId}`, {
+                method: 'POST'
+            });
+            
+            if (res.ok) {
+                showMessage('Фото удалено', 'success');
+                loadMasks().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка удаления', 'error');
+            }
         }
         
         async function deleteMask(id) {

@@ -493,12 +493,24 @@ router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async
         
         const photoUrl = `/uploads/${req.file.filename}`;
         
+        console.log('Загружено фото:', photoUrl);
+        console.log('ID маски:', req.params.id);
+        
         // Обновляем запись в базе данных
         await db.query('UPDATE masks SET "photoHash" = $1 WHERE id = $2', [photoUrl, req.params.id]);
         
         res.json({ success: true, photoUrl: photoUrl, message: 'Фото загружено' });
     } catch (err) {
         console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post('/masks/:id/delete-photo', checkAdmin, async (req, res) => {
+    try {
+        await db.query('UPDATE masks SET "photoHash" = NULL WHERE id = $1', [req.params.id]);
+        res.json({ success: true, message: 'Фото удалено' });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
