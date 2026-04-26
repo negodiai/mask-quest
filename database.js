@@ -207,6 +207,14 @@ async function initDatabase() {
         } catch (err) {
             console.log('Поля уже существуют или ошибка:', err.message);
         }
+
+                // Добавляем поле isAvailable для маршрутов (если нет)
+        try {
+            await pool.query(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS "isAvailable" INTEGER DEFAULT 0`);
+            console.log('✅ Добавлено поле isAvailable для маршрутов');
+        } catch (err) {
+            console.log('Поле isAvailable уже существует:', err.message);
+        }
         
         console.log('✅ База данных PostgreSQL инициализирована');
     } catch (error) {

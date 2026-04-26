@@ -519,7 +519,7 @@
             `).join('');
         }
         
-        function renderRoutesList() {
+                function renderRoutesList() {
             if (routes.length === 0) return '<p style="text-align: center; color: #64748b;">Нет маршрутов</p>';
             
             return routes.map(route => `
@@ -527,6 +527,7 @@
                     <div class="card-header">
                         <span class="card-title">${escapeHtml(route.name)}</span>
                         <div class="card-actions">
+                            ${!route.isAvailable ? `<button class="btn-icon btn-publish" onclick="publishRoute('${route.id}')" title="Опубликовать"><i class="fas fa-cloud-upload-alt"></i></button>` : ''}
                             <button class="btn-icon" onclick="editRoute('${route.id}')" title="Редактировать"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon btn-danger" onclick="deleteRoute('${route.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
@@ -534,9 +535,27 @@
                     <div style="font-size: 12px; color: #64748b;">
                         <div>📏 ${route.distanceKm} км | ⏱️ ${route.durationMinutes} мин</div>
                         <div>📝 ${escapeHtml(route.description || 'Без описания')}</div>
+                        <div style="margin-top: 8px;">
+                            ${route.isAvailable ? '<span class="badge badge-published">✅ Опубликован</span>' : '<span class="badge badge-draft">📝 Черновик</span>'}
+                        </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+                async function publishRoute(id) {
+            if (!confirm('Опубликовать маршрут? Он станет доступен в списке маршрутов для всех пользователей.')) return;
+            
+            const res = await fetch(`${API_BASE}/admin/routes/${id}/publish?userId=${currentUserId}`, {
+                method: 'POST'
+            });
+            
+            if (res.ok) {
+                showMessage('Маршрут опубликован!', 'success');
+                loadRoutes().then(() => renderAdminPanel());
+            } else {
+                showMessage('Ошибка публикации', 'error');
+            }
         }
         
                 function renderStats() {
@@ -939,7 +958,7 @@
             });
         }
         
-                async function editRoute(id) {
+                        async function editRoute(id) {
             const route = routes.find(r => r.id === id);
             if (!route) return;
             
@@ -966,7 +985,7 @@
                     description: document.getElementById('route-description').value,
                     durationMinutes: parseInt(document.getElementById('route-durationMinutes').value),
                     distanceKm: parseFloat(document.getElementById('route-distanceKm').value),
-                    isActive: route.isActive
+                    isAvailable: route.isAvailable  // сохраняем текущий статус
                 };
                 
                 const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
@@ -1094,6 +1113,7 @@
         }
 
         window.adminScrollToTop = adminScrollToTop;
+                window.publishRoute = publishRoute;
         
         init();
     </script>

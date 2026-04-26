@@ -157,10 +157,20 @@ router.post('/routes', checkAdmin, async (req, res) => {
     
     try {
         await db.query(`
-            INSERT INTO routes (id, name, description, "durationMinutes", "distanceKm", "isActive")
-            VALUES ($1, $2, $3, $4, $5, 1)
+            INSERT INTO routes (id, name, description, "durationMinutes", "distanceKm", "isAvailable")
+            VALUES ($1, $2, $3, $4, $5, 0)
         `, [id, name, description, durationMinutes, distanceKm]);
-        res.json({ success: true, id, message: 'Маршрут добавлен' });
+        res.json({ success: true, id, message: 'Маршрут добавлен как черновик' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Опубликовать маршрут
+router.post('/routes/:id/publish', checkAdmin, async (req, res) => {
+    try {
+        await db.query('UPDATE routes SET "isAvailable" = 1 WHERE id = $1', [req.params.id]);
+        res.json({ success: true, message: 'Маршрут опубликован' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -334,7 +344,7 @@ router.post('/masks/:id/publish', checkAdmin, async (req, res) => {
 // Получить все маршруты для селекта
 router.get('/routes/list', checkAdmin, async (req, res) => {
     try {
-        const result = await db.query('SELECT id, name FROM routes WHERE "isActive" = 1 ORDER BY name');
+        const result = await db.query('SELECT id, name FROM routes WHERE "isAvailable" = 1 ORDER BY name');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });

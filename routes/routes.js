@@ -7,9 +7,9 @@ router.get('/list', async (req, res) => {
     const { userId } = req.query;
     
     try {
-        // Получаем все активные маршруты
+        // Получаем только опубликованные маршруты (isAvailable = 1)
         const routesResult = await db.query(`
-            SELECT * FROM routes WHERE "isActive" = 1 ORDER BY name
+            SELECT * FROM routes WHERE "isAvailable" = 1 ORDER BY name
         `);
         const routes = routesResult.rows;
         
