@@ -72,7 +72,7 @@ router.get('/activations', async (req, res) => {
     
     try {
         const result = await db.query(`
-            SELECT ua.*, m.name, m.description, m."fullDescription", m."photoHash", 
+            SELECT ua.*, m.name, m.subtitle, m.description, m."fullDescription", m."photoHash", 
                    m."activationPhotoHash", m."audioGuideHash", m."priceAmount", 
                    m."priceCurrency", m."isAvailable"
             FROM user_activations ua
@@ -89,6 +89,7 @@ router.get('/activations', async (req, res) => {
             mask: {
                 id: row.maskId,
                 name: row.name,
+                subtitle: row.subtitle,
                 description: row.description,
                 fullDescription: row.fullDescription,
                 photoHash: row.photoHash,
