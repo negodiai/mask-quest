@@ -427,21 +427,17 @@ router.get('/set-mask-numbers', checkAdmin, async (req, res) => {
 });
 
 // Инициализация прогресса для всех пользователей
-router.post('/init-progress', checkAdmin, async (req, res) => {
+router.get('/init-progress', checkAdmin, async (req, res) => {
     try {
         const { v4: uuidv4 } = require('uuid');
         
-        // Получаем всех пользователей, у которых есть активации
         const users = await db.query('SELECT DISTINCT "userId" FROM user_activations');
-        
-        // Получаем все маршруты
         const routes = await db.query('SELECT id FROM routes WHERE "isAvailable" = 1');
         
         let created = 0;
         
         for (const user of users.rows) {
             for (const route of routes.rows) {
-                // Проверяем, есть ли уже запись прогресса
                 const existing = await db.query(
                     'SELECT * FROM user_route_progress WHERE "userId" = $1 AND "routeId" = $2',
                     [user.userId, route.id]
