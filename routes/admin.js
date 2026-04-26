@@ -2,6 +2,26 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Настройка хранения загруженных файлов
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 const ADMIN_ID = '359839365';
 
@@ -460,6 +480,25 @@ router.get('/init-progress', checkAdmin, async (req, res) => {
         });
     } catch (err) {
         console.error('Init progress error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Загрузка фото для маски
+router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/uploads/${req.file.filename}`;
+        
+        // Обновляем запись в базе данных
+        await db.query('UPDATE masks SET "photoHash" = $1 WHERE id = $2', [photoUrl, req.params.id]);
+        
+        res.json({ success: true, photoUrl: photoUrl, message: 'Фото загружено' });
+    } catch (err) {
+        console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
     }
 });
