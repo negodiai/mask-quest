@@ -152,14 +152,14 @@ router.get('/routes', checkAdmin, async (req, res) => {
 });
 
 router.post('/routes', checkAdmin, async (req, res) => {
-    const { name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom } = req.body;
+    const { name, description, durationMinutes, distanceKm } = req.body;
     const id = uuidv4();
     
     try {
         await db.query(`
-            INSERT INTO routes (id, name, description, difficulty, "durationMinutes", "distanceKm", color, "centerLat", "centerLng", zoom, "isActive")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
-        `, [id, name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom]);
+            INSERT INTO routes (id, name, description, "durationMinutes", "distanceKm", "isActive")
+            VALUES ($1, $2, $3, $4, $5, 1)
+        `, [id, name, description, durationMinutes, distanceKm]);
         res.json({ success: true, id, message: 'Маршрут добавлен' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -167,15 +167,14 @@ router.post('/routes', checkAdmin, async (req, res) => {
 });
 
 router.put('/routes/:id', checkAdmin, async (req, res) => {
-    const { name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom, isActive } = req.body;
+    const { name, description, durationMinutes, distanceKm, isActive } = req.body;
     
     try {
         await db.query(`
             UPDATE routes SET 
-                name = $1, description = $2, difficulty = $3, "durationMinutes" = $4, "distanceKm" = $5, 
-                color = $6, "centerLat" = $7, "centerLng" = $8, zoom = $9, "isActive" = $10
-            WHERE id = $11
-        `, [name, description, difficulty, durationMinutes, distanceKm, color, centerLat, centerLng, zoom, isActive ? 1 : 0, req.params.id]);
+                name = $1, description = $2, "durationMinutes" = $3, "distanceKm" = $4, "isActive" = $5
+            WHERE id = $6
+        `, [name, description, durationMinutes, distanceKm, isActive ? 1 : 0, req.params.id]);
         res.json({ success: true, message: 'Маршрут обновлён' });
     } catch (err) {
         res.status(500).json({ error: err.message });
