@@ -692,11 +692,11 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
                 </div>
-                                <div class="form-group">
+                                               <div class="form-group">
                     <label>Фото маски</label>
-                    <input type="file" id="mask-photo" accept="image/*">
-                    <div id="photo-preview" style="margin-top: 10px; display: none;">
-                        <img id="photo-preview-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
+                    <input type="file" id="mask-photo-add" accept="image/*">
+                    <div id="photo-preview-add" style="margin-top: 10px; display: none;">
+                        <img id="photo-preview-img-add" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
                     </div>
                 </div>
                 
@@ -752,8 +752,8 @@
                 if (res.ok) {
                     const maskId = result.id;
                     
-                    // Загружаем фото, если оно выбрано
-                    const photoFile = document.getElementById('mask-photo').files[0];
+                                        const photoInput = document.getElementById('mask-photo-add');
+                    const photoFile = photoInput ? photoInput.files[0] : null;
                     if (photoFile) {
                         const formData = new FormData();
                         formData.append('photo', photoFile);
@@ -763,6 +763,27 @@
                             body: formData
                         });
                     }
+
+                                setTimeout(() => {
+                const input = document.getElementById('mask-photo-add');
+                if (input) {
+                    input.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(ev) {
+                                const preview = document.getElementById('photo-preview-add');
+                                const img = document.getElementById('photo-preview-img-add');
+                                if (preview && img) {
+                                    img.src = ev.target.result;
+                                    preview.style.display = 'block';
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            }, 200);
                     
                     for (const routeId of selectedRoutes) {
                         await fetch(`${API_BASE}/admin/masks/${maskId}/routes/${routeId}?userId=${currentUserId}`, {
@@ -828,16 +849,15 @@
                     <label>2GIS (ссылка)</label>
                     <input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}">
                 </div>
-                                <div class="form-group">
+                                                <div class="form-group">
                     <label>Фото маски</label>
                     ${mask.photoHash ? `<div id="current-photo" style="margin-bottom: 10px;">
                         <img src="${mask.photoHash}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
                         <button type="button" onclick="document.getElementById('current-photo').remove()" style="background: #EF4444; color: white; border: none; border-radius: 8px; padding: 4px 8px; margin-left: 10px; cursor: pointer;">Удалить</button>
-                        <button type="button" onclick="deleteMaskPhoto('${mask.id}')" style="background: #EF4444; color: white; border: none; border-radius: 8px; padding: 4px 8px; margin-left: 10px; cursor: pointer;">Удалить фото</button>
                     </div>` : ''}
-                    <input type="file" id="mask-photo" accept="image/*">
-                    <div id="photo-preview" style="margin-top: 10px; display: none;">
-                        <img id="photo-preview-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
+                    <input type="file" id="mask-photo-edit" accept="image/*">
+                    <div id="photo-preview-edit" style="margin-top: 10px; display: none;">
+                        <img id="photo-preview-img-edit" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
                     </div>
                 </div>
                 
@@ -890,13 +910,14 @@
                 });
                 
                 if (res.ok) {
-                    // Загружаем новое фото, если оно выбрано
-                    const photoFile = document.getElementById('mask-photo').files[0];
+                                        // Загружаем новое фото, если оно выбрано
+                    const photoInput = document.getElementById('mask-photo-edit');
+                    const photoFile = photoInput ? photoInput.files[0] : null;
                     if (photoFile) {
                         const formData = new FormData();
                         formData.append('photo', photoFile);
                         
-                        const uploadRes = await fetch(`${API_BASE}/admin/masks/${id}/upload-photo?userId=${currentUserId}`, {
+                        await fetch(`${API_BASE}/admin/masks/${id}/upload-photo?userId=${currentUserId}`, {
                             method: 'POST',
                             body: formData
                         });
@@ -904,6 +925,27 @@
                         const uploadResult = await uploadRes.json();
                         console.log('Результат загрузки фото:', uploadResult);
                     }
+
+                                setTimeout(() => {
+                const input = document.getElementById('mask-photo-edit');
+                if (input) {
+                    input.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(ev) {
+                                const preview = document.getElementById('photo-preview-edit');
+                                const img = document.getElementById('photo-preview-img-edit');
+                                if (preview && img) {
+                                    img.src = ev.target.result;
+                                    preview.style.display = 'block';
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            }, 200);
                     
                     for (const routeId of selectedRoutes) {
                         if (!maskRouteIds.has(routeId)) {
