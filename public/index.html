@@ -3191,7 +3191,7 @@
         }
         
         // Простая информация о маске (для каталога)
-                function showSimpleMaskInfo(maskId) {
+                        function showSimpleMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
@@ -3203,11 +3203,13 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
+                            <!-- Главное фото -->
                             <div class="main-photo">
                                 <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">
                             </div>
-                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; margin-top: 12px; padding-left: 8px; text-align: left;">${escapeHtml(mask.description || 'Нет описания')}</p>
-                            <div class="action-buttons-small">
+                            
+                            <!-- Кнопки под фото -->
+                            <div class="action-buttons-small" style="margin-top: 16px; margin-bottom: 16px;">
                                 ${mask.isAvailable ? `<button class="btn-small-catalog" onclick="buyMask('${escapeHtml(mask.name)}'); closeModal();" style="background: #10B981; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     <i class="fas fa-shopping-cart"></i>
                                     <span>${mask.price?.amount || mask.priceAmount || 15000}₽</span>
@@ -3217,6 +3219,14 @@
                                     <span>Маршрут</span>
                                 </button>
                             </div>
+                            
+                            <!-- Подзаголовок -->
+                            <div style="margin-top: 8px; margin-bottom: 16px; padding-left: 8px;">
+                                <p style="color: #94a3b8; font-size: 14px; font-weight: 500; margin: 0;">${escapeHtml(mask.subtitle || '')}</p>
+                            </div>
+                            
+                            <!-- Краткое описание -->
+                            <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 16px; padding-left: 8px; text-align: left;">${escapeHtml(mask.description || 'Нет описания')}</p>
                         </div>
                     </div>
                 </div>
@@ -4340,6 +4350,11 @@
             }
             
             appDiv.innerHTML = content;
+
+                        // Принудительная проверка скролла для кнопки "Наверх"
+            setTimeout(() => {
+                checkScroll();
+            }, 100);
             
             // Сбрасываем проверку прокрутки при смене страницы
             setTimeout(() => {
