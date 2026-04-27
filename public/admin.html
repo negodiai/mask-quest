@@ -221,27 +221,46 @@
             padding: 20px;
         }
 
-        .photo-upload-area {
-            border: 2px dashed #2d2d44;
-            border-radius: 16px;
-            padding: 20px;
+                .photo-upload-area {
+            border: 1px dashed #3d3d5c;
+            border-radius: 12px;
+            padding: 10px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
             margin-bottom: 16px;
+            background: #1a1a2e;
         }
         
         .photo-upload-area:hover {
             border-color: #3B82F6;
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .photo-upload-area i {
+            font-size: 20px;
+            color: #64748b;
+            margin-right: 8px;
+        }
+        
+        .photo-upload-area span {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        
+        .photo-upload-area .upload-hint {
+            font-size: 11px;
+            color: #64748b;
+            margin-left: 8px;
         }
         
         .photo-preview {
-            width: 100%;
-            max-height: 200px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 12px;
-            margin-top: 12px;
+            margin-top: 10px;
+            border: 1px solid #3d3d5c;
         }
         
         .photo-preview.hidden {
@@ -250,6 +269,13 @@
         
         .photo-input {
             display: none;
+        }
+        
+        .photo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         
         .stat-grid {
@@ -600,6 +626,8 @@
             let currentPhotoUrl = '';
             
             showModal('Добавить маску', `
+                <div class="form-group"><label>Название *</label><input type="text" id="mask-name" placeholder="Например: Берёзовая"></div>
+
                 <div class="form-group">
                     <label>Фото маски</label>
                     <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
@@ -611,7 +639,6 @@
                     <img id="photo-preview" class="photo-preview hidden" src="">
                     <input type="hidden" id="mask-photoHash" value="">
                 </div>
-                <div class="form-group"><label>Название *</label><input type="text" id="mask-name" placeholder="Например: Берёзовая"></div>
                 <div class="form-group"><label>Подзаголовок (отображается на карточке в каталоге)</label><input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок"></div>
                 <div class="form-group"><label>Краткое описание (показывается внутри модального окна)</label><textarea id="mask-description" placeholder="Краткое описание маски"></textarea></div>
                 <div class="form-group"><label>Номер маски (QR-код) *</label><input type="number" id="mask-number" placeholder="1, 2, 3..."><small style="color:#64748b;">Номер для QR-кода</small></div>
@@ -679,6 +706,8 @@
             let currentPhotoUrl = mask.photoHash || '';
             
             showModal('Редактировать маску', `
+                <div class="form-group"><label>Название</label><input type="text" id="mask-name" value="${escapeHtml(mask.name)}"></div>
+
                 <div class="form-group">
                     <label>Фото маски</label>
                     <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
@@ -689,7 +718,6 @@
                     <img id="photo-preview" class="photo-preview ${!currentPhotoUrl ? 'hidden' : ''}" src="${currentPhotoUrl}">
                     <input type="hidden" id="mask-photoHash" value="${currentPhotoUrl}">
                 </div>
-                <div class="form-group"><label>Название</label><input type="text" id="mask-name" value="${escapeHtml(mask.name)}"></div>
                 <div class="form-group"><label>Подзаголовок</label><input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}"></div>
                 <div class="form-group"><label>Краткое описание</label><textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea></div>
                 <div class="form-group"><label>Номер маски (QR-код)</label><input type="number" id="mask-number" value="${mask.number || ''}"></div>
