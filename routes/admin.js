@@ -91,13 +91,32 @@ router.post('/upload-photo', checkAdmin, upload.single('photo'), async (req, res
     }
 });
 
+// Загрузка фото для периода (present, ussr, past)
+router.post('/upload-period-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/uploads/${req.file.filename}`;
+        res.json({ 
+            success: true, 
+            photoUrl: photoUrl,
+            message: 'Фото загружено'
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
         name, description, subtitle, number, priceAmount, 
         yandexMapLink, googleMapLink, twoGisLink,
         present_text, ussr_text, past_text,
-        photoHash
+        photoHash, present_photos, ussr_photos, past_photos
     } = req.body;
     const id = uuidv4();
     
@@ -107,12 +126,14 @@ router.post('/masks', checkAdmin, async (req, res) => {
                                "priceAmount", "isAvailable", 
                                "yandexMapLink", "googleMapLink", "twoGisLink",
                                "present_text", "ussr_text", "past_text",
-                               "photoHash", latitude, longitude, address)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                               "photoHash", "present_photos", "ussr_photos", "past_photos",
+                               latitude, longitude, address)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         `, [id, name, description, subtitle, number, priceAmount, 0, 
             yandexMapLink, googleMapLink, twoGisLink,
             present_text, ussr_text, past_text,
-            photoHash, null, null, null]);
+            photoHash, present_photos || '[]', ussr_photos || '[]', past_photos || '[]',
+            null, null, null]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -140,7 +161,7 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
         name, description, subtitle, number, priceAmount, isAvailable,
         yandexMapLink, googleMapLink, twoGisLink,
         present_text, ussr_text, past_text,
-        photoHash
+        photoHash, present_photos, ussr_photos, past_photos
     } = req.body;
     
     try {
@@ -150,12 +171,12 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
                 "priceAmount" = $5, "isAvailable" = $6,
                 "yandexMapLink" = $7, "googleMapLink" = $8, "twoGisLink" = $9,
                 "present_text" = $10, "ussr_text" = $11, "past_text" = $12,
-                "photoHash" = $13
-            WHERE id = $14
+                "photoHash" = $13, "present_photos" = $14, "ussr_photos" = $15, "past_photos" = $16
+            WHERE id = $17
         `, [name, description, subtitle, number, priceAmount, isAvailable ? 1 : 0,
             yandexMapLink, googleMapLink, twoGisLink,
             present_text, ussr_text, past_text,
-            photoHash, req.params.id]);
+            photoHash, present_photos || '[]', ussr_photos || '[]', past_photos || '[]', req.params.id]);
         
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {

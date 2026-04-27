@@ -78,7 +78,8 @@ router.get('/list', async (req, res) => {
         const result = await db.query(`
             SELECT id, number, name, description, subtitle, "photoHash", "isAvailable", 
                    "priceAmount", "priceCurrency", "yandexMapLink", "googleMapLink", "twoGisLink",
-                   "present_text", "ussr_text", "past_text"
+                   "present_text", "ussr_text", "past_text",
+                   "present_photos", "ussr_photos", "past_photos"
             FROM masks 
             WHERE "isAvailable" = 1
             ORDER BY number ASC
@@ -98,7 +99,10 @@ router.get('/list', async (req, res) => {
             twoGisLink: m.twoGisLink,
             present_text: m.present_text,
             ussr_text: m.ussr_text,
-            past_text: m.past_text
+            past_text: m.past_text,
+            present_photos: m.present_photos ? JSON.parse(m.present_photos) : [],
+            ussr_photos: m.ussr_photos ? JSON.parse(m.ussr_photos) : [],
+            past_photos: m.past_photos ? JSON.parse(m.past_photos) : []
         }));
         
         res.json(safeMasks);

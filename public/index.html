@@ -3299,7 +3299,7 @@
         }
         
         // Расширенная информация о маске (для активированных)
-                                                        function showExtendedMaskInfo(maskId) {
+                     function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
@@ -3321,14 +3321,33 @@
                 past: `Кёнигсберг (1333-1945)`
             };
             
-            // Функция для создания карусели с полнофункциональными фото
-            function createGalleryForTab(tabName) {
-                let slidesHtml = '';
-                let dotsHtml = '';
-                for (let i = 1; i <= 5; i++) {
-                    slidesHtml += `<div class="gallery-slide" style="background-image: url('/images/${mask.id}.jpg');"></div>`;
-                    dotsHtml += `<div class="gallery-dot ${i === 1 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${i - 1})"></div>`;
-                }
+                        // Получаем текущую вкладку (по умолчанию 'present')
+            if (typeof window.currentExtendedTab === 'undefined') {
+                window.currentExtendedTab = 'present';
+            }
+            
+            // Получаем фото для текущей вкладки
+            let currentPhotos = [];
+            if (window.currentExtendedTab === 'present') {
+                currentPhotos = mask.present_photos || [];
+            } else if (window.currentExtendedTab === 'ussr') {
+                currentPhotos = mask.ussr_photos || [];
+            } else if (window.currentExtendedTab === 'past') {
+                currentPhotos = mask.past_photos || [];
+            }
+            
+            // Если нет фото для периода — используем главное фото или заглушку
+            if (currentPhotos.length === 0) {
+                currentPhotos = [mask.photoHash || `/images/${mask.id}.jpg`];
+            }
+            
+            // Создаём карусель
+            let gallerySlides = '';
+            let galleryDots = '';
+            currentPhotos.forEach((photo, idx) => {
+                gallerySlides += `<div class="gallery-slide" style="background-image: url('${photo}');" onclick="event.stopPropagation(); openFullscreenExtendedTab('${window.currentExtendedTab}', ${idx})"></div>`;
+                galleryDots += `<div class="gallery-dot ${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${window.currentExtendedTab}', ${idx})"></div>`;
+            });
                 
                 return `
                     <div class="gallery-container" id="gallery-container-${tabName}">
@@ -3567,7 +3586,6 @@
                     });
                 }
             }, 200);
-        }
         
         // Функция для открытия полноэкранного режима из карусели
                 function openFullscreenForTab(tab, startIndex) {
@@ -3654,8 +3672,7 @@
             }, 100);
         }
         
-        // Переключение вкладок
-        function switchTab(tab) {
+                function switchTab(tab) {
             // Обновляем активную вкладку визуально
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.style.background = '#252542';
@@ -3671,6 +3688,42 @@
             document.getElementById(`${tab}-content`).style.display = 'block';
             
             window.currentExtendedTab = tab;
+            
+            // Обновляем карусель для выбранной вкладки
+            const mask = window.currentExtendedMask;
+            if (mask) {
+                let currentPhotos = [];
+                if (tab === 'present') currentPhotos = mask.present_photos || [];
+                else if (tab === 'ussr') currentPhotos = mask.ussr_photos || [];
+                else if (tab === 'past') currentPhotos = mask.past_photos || [];
+                
+                if (currentPhotos.length === 0) {
+                    currentPhotos = [mask.photoHash || `/images/${mask.id}.jpg`];
+                }
+                
+                // Обновляем количество фото
+                window.extendedImagesCount = currentPhotos.length;
+                window.currentExtendedIndex = 0;
+                
+                // Пересоздаём карусель
+                const galleryContainer = document.getElementById(`gallery-container-${tab}`);
+                if (galleryContainer) {
+                    let slidesHtml = '';
+                    let dotsHtml = '';
+                    currentPhotos.forEach((photo, idx) => {
+                        slidesHtml += `<div class="gallery-slide" style="background-image: url('${photo}');" onclick="event.stopPropagation(); openFullscreenExtendedTab('${tab}', ${idx})"></div>`;
+                        dotsHtml += `<div class="gallery-dot ${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tab}', ${idx})"></div>`;
+                    });
+                    
+                    const slidesDiv = document.getElementById(`gallery-slides-${tab}`);
+                    const dotsDiv = document.getElementById(`gallery-nav-${tab}`);
+                    if (slidesDiv) slidesDiv.innerHTML = slidesHtml;
+                    if (dotsDiv) dotsDiv.innerHTML = dotsHtml;
+                    
+                    // Сбрасываем трансформацию
+                    if (slidesDiv) slidesDiv.style.transform = 'translateX(0%)';
+                }
+            }
         }
         
         // Функции для управления каруселями в каждой вкладке
