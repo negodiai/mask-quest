@@ -1659,20 +1659,32 @@
             }
         }
         
-                       async function loadMasks() {
+                              async function loadMasks() {
             try {
                 const res = await fetch(`${API_BASE}/masks/list`);
                 const data = await res.json();
-                console.log('Загружено масок:', data.length);
-                console.log('Пример маски:', data[0]);
-                console.log('Ссылки на карты в первой маске:', {
-                    yandex: data[0]?.yandexMapLink,
-                    google: data[0]?.googleMapLink,
-                    twoGis: data[0]?.twoGisLink
-                });
-                appState.masks = data;
+                console.log('Ответ API /masks/list:', data);
+                
+                // Проверяем, что data — это массив
+                if (Array.isArray(data)) {
+                    appState.masks = data;
+                    console.log('Загружено масок:', data.length);
+                } else {
+                    console.error('API вернул не массив:', data);
+                    appState.masks = [];
+                }
+                
+                if (data.length > 0) {
+                    console.log('Пример маски:', data[0]);
+                    console.log('Ссылки на карты в первой маске:', {
+                        yandex: data[0]?.yandexMapLink,
+                        google: data[0]?.googleMapLink,
+                        twoGis: data[0]?.twoGisLink
+                    });
+                }
             } catch (e) {
                 console.error('Failed to load masks:', e);
+                appState.masks = [];
             }
         }
         
@@ -2127,7 +2139,13 @@
         }
 
                 // Функция для получения отфильтрованных масок
-               function getFilteredMasks() {
+                       function getFilteredMasks() {
+            // Проверяем, что appState.masks — массив
+            if (!Array.isArray(appState.masks)) {
+                console.error('appState.masks не массив:', appState.masks);
+                return [];
+            }
+            
             const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
             
             console.log('Активированные ID:', activatedIds);
