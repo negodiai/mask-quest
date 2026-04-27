@@ -277,57 +277,14 @@
             display: none;
         }
 
-                .period-photos-section {
-            margin-top: 16px;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #1a1a2e;
-            border-radius: 12px;
-        }
-        
-        .period-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 12px;
-        }
-        
-        .photo-upload-small {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border: 1px solid #3d3d5c;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: #252542;
-            margin-bottom: 12px;
-        }
-        
-        .photo-upload-small:hover {
-            border-color: #3B82F6;
-            background: rgba(59, 130, 246, 0.1);
-        }
-        
-        .photo-upload-small i {
-            font-size: 12px;
-            color: #64748b;
-        }
-        
-        .photo-upload-small span {
-            font-size: 11px;
-            color: #94a3b8;
-        }
-        
-        .period-photos-list {
+                .photos-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-top: 8px;
         }
         
-        .period-photo-item {
+        .photo-item {
             position: relative;
             width: 60px;
             height: 60px;
@@ -336,13 +293,13 @@
             border: 1px solid #3d3d5c;
         }
         
-        .period-photo-item img {
+        .photo-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        .period-photo-remove {
+        .photo-item .remove-photo {
             position: absolute;
             top: -6px;
             right: -6px;
@@ -704,9 +661,6 @@
         async function showAddMaskModal() {
             const routesHtml = allRoutes.map(route => `<label class="route-checkbox"><input type="checkbox" value="${route.id}" class="route-checkbox-input"><span>${escapeHtml(route.name)}</span></label>`).join('');
             let currentPhotoUrl = '';
-                        let currentPresentPhotos = [];
-            let currentUssrPhotos = [];
-            let currentPastPhotos = [];
             
             showModal('Добавить маску', `
                 <div class="form-group"><label>Название *</label><input type="text" id="mask-name" placeholder="Например: Берёзовая"></div>
@@ -723,35 +677,44 @@
                     <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
                     <input type="hidden" id="mask-photoHash" value="">
                 </div>
-                                <!-- Фото для периодов -->
-                <div class="period-photos-section">
-                    <div class="period-title">📸 Фото для вкладки "Настоящее"</div>
-                    <div class="photo-upload-small" onclick="document.getElementById('present-photo-input').click()">
-                        <i class="fas fa-plus"></i>
-                        <span>Добавить фото</span>
+
+                                <div class="form-group">
+                    <label>Фото для вкладки "Настоящее"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('present-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
                     </div>
-                    <input type="file" id="present-photo-input" class="photo-input" accept="image/*" multiple>
-                    <div id="present-photos-list" class="period-photos-list"></div>
+                    <input type="file" id="present-photo-input" class="photo-input" accept="image/*">
+                    <div id="present-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="present-photos" value="[]">
                 </div>
                 
-                <div class="period-photos-section">
-                    <div class="period-title">📸 Фото для вкладки "СССР"</div>
-                    <div class="photo-upload-small" onclick="document.getElementById('ussr-photo-input').click()">
-                        <i class="fas fa-plus"></i>
-                        <span>Добавить фото</span>
+                <div class="form-group">
+                    <label>Фото для вкладки "СССР"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('ussr-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
                     </div>
-                    <input type="file" id="ussr-photo-input" class="photo-input" accept="image/*" multiple>
-                    <div id="ussr-photos-list" class="period-photos-list"></div>
+                    <input type="file" id="ussr-photo-input" class="photo-input" accept="image/*">
+                    <div id="ussr-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="ussr-photos" value="[]">
                 </div>
                 
-                <div class="period-photos-section">
-                    <div class="period-title">📸 Фото для вкладки "Прошлое"</div>
-                    <div class="photo-upload-small" onclick="document.getElementById('past-photo-input').click()">
-                        <i class="fas fa-plus"></i>
-                        <span>Добавить фото</span>
+                <div class="form-group">
+                    <label>Фото для вкладки "Прошлое"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('past-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
                     </div>
-                    <input type="file" id="past-photo-input" class="photo-input" accept="image/*" multiple>
-                    <div id="past-photos-list" class="period-photos-list"></div>
+                    <input type="file" id="past-photo-input" class="photo-input" accept="image/*">
+                    <div id="past-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="past-photos" value="[]">
                 </div>
                 <div class="form-group"><label>Подзаголовок (отображается на карточке в каталоге)</label><input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок"></div>
                 <div class="form-group"><label>Краткое описание (показывается внутри модального окна)</label><textarea id="mask-description" placeholder="Краткое описание маски"></textarea></div>
@@ -810,71 +773,27 @@
                 });
             }, 200);
 
-                        // ========== ОБРАБОТЧИКИ ЗАГРУЗКИ ФОТО ДЛЯ ПЕРИОДОВ ==========
-            
-            // Переменные для хранения фото периодов
-            window.currentPresentPhotos = [];
-            window.currentUssrPhotos = [];
-            window.currentPastPhotos = [];
-            
-            function renderPeriodPhotos(period, photos) {
-                const container = document.getElementById(`${period}-photos-list`);
-                if (!container) return;
-                
-                container.innerHTML = photos.map((photo, index) => `
-                    <div class="period-photo-item">
-                        <img src="${photo}" onerror="this.style.display='none'">
-                        <div class="period-photo-remove" onclick="event.stopPropagation(); window.removePeriodPhoto('${period}', ${index})">&times;</div>
-                    </div>
-                `).join('');
-                
-                // Сохраняем в скрытое поле
-                const hiddenInput = document.getElementById(`${period}-photos-data`);
-                if (hiddenInput) {
-                    hiddenInput.value = JSON.stringify(photos);
-                }
-            }
-            
-            window.removePeriodPhoto = function(period, index) {
-                if (period === 'present') {
-                    window.currentPresentPhotos.splice(index, 1);
-                    renderPeriodPhotos('present', window.currentPresentPhotos);
-                } else if (period === 'ussr') {
-                    window.currentUssrPhotos.splice(index, 1);
-                    renderPeriodPhotos('ussr', window.currentUssrPhotos);
-                } else if (period === 'past') {
-                    window.currentPastPhotos.splice(index, 1);
-                    renderPeriodPhotos('past', window.currentPastPhotos);
-                }
-            };
-            
-            // Обработчик для фото "Настоящее"
+                        // Обработчик для фото "Настоящее"
             const presentInput = document.getElementById('present-photo-input');
             if (presentInput) {
                 presentInput.addEventListener('change', async (e) => {
-                    const files = Array.from(e.target.files);
-                    for (const file of files) {
-                        const formData = new FormData();
-                        formData.append('photo', file);
-                        showMessage('Загрузка фото для вкладки "Настоящее"...', 'info');
-                        try {
-                            const res = await fetch(`${API_BASE}/admin/upload-period-photo?userId=${currentUserId}`, { 
-                                method: 'POST', 
-                                body: formData 
-                            });
-                            const result = await res.json();
-                            if (res.ok) {
-                                window.currentPresentPhotos.push(result.photoUrl);
-                                renderPeriodPhotos('present', window.currentPresentPhotos);
-                                showMessage('Фото загружено!', 'success');
-                            } else {
-                                showMessage('Ошибка загрузки фото', 'error');
-                            }
-                        } catch (err) {
-                            showMessage('Ошибка загрузки фото', 'error');
-                        }
-                    }
-                    e.target.value = '';
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    showMessage('Загрузка фото...', 'info');
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/upload-present-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (res.ok) {
+                            let photos = JSON.parse(document.getElementById('present-photos').value || '[]');
+                            photos.push(result.photoUrl);
+                            document.getElementById('present-photos').value = JSON.stringify(photos);
+                            renderPhotosList('present', photos);
+                            showMessage('Фото добавлено!', 'success');
+                        } else showMessage('Ошибка загрузки', 'error');
+                    } catch (err) { showMessage('Ошибка', 'error'); }
+                    presentInput.value = '';
                 });
             }
             
@@ -882,29 +801,23 @@
             const ussrInput = document.getElementById('ussr-photo-input');
             if (ussrInput) {
                 ussrInput.addEventListener('change', async (e) => {
-                    const files = Array.from(e.target.files);
-                    for (const file of files) {
-                        const formData = new FormData();
-                        formData.append('photo', file);
-                        showMessage('Загрузка фото для вкладки "СССР"...', 'info');
-                        try {
-                            const res = await fetch(`${API_BASE}/admin/upload-period-photo?userId=${currentUserId}`, { 
-                                method: 'POST', 
-                                body: formData 
-                            });
-                            const result = await res.json();
-                            if (res.ok) {
-                                window.currentUssrPhotos.push(result.photoUrl);
-                                renderPeriodPhotos('ussr', window.currentUssrPhotos);
-                                showMessage('Фото загружено!', 'success');
-                            } else {
-                                showMessage('Ошибка загрузки фото', 'error');
-                            }
-                        } catch (err) {
-                            showMessage('Ошибка загрузки фото', 'error');
-                        }
-                    }
-                    e.target.value = '';
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    showMessage('Загрузка фото...', 'info');
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/upload-ussr-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (res.ok) {
+                            let photos = JSON.parse(document.getElementById('ussr-photos').value || '[]');
+                            photos.push(result.photoUrl);
+                            document.getElementById('ussr-photos').value = JSON.stringify(photos);
+                            renderPhotosList('ussr', photos);
+                            showMessage('Фото добавлено!', 'success');
+                        } else showMessage('Ошибка загрузки', 'error');
+                    } catch (err) { showMessage('Ошибка', 'error'); }
+                    ussrInput.value = '';
                 });
             }
             
@@ -912,62 +825,51 @@
             const pastInput = document.getElementById('past-photo-input');
             if (pastInput) {
                 pastInput.addEventListener('change', async (e) => {
-                    const files = Array.from(e.target.files);
-                    for (const file of files) {
-                        const formData = new FormData();
-                        formData.append('photo', file);
-                        showMessage('Загрузка фото для вкладки "Прошлое"...', 'info');
-                        try {
-                            const res = await fetch(`${API_BASE}/admin/upload-period-photo?userId=${currentUserId}`, { 
-                                method: 'POST', 
-                                body: formData 
-                            });
-                            const result = await res.json();
-                            if (res.ok) {
-                                window.currentPastPhotos.push(result.photoUrl);
-                                renderPeriodPhotos('past', window.currentPastPhotos);
-                                showMessage('Фото загружено!', 'success');
-                            } else {
-                                showMessage('Ошибка загрузки фото', 'error');
-                            }
-                        } catch (err) {
-                            showMessage('Ошибка загрузки фото', 'error');
-                        }
-                    }
-                    e.target.value = '';
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    showMessage('Загрузка фото...', 'info');
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/upload-past-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (res.ok) {
+                            let photos = JSON.parse(document.getElementById('past-photos').value || '[]');
+                            photos.push(result.photoUrl);
+                            document.getElementById('past-photos').value = JSON.stringify(photos);
+                            renderPhotosList('past', photos);
+                            showMessage('Фото добавлено!', 'success');
+                        } else showMessage('Ошибка загрузки', 'error');
+                    } catch (err) { showMessage('Ошибка', 'error'); }
+                    pastInput.value = '';
                 });
             }
         }
 
-                    function renderPeriodPhotos(period, photos) {
-                const container = document.getElementById(`${period}-photos-list`);
-                if (!container) return;
-                
-                container.innerHTML = photos.map((photo, index) => `
-                    <div class="period-photo-item">
-                        <img src="${photo}" onerror="this.style.display='none'">
-                        <div class="period-photo-remove" onclick="event.stopPropagation(); removePeriodPhoto('${period}', ${index})">&times;</div>
-                    </div>
-                `).join('');
-                
-                // Сохраняем в скрытое поле
-                document.getElementById(`${period}-photos-data`).value = JSON.stringify(photos);
-            }
-            
-            window.removePeriodPhoto = function(period, index) {
-                if (period === 'present') {
-                    currentPresentPhotos.splice(index, 1);
-                    renderPeriodPhotos('present', currentPresentPhotos);
-                } else if (period === 'ussr') {
-                    currentUssrPhotos.splice(index, 1);
-                    renderPeriodPhotos('ussr', currentUssrPhotos);
-                } else if (period === 'past') {
-                    currentPastPhotos.splice(index, 1);
-                    renderPeriodPhotos('past', currentPastPhotos);
-                }
-            };
+                function renderPhotosList(type, photos) {
+            const container = document.getElementById(`${type}-photos-list`);
+            if (!container) return;
+            container.innerHTML = '';
+            photos.forEach((photo, index) => {
+                const div = document.createElement('div');
+                div.className = 'photo-item';
+                div.innerHTML = `
+                    <img src="${photo}" onerror="this.style.display='none'">
+                    <div class="remove-photo" onclick="removePhoto('${type}', ${index})">×</div>
+                `;
+                container.appendChild(div);
+            });
+        }
         
-        async function editMask(id) {
+        function removePhoto(type, index) {
+            const input = document.getElementById(`${type}-photos`);
+            let photos = JSON.parse(input.value || '[]');
+            photos.splice(index, 1);
+            input.value = JSON.stringify(photos);
+            renderPhotosList(type, photos);
+        }
+        
+                async function editMask(id) {
             const mask = masks.find(m => m.id === id);
             if (!mask) return;
             const maskRoutes = await loadMaskRoutes(id);
@@ -975,10 +877,20 @@
             const routesHtml = allRoutes.map(route => `<label class="route-checkbox"><input type="checkbox" value="${route.id}" class="route-checkbox-input" ${maskRouteIds.has(route.id) ? 'checked' : ''}><span>${escapeHtml(route.name)}</span></label>`).join('');
             let currentPhotoUrl = mask.photoHash || '';
             
+            // Парсим существующие фото для эпох
+            let presentPhotos = [];
+            let ussrPhotos = [];
+            let pastPhotos = [];
+            try {
+                presentPhotos = JSON.parse(mask.present_photos || '[]');
+                ussrPhotos = JSON.parse(mask.ussr_photos || '[]');
+                pastPhotos = JSON.parse(mask.past_photos || '[]');
+            } catch(e) {}
+            
             showModal('Редактировать маску', `
                 <div class="form-group"><label>Название</label><input type="text" id="mask-name" value="${escapeHtml(mask.name)}"></div>
 
-                                <div class="form-group">
+                <div class="form-group">
                     <label>Фото маски</label>
                     <div class="photo-row">
                         <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
@@ -990,6 +902,46 @@
                     <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
                     <input type="hidden" id="mask-photoHash" value="${currentPhotoUrl}">
                 </div>
+                
+                <div class="form-group">
+                    <label>📸 Фото для вкладки "Настоящее"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('present-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
+                    </div>
+                    <input type="file" id="present-photo-input" class="photo-input" accept="image/*">
+                    <div id="present-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="present-photos" value='${JSON.stringify(presentPhotos)}'>
+                </div>
+                
+                <div class="form-group">
+                    <label>📸 Фото для вкладки "СССР"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('ussr-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
+                    </div>
+                    <input type="file" id="ussr-photo-input" class="photo-input" accept="image/*">
+                    <div id="ussr-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="ussr-photos" value='${JSON.stringify(ussrPhotos)}'>
+                </div>
+                
+                <div class="form-group">
+                    <label>📸 Фото для вкладки "Прошлое"</label>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('past-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Добавить фото</span>
+                        </div>
+                    </div>
+                    <input type="file" id="past-photo-input" class="photo-input" accept="image/*">
+                    <div id="past-photos-list" class="photos-list"></div>
+                    <input type="hidden" id="past-photos" value='${JSON.stringify(pastPhotos)}'>
+                </div>
+                
                 <div class="form-group"><label>Подзаголовок</label><input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}"></div>
                 <div class="form-group"><label>Краткое описание</label><textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea></div>
                 <div class="form-group"><label>Номер маски (QR-код)</label><input type="number" id="mask-number" value="${mask.number || ''}"></div>
@@ -1017,7 +969,10 @@
                     present_text: document.getElementById('mask-present_text').value,
                     ussr_text: document.getElementById('mask-ussr_text').value,
                     past_text: document.getElementById('mask-past_text').value,
-                    photoHash: document.getElementById('mask-photoHash').value
+                    photoHash: document.getElementById('mask-photoHash').value,
+                    present_photos: document.getElementById('present-photos').value,
+                    ussr_photos: document.getElementById('ussr-photos').value,
+                    past_photos: document.getElementById('past-photos').value
                 };
                 const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedMask) });
                 if (res.ok) {
@@ -1029,8 +984,36 @@
                 } else showMessage('Ошибка обновления', 'error');
             });
             
+            // Функция для отображения списка фото
+            function renderPhotosListEdit(type, photos) {
+                const container = document.getElementById(`${type}-photos-list`);
+                if (!container) return;
+                container.innerHTML = '';
+                photos.forEach((photo, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'photo-item';
+                    div.innerHTML = `
+                        <img src="${photo}" onerror="this.style.display='none'">
+                        <div class="remove-photo" onclick="removePhotoEdit('${type}', ${index})">×</div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            
+            // Отображение существующих фото
             setTimeout(() => {
-                document.getElementById('mask-photo-input').addEventListener('change', async (e) => {
+                renderPhotosListEdit('present', presentPhotos);
+                renderPhotosListEdit('ussr', ussrPhotos);
+                renderPhotosListEdit('past', pastPhotos);
+            }, 100);
+            
+            // Обработчик загрузки основного фото
+            setTimeout(() => {
+                const fileInput = document.getElementById('mask-photo-input');
+                const preview = document.getElementById('photo-preview');
+                const photoHashInput = document.getElementById('mask-photoHash');
+                
+                fileInput.addEventListener('change', async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
                     const formData = new FormData();
@@ -1041,14 +1024,95 @@
                         const result = await res.json();
                         if (res.ok) {
                             currentPhotoUrl = result.photoUrl;
-                            document.getElementById('photo-preview').src = currentPhotoUrl;
-                            document.getElementById('photo-preview').classList.remove('hidden');
-                            document.getElementById('mask-photoHash').value = currentPhotoUrl;
+                            preview.src = currentPhotoUrl;
+                            preview.classList.remove('hidden');
+                            photoHashInput.value = currentPhotoUrl;
                             showMessage('Фото загружено!', 'success');
                         } else showMessage('Ошибка загрузки фото', 'error');
                     } catch (err) { showMessage('Ошибка загрузки фото', 'error'); }
                 });
+                
+                // Обработчик для фото "Настоящее"
+                const presentInput = document.getElementById('present-photo-input');
+                if (presentInput) {
+                    presentInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('photo', file);
+                        showMessage('Загрузка фото...', 'info');
+                        try {
+                            const res = await fetch(`${API_BASE}/admin/upload-present-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                            const result = await res.json();
+                            if (res.ok) {
+                                let photos = JSON.parse(document.getElementById('present-photos').value || '[]');
+                                photos.push(result.photoUrl);
+                                document.getElementById('present-photos').value = JSON.stringify(photos);
+                                renderPhotosListEdit('present', photos);
+                                showMessage('Фото добавлено!', 'success');
+                            } else showMessage('Ошибка загрузки', 'error');
+                        } catch (err) { showMessage('Ошибка', 'error'); }
+                        presentInput.value = '';
+                    });
+                }
+                
+                // Обработчик для фото "СССР"
+                const ussrInput = document.getElementById('ussr-photo-input');
+                if (ussrInput) {
+                    ussrInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('photo', file);
+                        showMessage('Загрузка фото...', 'info');
+                        try {
+                            const res = await fetch(`${API_BASE}/admin/upload-ussr-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                            const result = await res.json();
+                            if (res.ok) {
+                                let photos = JSON.parse(document.getElementById('ussr-photos').value || '[]');
+                                photos.push(result.photoUrl);
+                                document.getElementById('ussr-photos').value = JSON.stringify(photos);
+                                renderPhotosListEdit('ussr', photos);
+                                showMessage('Фото добавлено!', 'success');
+                            } else showMessage('Ошибка загрузки', 'error');
+                        } catch (err) { showMessage('Ошибка', 'error'); }
+                        ussrInput.value = '';
+                    });
+                }
+                
+                // Обработчик для фото "Прошлое"
+                const pastInput = document.getElementById('past-photo-input');
+                if (pastInput) {
+                    pastInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('photo', file);
+                        showMessage('Загрузка фото...', 'info');
+                        try {
+                            const res = await fetch(`${API_BASE}/admin/upload-past-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                            const result = await res.json();
+                            if (res.ok) {
+                                let photos = JSON.parse(document.getElementById('past-photos').value || '[]');
+                                photos.push(result.photoUrl);
+                                document.getElementById('past-photos').value = JSON.stringify(photos);
+                                renderPhotosListEdit('past', photos);
+                                showMessage('Фото добавлено!', 'success');
+                            } else showMessage('Ошибка загрузки', 'error');
+                        } catch (err) { showMessage('Ошибка', 'error'); }
+                        pastInput.value = '';
+                    });
+                }
             }, 200);
+        }
+        
+        // Функция удаления фото для редактирования
+        function removePhotoEdit(type, index) {
+            const input = document.getElementById(`${type}-photos`);
+            let photos = JSON.parse(input.value || '[]');
+            photos.splice(index, 1);
+            input.value = JSON.stringify(photos);
+            renderPhotosListEdit(type, photos);
         }
         
         async function deleteMask(id) {

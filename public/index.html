@@ -1659,32 +1659,20 @@
             }
         }
         
-                              async function loadMasks() {
+                       async function loadMasks() {
             try {
                 const res = await fetch(`${API_BASE}/masks/list`);
                 const data = await res.json();
-                console.log('Ответ API /masks/list:', data);
-                
-                // Проверяем, что data — это массив
-                if (Array.isArray(data)) {
-                    appState.masks = data;
-                    console.log('Загружено масок:', data.length);
-                } else {
-                    console.error('API вернул не массив:', data);
-                    appState.masks = [];
-                }
-                
-                if (data.length > 0) {
-                    console.log('Пример маски:', data[0]);
-                    console.log('Ссылки на карты в первой маске:', {
-                        yandex: data[0]?.yandexMapLink,
-                        google: data[0]?.googleMapLink,
-                        twoGis: data[0]?.twoGisLink
-                    });
-                }
+                console.log('Загружено масок:', data.length);
+                console.log('Пример маски:', data[0]);
+                console.log('Ссылки на карты в первой маске:', {
+                    yandex: data[0]?.yandexMapLink,
+                    google: data[0]?.googleMapLink,
+                    twoGis: data[0]?.twoGisLink
+                });
+                appState.masks = data;
             } catch (e) {
                 console.error('Failed to load masks:', e);
-                appState.masks = [];
             }
         }
         
@@ -2139,13 +2127,7 @@
         }
 
                 // Функция для получения отфильтрованных масок
-                       function getFilteredMasks() {
-            // Проверяем, что appState.masks — массив
-            if (!Array.isArray(appState.masks)) {
-                console.error('appState.masks не массив:', appState.masks);
-                return [];
-            }
-            
+               function getFilteredMasks() {
             const activatedIds = new Set(appState.activations.map(a => a.mask?.id).filter(Boolean));
             
             console.log('Активированные ID:', activatedIds);
@@ -3316,8 +3298,8 @@
             }, 200);
         }
         
-                        // Расширенная информация о маске (для активированных)
-        function showExtendedMaskInfo(maskId) {
+        // Расширенная информация о маске (для активированных)
+                function showExtendedMaskInfo(maskId) {
             const mask = appState.masks.find(m => m.id === maskId);
             if (!mask) return;
             
@@ -3325,7 +3307,7 @@
             window.currentExtendedMask = mask;
             window.currentExtendedTab = 'present';
             
-            // Тексты для разных эпох (берём из данных маски)
+                        // Тексты для разных эпох (берём из данных маски)
             const texts = {
                 present: mask.present_text || `Современный Калининград...`,
                 ussr: mask.ussr_text || `Советский период...`,
@@ -3339,16 +3321,15 @@
                 past: `Кёнигсберг (1333-1945)`
             };
             
-            // Функция для создания карусели для конкретной вкладки
-            function createGalleryForTab(tabName) {
+            // Функция для создания карусели с полнофункциональными фото
+                        function createGalleryForTab(tabName) {
                 let photos = [];
-                if (tabName === 'present') photos = mask.present_photos || [];
-                else if (tabName === 'ussr') photos = mask.ussr_photos || [];
-                else if (tabName === 'past') photos = mask.past_photos || [];
+                if (tabName === 'present') photos = JSON.parse(mask.present_photos || '[]');
+                else if (tabName === 'ussr') photos = JSON.parse(mask.ussr_photos || '[]');
+                else photos = JSON.parse(mask.past_photos || '[]');
                 
-                // Если нет фото для периода — используем главное фото
                 if (photos.length === 0) {
-                    photos = [mask.photoHash || `/images/${mask.id}.jpg`];
+                    photos = [`/images/${mask.id}.jpg`];
                 }
                 
                 let slidesHtml = '';
@@ -3357,6 +3338,8 @@
                     slidesHtml += `<div class="gallery-slide" style="background-image: url('${photo}');"></div>`;
                     dotsHtml += `<div class="gallery-dot ${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tabName}', ${idx})"></div>`;
                 });
+                
+                window[`photosCount_${tabName}`] = photos.length;
                 
                 return `
                     <div class="gallery-container" id="gallery-container-${tabName}">
@@ -3380,8 +3363,8 @@
                             <button class="close-btn" onclick="closeModal()">&times;</button>
                         </div>
                         <div class="modal-content">
-                            <!-- Главное фото -->
-                            <div class="main-photo">
+                            <!-- Главное фото (без onclick) -->
+                                                                                    <div class="main-photo">
                                 ${mask.photoHash ? 
                                     `<img src="${mask.photoHash}" onerror="this.style.display='none'">` :
                                     `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">`
@@ -3400,7 +3383,7 @@
                                 </button>
                             </div>
 
-                            <!-- Подзаголовок -->
+                                                        <!-- Подзаголовок -->
                             <div style="margin-top: 16px; margin-bottom: 16px; padding-left: 8px;">
                                 <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 0;">${escapeHtml(mask.subtitle || '')}</p>
                             </div>
@@ -3446,21 +3429,11 @@
             // Сохраняем ID маски для полноэкранного режима
             window.currentFullscreenMaskId = mask.id;
             
-            // Инициализация каруселей и кнопки "Наверх"
+                        // Инициализация каруселей и кнопки "Наверх"
             setTimeout(() => {
                 // Инициализируем карусели для всех вкладок
                 ['present', 'ussr', 'past'].forEach(tab => {
-                    // Получаем количество фото для этой вкладки
-                    let photos = [];
-                    if (tab === 'present') photos = mask.present_photos || [];
-                    else if (tab === 'ussr') photos = mask.ussr_photos || [];
-                    else if (tab === 'past') photos = mask.past_photos || [];
-                    
-                    if (photos.length === 0) {
-                        photos = [mask.photoHash || `/images/${mask.id}.jpg`];
-                    }
-                    
-                    const imagesCount = photos.length;
+                    // Убеждаемся, что глобальные переменные для индексов существуют
                     if (window[`currentIndex_${tab}`] === undefined) {
                         window[`currentIndex_${tab}`] = 0;
                     }
@@ -3481,6 +3454,10 @@
                         let touchStartX = 0;
                         let touchEndX = 0;
                         
+                        // Удаляем старые обработчики, чтобы не дублировать
+                        container.removeEventListener('touchstart', null);
+                        container.removeEventListener('touchend', null);
+                        
                         container.addEventListener('touchstart', (e) => {
                             touchStartX = e.changedTouches[0].screenX;
                         });
@@ -3491,6 +3468,7 @@
                             
                             if (Math.abs(deltaX) > 50) {
                                 if (deltaX > 0) {
+                                    // Свайп вправо - предыдущее фото
                                     if (window[`currentIndex_${tab}`] > 0) {
                                         window[`currentIndex_${tab}`]--;
                                         const slidesEl = document.getElementById(`gallery-slides-${tab}`);
@@ -3500,7 +3478,8 @@
                                         updateDotsForTab(tab, window[`currentIndex_${tab}`]);
                                     }
                                 } else {
-                                    if (window[`currentIndex_${tab}`] < imagesCount - 1) {
+                                    // Свайп влево - следующее фото
+                                    if (window[`currentIndex_${tab}`] < 4) {
                                         window[`currentIndex_${tab}`]++;
                                         const slidesEl = document.getElementById(`gallery-slides-${tab}`);
                                         if (slidesEl) {
@@ -3534,7 +3513,7 @@
                     if (rightArrow) {
                         rightArrow.onclick = (e) => {
                             e.stopPropagation();
-                            if (window[`currentIndex_${tab}`] < imagesCount - 1) {
+                            if (window[`currentIndex_${tab}`] < 4) {
                                 window[`currentIndex_${tab}`]++;
                                 const slidesEl = document.getElementById(`gallery-slides-${tab}`);
                                 if (slidesEl) {
@@ -3686,7 +3665,8 @@
             }, 100);
         }
         
-                function switchTab(tab) {
+        // Переключение вкладок
+        function switchTab(tab) {
             // Обновляем активную вкладку визуально
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.style.background = '#252542';
@@ -3702,42 +3682,6 @@
             document.getElementById(`${tab}-content`).style.display = 'block';
             
             window.currentExtendedTab = tab;
-            
-            // Обновляем карусель для выбранной вкладки
-            const mask = window.currentExtendedMask;
-            if (mask) {
-                let currentPhotos = [];
-                if (tab === 'present') currentPhotos = mask.present_photos || [];
-                else if (tab === 'ussr') currentPhotos = mask.ussr_photos || [];
-                else if (tab === 'past') currentPhotos = mask.past_photos || [];
-                
-                if (currentPhotos.length === 0) {
-                    currentPhotos = [mask.photoHash || `/images/${mask.id}.jpg`];
-                }
-                
-                // Обновляем количество фото
-                window.extendedImagesCount = currentPhotos.length;
-                window.currentExtendedIndex = 0;
-                
-                // Пересоздаём карусель
-                const galleryContainer = document.getElementById(`gallery-container-${tab}`);
-                if (galleryContainer) {
-                    let slidesHtml = '';
-                    let dotsHtml = '';
-                    currentPhotos.forEach((photo, idx) => {
-                        slidesHtml += `<div class="gallery-slide" style="background-image: url('${photo}');" onclick="event.stopPropagation(); openFullscreenExtendedTab('${tab}', ${idx})"></div>`;
-                        dotsHtml += `<div class="gallery-dot ${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlideExtendedTab('${tab}', ${idx})"></div>`;
-                    });
-                    
-                    const slidesDiv = document.getElementById(`gallery-slides-${tab}`);
-                    const dotsDiv = document.getElementById(`gallery-nav-${tab}`);
-                    if (slidesDiv) slidesDiv.innerHTML = slidesHtml;
-                    if (dotsDiv) dotsDiv.innerHTML = dotsHtml;
-                    
-                    // Сбрасываем трансформацию
-                    if (slidesDiv) slidesDiv.style.transform = 'translateX(0%)';
-                }
-            }
         }
         
         // Функции для управления каруселями в каждой вкладке
@@ -3757,28 +3701,26 @@
             });
         }
         
-        function prevSlideExtendedTab(tab) {
+                function prevSlideExtendedTab(tab) {
             let currentIndex = window[`currentIndex_${tab}`];
+            const photosCount = window[`photosCount_${tab}`] || 5;
             if (currentIndex > 0) {
                 currentIndex--;
                 window[`currentIndex_${tab}`] = currentIndex;
                 const slides = document.getElementById(`gallery-slides-${tab}`);
-                if (slides) {
-                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
-                }
+                if (slides) slides.style.transform = `translateX(-${currentIndex * 100}%)`;
                 updateDotsForTab(tab, currentIndex);
             }
         }
         
         function nextSlideExtendedTab(tab) {
             let currentIndex = window[`currentIndex_${tab}`];
-            if (currentIndex < imagesCount - 1) {
+            const photosCount = window[`photosCount_${tab}`] || 5;
+            if (currentIndex < photosCount - 1) {
                 currentIndex++;
                 window[`currentIndex_${tab}`] = currentIndex;
                 const slides = document.getElementById(`gallery-slides-${tab}`);
-                if (slides) {
-                    slides.style.transform = `translateX(-${currentIndex * 100}%)`;
-                }
+                if (slides) slides.style.transform = `translateX(-${currentIndex * 100}%)`;
                 updateDotsForTab(tab, currentIndex);
             }
         }

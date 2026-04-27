@@ -55,7 +55,7 @@ async function checkAdmin(req, res, next) {
 
 router.get('/masks', checkAdmin, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM masks ORDER BY name');
+        const result = await db.query('SELECT *, present_photos, ussr_photos, past_photos FROM masks ORDER BY name');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -91,19 +91,42 @@ router.post('/upload-photo', checkAdmin, upload.single('photo'), async (req, res
     }
 });
 
-// Загрузка фото для периода (present, ussr, past)
-router.post('/upload-period-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+// Загрузка фото для вкладки "Настоящее"
+router.post('/upload-present-photo', checkAdmin, upload.single('photo'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Файл не загружен' });
         }
-        
         const photoUrl = `/uploads/${req.file.filename}`;
-        res.json({ 
-            success: true, 
-            photoUrl: photoUrl,
-            message: 'Фото загружено'
-        });
+        res.json({ success: true, photoUrl: photoUrl });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Загрузка фото для вкладки "СССР"
+router.post('/upload-ussr-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        const photoUrl = `/uploads/${req.file.filename}`;
+        res.json({ success: true, photoUrl: photoUrl });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Загрузка фото для вкладки "Прошлое"
+router.post('/upload-past-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        const photoUrl = `/uploads/${req.file.filename}`;
+        res.json({ success: true, photoUrl: photoUrl });
     } catch (err) {
         console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
