@@ -2,6 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
+// В начале файла после других require
+const path = require('path');
+
+// Добавьте после app.use(express.static('public'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Подключаем базу данных PostgreSQL
 const db = require('./database');
@@ -22,7 +27,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
 
 // Подключаем наши API
 app.use('/api/masks', masksRoutes);

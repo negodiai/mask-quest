@@ -6,7 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Настройка хранения загруженных файлов
+// Настройка multer для загрузки файлов
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = path.join(__dirname, '../uploads');
@@ -17,11 +17,25 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+        const ext = path.extname(file.originalname);
+        cb(null, 'mask-' + uniqueSuffix + ext);
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB лимит
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Только изображения!'));
+        }
+    }
+});
 
 const ADMIN_ID = '359839365';
 
@@ -58,12 +72,32 @@ router.get('/masks/:id', checkAdmin, async (req, res) => {
     }
 });
 
+// Загрузка фото для маски
+router.post('/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        const photoUrl = `/uploads/${req.file.filename}`;
+        res.json({ 
+            success: true, 
+            photoUrl: photoUrl,
+            message: 'Фото загружено'
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/admin/masks - добавить маску (черновик)
 router.post('/masks', checkAdmin, async (req, res) => {
     const { 
         name, description, subtitle, number, priceAmount, 
         yandexMapLink, googleMapLink, twoGisLink,
-        present_text, ussr_text, past_text
+        present_text, ussr_text, past_text,
+        photoHash
     } = req.body;
     const id = uuidv4();
     
@@ -73,12 +107,12 @@ router.post('/masks', checkAdmin, async (req, res) => {
                                "priceAmount", "isAvailable", 
                                "yandexMapLink", "googleMapLink", "twoGisLink",
                                "present_text", "ussr_text", "past_text",
-                               latitude, longitude, address)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                               "photoHash", latitude, longitude, address)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         `, [id, name, description, subtitle, number, priceAmount, 0, 
             yandexMapLink, googleMapLink, twoGisLink,
             present_text, ussr_text, past_text,
-            null, null, null]);
+            photoHash, null, null, null]);
         
         res.json({ success: true, id, message: 'Маска добавлена как черновик' });
     } catch (err) {
@@ -105,7 +139,8 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
     const { 
         name, description, subtitle, number, priceAmount, isAvailable,
         yandexMapLink, googleMapLink, twoGisLink,
-        present_text, ussr_text, past_text
+        present_text, ussr_text, past_text,
+        photoHash
     } = req.body;
     
     try {
@@ -114,11 +149,13 @@ router.put('/masks/:id', checkAdmin, async (req, res) => {
                 name = $1, description = $2, subtitle = $3, number = $4,
                 "priceAmount" = $5, "isAvailable" = $6,
                 "yandexMapLink" = $7, "googleMapLink" = $8, "twoGisLink" = $9,
-                "present_text" = $10, "ussr_text" = $11, "past_text" = $12
-            WHERE id = $13
+                "present_text" = $10, "ussr_text" = $11, "past_text" = $12,
+                "photoHash" = $13
+            WHERE id = $14
         `, [name, description, subtitle, number, priceAmount, isAvailable ? 1 : 0,
             yandexMapLink, googleMapLink, twoGisLink,
-            present_text, ussr_text, past_text, req.params.id]);
+            present_text, ussr_text, past_text,
+            photoHash, req.params.id]);
         
         res.json({ success: true, message: 'Маска обновлена' });
     } catch (err) {
@@ -480,37 +517,6 @@ router.get('/init-progress', checkAdmin, async (req, res) => {
         });
     } catch (err) {
         console.error('Init progress error:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Загрузка фото для маски
-router.post('/masks/:id/upload-photo', checkAdmin, upload.single('photo'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Файл не загружен' });
-        }
-        
-        const photoUrl = `/uploads/${req.file.filename}`;
-        
-        console.log('Загружено фото:', photoUrl);
-        console.log('ID маски:', req.params.id);
-        
-        // Обновляем запись в базе данных
-        await db.query('UPDATE masks SET "photoHash" = $1 WHERE id = $2', [photoUrl, req.params.id]);
-        
-        res.json({ success: true, photoUrl: photoUrl, message: 'Фото загружено' });
-    } catch (err) {
-        console.error('Upload error:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/masks/:id/delete-photo', checkAdmin, async (req, res) => {
-    try {
-        await db.query('UPDATE masks SET "photoHash" = NULL WHERE id = $1', [req.params.id]);
-        res.json({ success: true, message: 'Фото удалено' });
-    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

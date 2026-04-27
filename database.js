@@ -123,6 +123,14 @@ async function initDatabase() {
         } catch (err) {
             console.log('Поле number уже существует или ошибка:', err.message);
         }
+
+                // Добавляем поле для хранения пути к фото (если нет)
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS "photoHash" TEXT`);
+            console.log('✅ Добавлено поле photoHash');
+        } catch (err) {
+            console.log('Поле photoHash уже существует:', err.message);
+        }
         
         await pool.query(`
             CREATE TABLE IF NOT EXISTS routes (

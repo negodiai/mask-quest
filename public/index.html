@@ -2437,8 +2437,11 @@
                     <div class="card clickable-card ${isActivated ? 'activated-mask-card' : ''}" onclick="showSimpleMaskInfo('${mask.id}')">
                         <div style="display: flex; gap: 12px; position: relative;">
                             ${isActivated ? '<div class="mask-completed-badge"><i class="fas fa-check"></i></div>' : ''}
-                            <div class="mask-image">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                                        <div class="mask-image">
+                                ${mask.photoHash ? 
+                                    `<img src="${mask.photoHash}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">` :
+                                    `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">`
+                                }
                                 <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                             </div>
                             <div class="card-text-content">
@@ -2491,7 +2494,7 @@
                 historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
                         <div class="history-icon-new">
-                            <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                             <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                         </div>
                              <div class="history-content">
@@ -3204,8 +3207,11 @@
                         </div>
                         <div class="modal-content">
                             <!-- Главное фото -->
-                            <div class="main-photo">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                                        <div class="main-photo">
+                                ${mask.photoHash ? 
+                                    `<img src="${mask.photoHash}" onerror="this.style.display='none'">` :
+                                    `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">`
+                                }
                             </div>
                             
                             <!-- Кнопки под фото -->
@@ -3344,8 +3350,11 @@
                         </div>
                         <div class="modal-content">
                             <!-- Главное фото (без onclick) -->
-                                                        <div class="main-photo">
-                                <img src="${mask.photoHash || `/images/${mask.id}.jpg`}" onerror="this.style.display='none'">
+                                                                                    <div class="main-photo">
+                                ${mask.photoHash ? 
+                                    `<img src="${mask.photoHash}" onerror="this.style.display='none'">` :
+                                    `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'">`
+                                }
                             </div>
                             
                             <!-- Кнопки под фото -->

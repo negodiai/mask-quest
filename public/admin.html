@@ -220,6 +220,37 @@
         .modal-content {
             padding: 20px;
         }
+
+        .photo-upload-area {
+            border: 2px dashed #2d2d44;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+        
+        .photo-upload-area:hover {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .photo-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+        
+        .photo-preview.hidden {
+            display: none;
+        }
+        
+        .photo-input {
+            display: none;
+        }
         
         .stat-grid {
             display: grid;
@@ -319,7 +350,6 @@
             color: #EF4444;
         }
 
-                /* Кнопка "Наверх" для админки */
         .admin-scroll-top-btn {
             position: fixed;
             bottom: 50px;
@@ -352,11 +382,10 @@
     </style>
 </head>
 <body>
-        <div class="container" id="app">
+    <div class="container" id="app">
         <div class="spinner">Загрузка админ-панели...</div>
     </div>
     
-    <!-- Кнопка "Наверх" для админки -->
     <button id="adminScrollTopBtn" class="admin-scroll-top-btn" onclick="adminScrollToTop()">
         <i class="fas fa-arrow-up"></i>
     </button>
@@ -369,7 +398,6 @@
         let routes = [];
         let allRoutes = [];
         
-        // Получаем Telegram ID
         function init() {
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
@@ -449,7 +477,7 @@
         
         function renderAdminPanel() {
             const html = `
-                                <div class="header">
+                <div class="header">
                     <h1><i class="fas fa-shield-alt"></i> Админ-панель</h1>
                     <div style="display: flex; gap: 8px;">
                         <button class="back-btn" onclick="refreshData()"><i class="fas fa-sync-alt"></i> Обновить</button>
@@ -471,18 +499,14 @@
                     <button class="btn-success" onclick="showAddMaskModal()" style="margin-bottom: 16px;">
                         <i class="fas fa-plus"></i> Добавить маску
                     </button>
-                    <div id="masks-list">
-                        ${renderMasksList()}
-                    </div>
+                    <div id="masks-list">${renderMasksList()}</div>
                 </div>
                 
                 <div id="routes-tab" class="tab-content ${currentTab === 'routes' ? 'active' : ''}">
                     <button class="btn-success" onclick="showAddRouteModal()" style="margin-bottom: 16px;">
                         <i class="fas fa-plus"></i> Добавить маршрут
                     </button>
-                    <div id="routes-list">
-                        ${renderRoutesList()}
-                    </div>
+                    <div id="routes-list">${renderRoutesList()}</div>
                 </div>
                 
                 <div id="stats-tab" class="tab-content ${currentTab === 'stats' ? 'active' : ''}">
@@ -490,16 +514,11 @@
                 </div>
             `;
             document.getElementById('app').innerHTML = html;
-
-            // Сброс проверки прокрутки при переключении вкладок
-            setTimeout(() => {
-                adminCheckScroll();
-            }, 100);
+            setTimeout(() => adminCheckScroll(), 100);
         }
         
         function renderMasksList() {
             if (masks.length === 0) return '<p style="text-align: center; color: #64748b;">Нет масок</p>';
-            
             return masks.map(mask => `
                 <div class="card">
                     <div class="card-header">
@@ -510,7 +529,7 @@
                             <button class="btn-icon btn-danger" onclick="deleteMask('${mask.id}')" title="Удалить"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                                        <div style="font-size: 12px; color: #64748b;">
+                    <div style="font-size: 12px; color: #64748b;">
                         <div>📝 ${escapeHtml(mask.subtitle || 'Без подзаголовка')}</div>
                         <div style="margin-top: 8px;">
                             ${mask.isAvailable ? '<span class="badge badge-published">✅ Опубликована</span>' : '<span class="badge badge-draft">📝 Черновик</span>'}
@@ -520,9 +539,8 @@
             `).join('');
         }
         
-                function renderRoutesList() {
+        function renderRoutesList() {
             if (routes.length === 0) return '<p style="text-align: center; color: #64748b;">Нет маршрутов</p>';
-            
             return routes.map(route => `
                 <div class="card">
                     <div class="card-header">
@@ -543,190 +561,71 @@
                 </div>
             `).join('');
         }
-
-                async function publishRoute(id) {
-            if (!confirm('Опубликовать маршрут? Он станет доступен в списке маршрутов для всех пользователей.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/routes/${id}/publish?userId=${currentUserId}`, {
-                method: 'POST'
-            });
-            
-            if (res.ok) {
-                showMessage('Маршрут опубликован!', 'success');
-                loadRoutes().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка публикации', 'error');
-            }
-        }
         
-                function renderStats() {
+        function renderStats() {
             const stats = window.stats || {};
             return `
                 <div class="stat-grid">
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.totalUsers || 0}</div>
-                        <div class="stat-label">Всего пользователей</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.activeUsers || 0}</div>
-                        <div class="stat-label">Активных за 7 дней</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.totalActivations || 0}</div>
-                        <div class="stat-label">Всего активаций</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.totalMasks || 0}</div>
-                        <div class="stat-label">Всего масок</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.totalRoutes || 0}</div>
-                        <div class="stat-label">Всего маршрутов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${stats.completedRoutesTotal || 0}</div>
-                        <div class="stat-label">Пройдено маршрутов</div>
-                    </div>
+                    <div class="stat-card"><div class="stat-value">${stats.totalUsers || 0}</div><div class="stat-label">Всего пользователей</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.activeUsers || 0}</div><div class="stat-label">Активных за 7 дней</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.totalActivations || 0}</div><div class="stat-label">Всего активаций</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.totalMasks || 0}</div><div class="stat-label">Всего масок</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.totalRoutes || 0}</div><div class="stat-label">Всего маршрутов</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.completedRoutesTotal || 0}</div><div class="stat-label">Пройдено маршрутов</div></div>
                 </div>
-                
-                <div class="card">
-                    <h3 style="margin-bottom: 12px;">🔥 Популярные маски</h3>
-                    ${(stats.popularMasks || []).length > 0 ? 
-                        stats.popularMasks.map(m => `
-                            <div class="list-item">
-                                <span>${escapeHtml(m.name)}</span>
-                                <span style="color: #3B82F6;">${m.count} активаций</span>
-                            </div>
-                        `).join('') : 
-                        '<p style="color: #64748b;">Нет данных</p>'
-                    }
-                </div>
-                
-                <div class="card">
-                    <h3 style="margin-bottom: 12px;">🏆 Популярные маршруты</h3>
-                    ${(stats.popularRoutes || []).length > 0 ? 
-                        stats.popularRoutes.map(r => `
-                            <div class="list-item">
-                                <span>${escapeHtml(r.name)}</span>
-                                <span style="color: #3B82F6;">${r.count} прохождений</span>
-                            </div>
-                        `).join('') : 
-                        '<p style="color: #64748b;">Нет данных</p>'
-                    }
-                </div>
-                
-                <div class="card">
-                    <h3 style="margin-bottom: 12px;">📅 Активации за 7 дней</h3>
-                    ${(stats.dailyActivations || []).length > 0 ? 
-                        stats.dailyActivations.map(d => `
-                            <div class="list-item">
-                                <span>${d.date}</span>
-                                <span style="color: #3B82F6;">${d.count} активаций</span>
-                            </div>
-                        `).join('') : 
-                        '<p style="color: #64748b;">Нет данных</p>'
-                    }
-                </div>
+                <div class="card"><h3>🔥 Популярные маски</h3>${(stats.popularMasks || []).length ? stats.popularMasks.map(m => `<div class="list-item"><span>${escapeHtml(m.name)}</span><span style="color:#3B82F6;">${m.count} активаций</span></div>`).join('') : '<p style="color:#64748b;">Нет данных</p>'}</div>
+                <div class="card"><h3>🏆 Популярные маршруты</h3>${(stats.popularRoutes || []).length ? stats.popularRoutes.map(r => `<div class="list-item"><span>${escapeHtml(r.name)}</span><span style="color:#3B82F6;">${r.count} прохождений</span></div>`).join('') : '<p style="color:#64748b;">Нет данных</p>'}</div>
+                <div class="card"><h3>📅 Активации за 7 дней</h3>${(stats.dailyActivations || []).length ? stats.dailyActivations.map(d => `<div class="list-item"><span>${d.date}</span><span style="color:#3B82F6;">${d.count} активаций</span></div>`).join('') : '<p style="color:#64748b;">Нет данных</p>'}</div>
             `;
         }
         
-        function switchTab(tab) {
-            currentTab = tab;
-            renderAdminPanel();
-        }
+        function switchTab(tab) { currentTab = tab; renderAdminPanel(); }
         
         async function publishMask(id) {
-            if (!confirm('Опубликовать маску? Она станет доступна в каталоге для всех пользователей.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, {
-                method: 'POST'
-            });
-            
-            if (res.ok) {
-                showMessage('Маска опубликована!', 'success');
-                loadMasks().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка публикации', 'error');
-            }
+            if (!confirm('Опубликовать маску? Она станет доступна в каталоге.')) return;
+            const res = await fetch(`${API_BASE}/admin/masks/${id}/publish?userId=${currentUserId}`, { method: 'POST' });
+            if (res.ok) { showMessage('Маска опубликована!', 'success'); loadMasks().then(() => renderAdminPanel()); }
+            else showMessage('Ошибка публикации', 'error');
         }
         
-                        async function showAddMaskModal() {
-            const routesHtml = allRoutes.map(route => `
-                <label class="route-checkbox">
-                    <input type="checkbox" value="${route.id}" class="route-checkbox-input">
-                    <span>${escapeHtml(route.name)}</span>
-                </label>
-            `).join('');
+        async function publishRoute(id) {
+            if (!confirm('Опубликовать маршрут? Он станет доступен пользователям.')) return;
+            const res = await fetch(`${API_BASE}/admin/routes/${id}/publish?userId=${currentUserId}`, { method: 'POST' });
+            if (res.ok) { showMessage('Маршрут опубликован!', 'success'); loadRoutes().then(() => renderAdminPanel()); }
+            else showMessage('Ошибка публикации', 'error');
+        }
+        
+        async function showAddMaskModal() {
+            const routesHtml = allRoutes.map(route => `<label class="route-checkbox"><input type="checkbox" value="${route.id}" class="route-checkbox-input"><span>${escapeHtml(route.name)}</span></label>`).join('');
+            let currentPhotoUrl = '';
             
             showModal('Добавить маску', `
-                                <div class="form-group">
-                    <label>Название *</label>
-                    <input type="text" id="mask-name" placeholder="Например: Берёзовая">
-                </div>
                 <div class="form-group">
-                    <label>Подзаголовок (отображается на карточке в каталоге)</label>
-                    <input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок для карточки">
-                </div>
-                <div class="form-group">
-                    <label>Краткое описание (показывается внутри модального окна)</label>
-                    <textarea id="mask-description" placeholder="Краткое описание маски"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Номер маски (QR-код) *</label>
-                    <input type="number" id="mask-number" placeholder="1, 2, 3...">
-                    <small style="color: #64748b;">Этот номер будет использоваться в QR-коде и для активации</small>
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="mask-priceAmount" placeholder="15000">
-                </div>
-                <div class="form-group">
-                    <label>Яндекс.Карты (ссылка)</label>
-                    <input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/...">
-                </div>
-                <div class="form-group">
-                    <label>Google Maps (ссылка)</label>
-                    <input type="text" id="mask-googleMapLink" placeholder="https://maps.google.com/...">
-                </div>
-                <div class="form-group">
-                    <label>2GIS (ссылка)</label>
-                    <input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/...">
-                </div>
-                                               <div class="form-group">
                     <label>Фото маски</label>
-                    <input type="file" id="mask-photo-add" accept="image/*">
-                    <div id="photo-preview-add" style="margin-top: 10px; display: none;">
-                        <img id="photo-preview-img-add" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
+                    <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:#64748b; margin-bottom:8px; display:block;"></i>
+                        <span>Нажмите для загрузки фото</span>
+                        <span style="display:block; font-size:12px; color:#64748b; margin-top:4px;">JPEG, PNG, GIF, WEBP (до 5MB)</span>
                     </div>
+                    <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
+                    <img id="photo-preview" class="photo-preview hidden" src="">
+                    <input type="hidden" id="mask-photoHash" value="">
                 </div>
-                
-                <h3 style="margin-top: 20px; margin-bottom: 12px;">📖 Тексты для карточки маски</h3>
-                
-                <div class="form-group">
-                    <label>Настоящее</label>
-                    <textarea id="mask-present_text" placeholder="Текст для вкладки 'Настоящее' (Современный Калининград)" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>СССР</label>
-                    <textarea id="mask-ussr_text" placeholder="Текст для вкладки 'СССР' (Советский период)" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Прошлое</label>
-                    <textarea id="mask-past_text" placeholder="Текст для вкладки 'Прошлое' (Кёнигсберг)" rows="4"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>Добавить в маршруты</label>
-                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
-                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
-                    </div>
-                </div>
+                <div class="form-group"><label>Название *</label><input type="text" id="mask-name" placeholder="Например: Берёзовая"></div>
+                <div class="form-group"><label>Подзаголовок (отображается на карточке в каталоге)</label><input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок"></div>
+                <div class="form-group"><label>Краткое описание (показывается внутри модального окна)</label><textarea id="mask-description" placeholder="Краткое описание маски"></textarea></div>
+                <div class="form-group"><label>Номер маски (QR-код) *</label><input type="number" id="mask-number" placeholder="1, 2, 3..."><small style="color:#64748b;">Номер для QR-кода</small></div>
+                <div class="form-group"><label>Цена (₽)</label><input type="number" id="mask-priceAmount" placeholder="15000"></div>
+                <div class="form-group"><label>Яндекс.Карты (ссылка)</label><input type="text" id="mask-yandexMapLink" placeholder="https://yandex.ru/maps/..."></div>
+                <div class="form-group"><label>Google Maps (ссылка)</label><input type="text" id="mask-googleMapLink" placeholder="https://maps.google.com/..."></div>
+                <div class="form-group"><label>2GIS (ссылка)</label><input type="text" id="mask-twoGisLink" placeholder="https://2gis.ru/..."></div>
+                <h3 style="margin-top:20px;">📖 Тексты для карточки маски</h3>
+                <div class="form-group"><label>Настоящее</label><textarea id="mask-present_text" rows="4" placeholder="Текст для вкладки 'Настоящее'"></textarea></div>
+                <div class="form-group"><label>СССР</label><textarea id="mask-ussr_text" rows="4" placeholder="Текст для вкладки 'СССР'"></textarea></div>
+                <div class="form-group"><label>Прошлое</label><textarea id="mask-past_text" rows="4" placeholder="Текст для вкладки 'Прошлое'"></textarea></div>
+                <div class="form-group"><label>Добавить в маршруты</label><div id="routes-list-modal">${routesHtml || '<p>Нет маршрутов</p>'}</div></div>
             `, async () => {
-                const selectedRoutes = [];
-                document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
-                    selectedRoutes.push(cb.value);
-                });
-                
+                const selectedRoutes = [...document.querySelectorAll('.route-checkbox-input:checked')].map(cb => cb.value);
                 const newMask = {
                     name: document.getElementById('mask-name').value,
                     subtitle: document.getElementById('mask-subtitle').value,
@@ -738,156 +637,73 @@
                     twoGisLink: document.getElementById('mask-twoGisLink').value,
                     present_text: document.getElementById('mask-present_text').value,
                     ussr_text: document.getElementById('mask-ussr_text').value,
-                    past_text: document.getElementById('mask-past_text').value
+                    past_text: document.getElementById('mask-past_text').value,
+                    photoHash: currentPhotoUrl
                 };
-                
-                const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newMask)
-                });
-                
+                const res = await fetch(`${API_BASE}/admin/masks?userId=${currentUserId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMask) });
                 const result = await res.json();
-                
                 if (res.ok) {
-                    const maskId = result.id;
-                    
-                                        const photoInput = document.getElementById('mask-photo-add');
-                    const photoFile = photoInput ? photoInput.files[0] : null;
-                    if (photoFile) {
-                        const formData = new FormData();
-                        formData.append('photo', photoFile);
-                        
-                        await fetch(`${API_BASE}/admin/masks/${maskId}/upload-photo?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    }
-
-                                setTimeout(() => {
-                const input = document.getElementById('mask-photo-add');
-                if (input) {
-                    input.addEventListener('change', function(e) {
-                        const file = e.target.files[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = function(ev) {
-                                const preview = document.getElementById('photo-preview-add');
-                                const img = document.getElementById('photo-preview-img-add');
-                                if (preview && img) {
-                                    img.src = ev.target.result;
-                                    preview.style.display = 'block';
-                                }
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                }
-            }, 200);
-                    
-                    for (const routeId of selectedRoutes) {
-                        await fetch(`${API_BASE}/admin/masks/${maskId}/routes/${routeId}?userId=${currentUserId}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ order: 0 })
-                        });
-                    }
+                    for (const routeId of selectedRoutes) await fetch(`${API_BASE}/admin/masks/${result.id}/routes/${routeId}?userId=${currentUserId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: 0 }) });
                     showMessage('Маска добавлена как черновик!', 'success');
                     loadMasks().then(() => renderAdminPanel());
-                } else {
-                    showMessage('Ошибка добавления', 'error');
-                }
+                } else showMessage('Ошибка добавления', 'error');
             });
+            
+            setTimeout(() => {
+                document.getElementById('mask-photo-input').addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    showMessage('Загрузка фото...', 'info');
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/upload-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (res.ok) {
+                            currentPhotoUrl = result.photoUrl;
+                            document.getElementById('photo-preview').src = currentPhotoUrl;
+                            document.getElementById('photo-preview').classList.remove('hidden');
+                            showMessage('Фото загружено!', 'success');
+                        } else showMessage('Ошибка загрузки фото', 'error');
+                    } catch (err) { showMessage('Ошибка загрузки фото', 'error'); }
+                });
+            }, 200);
         }
-
         
-                                async function editMask(id) {
+        async function editMask(id) {
             const mask = masks.find(m => m.id === id);
             if (!mask) return;
-            
             const maskRoutes = await loadMaskRoutes(id);
             const maskRouteIds = new Set(maskRoutes.map(r => r.id));
-            
-            const routesHtml = allRoutes.map(route => `
-                <label class="route-checkbox">
-                    <input type="checkbox" value="${route.id}" class="route-checkbox-input" ${maskRouteIds.has(route.id) ? 'checked' : ''}>
-                    <span>${escapeHtml(route.name)}</span>
-                </label>
-            `).join('');
+            const routesHtml = allRoutes.map(route => `<label class="route-checkbox"><input type="checkbox" value="${route.id}" class="route-checkbox-input" ${maskRouteIds.has(route.id) ? 'checked' : ''}><span>${escapeHtml(route.name)}</span></label>`).join('');
+            let currentPhotoUrl = mask.photoHash || '';
             
             showModal('Редактировать маску', `
-                                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="mask-name" value="${escapeHtml(mask.name)}">
-                </div>
                 <div class="form-group">
-                    <label>Подзаголовок (отображается на карточке в каталоге)</label>
-                    <input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Краткое описание (показывается внутри модального окна)</label>
-                    <textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Номер маски (QR-код)</label>
-                    <input type="number" id="mask-number" value="${mask.number || ''}">
-                    <small style="color: #64748b;">Этот номер будет использоваться в QR-коде и для активации</small>
-                </div>
-                <div class="form-group">
-                    <label>Цена (₽)</label>
-                    <input type="number" id="mask-priceAmount" value="${mask.priceAmount || 15000}">
-                </div>
-                <div class="form-group">
-                    <label>Яндекс.Карты (ссылка)</label>
-                    <input type="text" id="mask-yandexMapLink" value="${escapeHtml(mask.yandexMapLink || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Google Maps (ссылка)</label>
-                    <input type="text" id="mask-googleMapLink" value="${escapeHtml(mask.googleMapLink || '')}">
-                </div>
-                <div class="form-group">
-                    <label>2GIS (ссылка)</label>
-                    <input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}">
-                </div>
-                                                <div class="form-group">
                     <label>Фото маски</label>
-                    ${mask.photoHash ? `<div id="current-photo" style="margin-bottom: 10px;">
-                        <img src="${mask.photoHash}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
-                        <button type="button" onclick="document.getElementById('current-photo').remove()" style="background: #EF4444; color: white; border: none; border-radius: 8px; padding: 4px 8px; margin-left: 10px; cursor: pointer;">Удалить</button>
-                    </div>` : ''}
-                    <input type="file" id="mask-photo-edit" accept="image/*">
-                    <div id="photo-preview-edit" style="margin-top: 10px; display: none;">
-                        <img id="photo-preview-img-edit" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px;">
+                    <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:#64748b; margin-bottom:8px; display:block;"></i>
+                        <span>Нажмите для загрузки нового фото</span>
                     </div>
+                    <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
+                    <img id="photo-preview" class="photo-preview ${!currentPhotoUrl ? 'hidden' : ''}" src="${currentPhotoUrl}">
+                    <input type="hidden" id="mask-photoHash" value="${currentPhotoUrl}">
                 </div>
-                
-                <h3 style="margin-top: 20px; margin-bottom: 12px;">📖 Тексты для карточки маски</h3>
-                
-                <div class="form-group">
-                    <label>Настоящее</label>
-                    <textarea id="mask-present_text" rows="4">${escapeHtml(mask.present_text || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>СССР</label>
-                    <textarea id="mask-ussr_text" rows="4">${escapeHtml(mask.ussr_text || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Прошлое</label>
-                    <textarea id="mask-past_text" rows="4">${escapeHtml(mask.past_text || '')}</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>Добавить в маршруты</label>
-                    <div id="routes-list-modal" style="max-height: 200px; overflow-y: auto; background: #1a1a2e; border-radius: 10px;">
-                        ${routesHtml || '<p style="padding: 12px;">Нет маршрутов</p>'}
-                    </div>
-                </div>
+                <div class="form-group"><label>Название</label><input type="text" id="mask-name" value="${escapeHtml(mask.name)}"></div>
+                <div class="form-group"><label>Подзаголовок</label><input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}"></div>
+                <div class="form-group"><label>Краткое описание</label><textarea id="mask-description">${escapeHtml(mask.description || '')}</textarea></div>
+                <div class="form-group"><label>Номер маски (QR-код)</label><input type="number" id="mask-number" value="${mask.number || ''}"></div>
+                <div class="form-group"><label>Цена (₽)</label><input type="number" id="mask-priceAmount" value="${mask.priceAmount || 15000}"></div>
+                <div class="form-group"><label>Яндекс.Карты</label><input type="text" id="mask-yandexMapLink" value="${escapeHtml(mask.yandexMapLink || '')}"></div>
+                <div class="form-group"><label>Google Maps</label><input type="text" id="mask-googleMapLink" value="${escapeHtml(mask.googleMapLink || '')}"></div>
+                <div class="form-group"><label>2GIS</label><input type="text" id="mask-twoGisLink" value="${escapeHtml(mask.twoGisLink || '')}"></div>
+                <h3>📖 Тексты для карточки</h3>
+                <div class="form-group"><label>Настоящее</label><textarea id="mask-present_text" rows="4">${escapeHtml(mask.present_text || '')}</textarea></div>
+                <div class="form-group"><label>СССР</label><textarea id="mask-ussr_text" rows="4">${escapeHtml(mask.ussr_text || '')}</textarea></div>
+                <div class="form-group"><label>Прошлое</label><textarea id="mask-past_text" rows="4">${escapeHtml(mask.past_text || '')}</textarea></div>
+                <div class="form-group"><label>Добавить в маршруты</label><div id="routes-list-modal">${routesHtml || '<p>Нет маршрутов</p>'}</div></div>
             `, async () => {
-                const selectedRoutes = [];
-                document.querySelectorAll('.route-checkbox-input:checked').forEach(cb => {
-                    selectedRoutes.push(cb.value);
-                });
-                
+                const selectedRoutes = [...document.querySelectorAll('.route-checkbox-input:checked')].map(cb => cb.value);
                 const updatedMask = {
                     name: document.getElementById('mask-name').value,
                     subtitle: document.getElementById('mask-subtitle').value,
@@ -900,144 +716,54 @@
                     twoGisLink: document.getElementById('mask-twoGisLink').value,
                     present_text: document.getElementById('mask-present_text').value,
                     ussr_text: document.getElementById('mask-ussr_text').value,
-                    past_text: document.getElementById('mask-past_text').value
+                    past_text: document.getElementById('mask-past_text').value,
+                    photoHash: document.getElementById('mask-photoHash').value
                 };
-                
-                const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedMask)
-                });
-                
+                const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedMask) });
                 if (res.ok) {
-                                        // Загружаем новое фото, если оно выбрано
-                    const photoInput = document.getElementById('mask-photo-edit');
-                    const photoFile = photoInput ? photoInput.files[0] : null;
-                    if (photoFile) {
-                        const formData = new FormData();
-                        formData.append('photo', photoFile);
-                        
-                        await fetch(`${API_BASE}/admin/masks/${id}/upload-photo?userId=${currentUserId}`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const uploadResult = await uploadRes.json();
-                        console.log('Результат загрузки фото:', uploadResult);
-                    }
-
-                                setTimeout(() => {
-                const input = document.getElementById('mask-photo-edit');
-                if (input) {
-                    input.addEventListener('change', function(e) {
-                        const file = e.target.files[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = function(ev) {
-                                const preview = document.getElementById('photo-preview-edit');
-                                const img = document.getElementById('photo-preview-img-edit');
-                                if (preview && img) {
-                                    img.src = ev.target.result;
-                                    preview.style.display = 'block';
-                                }
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                }
+                    for (const routeId of selectedRoutes) if (!maskRouteIds.has(routeId)) await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: 0 }) });
+                    for (const routeId of maskRouteIds) if (!selectedRoutes.includes(routeId)) await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, { method: 'DELETE' });
+                    showMessage('Маска обновлена!', 'success');
+                    loadMasks().then(() => renderAdminPanel());
+                    if (window.opener && !window.opener.closed) window.opener.postMessage('masksUpdated', '*');
+                } else showMessage('Ошибка обновления', 'error');
+            });
+            
+            setTimeout(() => {
+                document.getElementById('mask-photo-input').addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    showMessage('Загрузка фото...', 'info');
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/upload-photo?userId=${currentUserId}`, { method: 'POST', body: formData });
+                        const result = await res.json();
+                        if (res.ok) {
+                            currentPhotoUrl = result.photoUrl;
+                            document.getElementById('photo-preview').src = currentPhotoUrl;
+                            document.getElementById('photo-preview').classList.remove('hidden');
+                            document.getElementById('mask-photoHash').value = currentPhotoUrl;
+                            showMessage('Фото загружено!', 'success');
+                        } else showMessage('Ошибка загрузки фото', 'error');
+                    } catch (err) { showMessage('Ошибка загрузки фото', 'error'); }
+                });
             }, 200);
-                    
-                    for (const routeId of selectedRoutes) {
-                        if (!maskRouteIds.has(routeId)) {
-                            await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ order: 0 })
-                            });
-                        }
-                    }
-                    for (const routeId of maskRouteIds) {
-                        if (!selectedRoutes.includes(routeId)) {
-                            await fetch(`${API_BASE}/admin/masks/${id}/routes/${routeId}?userId=${currentUserId}`, {
-                                method: 'DELETE'
-                            });
-                        }
-                    }
-                                                            showMessage('Маска обновлена!', 'success');
-                    
-                    // Перезагружаем список масок в админке
-                    loadMasks().then(() => {
-                        renderAdminPanel();
-                        
-                        // Отправляем сообщение в основное окно (приложение) об обновлении масок
-                        try {
-                            // Если админка открыта в отдельной вкладке/окне
-                            if (window.opener && !window.opener.closed) {
-                                window.opener.postMessage('masksUpdated', '*');
-                                console.log('Сообщение отправлено в основное окно');
-                            }
-                            // Если админка открыта в iframe или том же окне
-                            if (window.parent && window.parent !== window) {
-                                window.parent.postMessage('masksUpdated', '*');
-                            }
-                        } catch (e) {
-                            console.error('Ошибка отправки сообщения:', e);
-                        }
-                    });
-                } else {
-                    showMessage('Ошибка обновления', 'error');
-                }
-            });
-        }
-
-                async function deleteMaskPhoto(maskId) {
-            if (!confirm('Удалить фото маски?')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/masks/${maskId}/delete-photo?userId=${currentUserId}`, {
-                method: 'POST'
-            });
-            
-            if (res.ok) {
-                showMessage('Фото удалено', 'success');
-                loadMasks().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
         }
         
         async function deleteMask(id) {
-            if (!confirm('Удалить маску? Это действие нельзя отменить.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Маска удалена', 'success');
-                loadMasks().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
+            if (!confirm('Удалить маску?')) return;
+            const res = await fetch(`${API_BASE}/admin/masks/${id}?userId=${currentUserId}`, { method: 'DELETE' });
+            if (res.ok) { showMessage('Маска удалена', 'success'); loadMasks().then(() => renderAdminPanel()); }
+            else showMessage('Ошибка удаления', 'error');
         }
         
-                function showAddRouteModal() {
+        function showAddRouteModal() {
             showModal('Добавить маршрут', `
-                <div class="form-group">
-                    <label>Название *</label>
-                    <input type="text" id="route-name" placeholder="Например: Исторический центр">
-                </div>
-                <div class="form-group">
-                    <label>Описание</label>
-                    <textarea id="route-description" placeholder="Описание маршрута"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Длительность (минут)</label>
-                    <input type="number" id="route-durationMinutes" placeholder="60">
-                </div>
-                <div class="form-group">
-                    <label>Дистанция (км)</label>
-                    <input type="text" id="route-distanceKm" placeholder="2.5">
-                </div>
+                <div class="form-group"><label>Название *</label><input type="text" id="route-name" placeholder="Например: Исторический центр"></div>
+                <div class="form-group"><label>Описание</label><textarea id="route-description" placeholder="Описание маршрута"></textarea></div>
+                <div class="form-group"><label>Длительность (минут)</label><input type="number" id="route-durationMinutes" placeholder="60"></div>
+                <div class="form-group"><label>Дистанция (км)</label><input type="text" id="route-distanceKm" placeholder="2.5"></div>
             `, async () => {
                 const newRoute = {
                     name: document.getElementById('route-name').value,
@@ -1046,206 +772,87 @@
                     distanceKm: parseFloat(document.getElementById('route-distanceKm').value) || 1,
                     isActive: true
                 };
-                
-                const res = await fetch(`${API_BASE}/admin/routes?userId=${currentUserId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newRoute)
-                });
-                
-                if (res.ok) {
-                    showMessage('Маршрут добавлен!', 'success');
-                    await loadAllRoutes();
-                    loadRoutes().then(() => renderAdminPanel());
-                } else {
-                    showMessage('Ошибка добавления', 'error');
-                }
+                const res = await fetch(`${API_BASE}/admin/routes?userId=${currentUserId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newRoute) });
+                if (res.ok) { showMessage('Маршрут добавлен!', 'success'); await loadAllRoutes(); loadRoutes().then(() => renderAdminPanel()); }
+                else showMessage('Ошибка добавления', 'error');
             });
         }
         
-                        async function editRoute(id) {
+        async function editRoute(id) {
             const route = routes.find(r => r.id === id);
             if (!route) return;
-            
             showModal('Редактировать маршрут', `
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="route-name" value="${escapeHtml(route.name)}">
-                </div>
-                <div class="form-group">
-                    <label>Описание</label>
-                    <textarea id="route-description">${escapeHtml(route.description || '')}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Длительность (минут)</label>
-                    <input type="number" id="route-durationMinutes" value="${route.durationMinutes}">
-                </div>
-                <div class="form-group">
-                    <label>Дистанция (км)</label>
-                    <input type="text" id="route-distanceKm" value="${route.distanceKm}">
-                </div>
+                <div class="form-group"><label>Название</label><input type="text" id="route-name" value="${escapeHtml(route.name)}"></div>
+                <div class="form-group"><label>Описание</label><textarea id="route-description">${escapeHtml(route.description || '')}</textarea></div>
+                <div class="form-group"><label>Длительность (минут)</label><input type="number" id="route-durationMinutes" value="${route.durationMinutes}"></div>
+                <div class="form-group"><label>Дистанция (км)</label><input type="text" id="route-distanceKm" value="${route.distanceKm}"></div>
             `, async () => {
                 const updatedRoute = {
                     name: document.getElementById('route-name').value,
                     description: document.getElementById('route-description').value,
                     durationMinutes: parseInt(document.getElementById('route-durationMinutes').value),
                     distanceKm: parseFloat(document.getElementById('route-distanceKm').value),
-                    isAvailable: route.isAvailable  // сохраняем текущий статус
+                    isAvailable: route.isAvailable
                 };
-                
-                const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedRoute)
-                });
-                
-                if (res.ok) {
-                    showMessage('Маршрут обновлён!', 'success');
-                    loadRoutes().then(() => renderAdminPanel());
-                } else {
-                    showMessage('Ошибка обновления', 'error');
-                }
+                const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedRoute) });
+                if (res.ok) { showMessage('Маршрут обновлён!', 'success'); loadRoutes().then(() => renderAdminPanel()); }
+                else showMessage('Ошибка обновления', 'error');
             });
         }
         
         async function deleteRoute(id) {
-            if (!confirm('Удалить маршрут? Это действие нельзя отменить.')) return;
-            
-            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, {
-                method: 'DELETE'
-            });
-            
-            if (res.ok) {
-                showMessage('Маршрут удалён', 'success');
-                await loadAllRoutes();
-                loadRoutes().then(() => renderAdminPanel());
-            } else {
-                showMessage('Ошибка удаления', 'error');
-            }
+            if (!confirm('Удалить маршрут?')) return;
+            const res = await fetch(`${API_BASE}/admin/routes/${id}?userId=${currentUserId}`, { method: 'DELETE' });
+            if (res.ok) { showMessage('Маршрут удалён', 'success'); await loadAllRoutes(); loadRoutes().then(() => renderAdminPanel()); }
+            else showMessage('Ошибка удаления', 'error');
         }
         
-        let activeModal = null;
-        
         function showModal(title, content, onSave) {
-            const modalHtml = `
-                <div id="admin-modal" class="modal-overlay">
-                    <div class="modal-container">
-                        <div class="modal-header">
-                            <h3>${title}</h3>
-                            <button class="btn-icon" onclick="closeModal()">&times;</button>
-                        </div>
-                        <div class="modal-content">
-                            ${content}
-                            <button class="btn-success" onclick="saveModal()" style="margin-top: 16px;">Сохранить</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-                        setTimeout(() => {
-                setupPhotoPreview();
-            }, 200);
+            const modalHtml = `<div id="admin-modal" class="modal-overlay"><div class="modal-container"><div class="modal-header"><h3>${title}</h3><button class="btn-icon" onclick="closeModal()">&times;</button></div><div class="modal-content">${content}<button class="btn-success" onclick="saveModal()" style="margin-top:16px;">Сохранить</button></div></div></div>`;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             window.modalOnSave = onSave;
         }
         
-        function closeModal() {
-            const modal = document.getElementById('admin-modal');
-            if (modal) modal.remove();
-        }
-        
-        function saveModal() {
-            if (window.modalOnSave) window.modalOnSave();
-            closeModal();
-        }
+        function closeModal() { document.getElementById('admin-modal')?.remove(); }
+        function saveModal() { if (window.modalOnSave) window.modalOnSave(); closeModal(); }
         
         let messageTimeout = null;
-        
         function showMessage(text, type) {
-            const existing = document.querySelector('.message');
-            if (existing) existing.remove();
+            document.querySelector('.message')?.remove();
             if (messageTimeout) clearTimeout(messageTimeout);
-            
             const msg = document.createElement('div');
             msg.className = `message message-${type}`;
             msg.innerHTML = text;
             document.querySelector('.container').insertBefore(msg, document.querySelector('.container').firstChild);
-            
             messageTimeout = setTimeout(() => msg.remove(), 3000);
         }
         
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
+            return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
         }
-
-        // === КНОПКА "НАВЕРХ" ДЛЯ АДМИНКИ ===
         
         function adminCheckScroll() {
             const btn = document.getElementById('adminScrollTopBtn');
             if (!btn) return;
-            
-            const scrollY = window.scrollY || window.pageYOffset;
-            
-            if (scrollY > 300) {
-                btn.classList.add('show');
-            } else {
-                btn.classList.remove('show');
-            }
+            if ((window.scrollY || window.pageYOffset) > 300) btn.classList.add('show');
+            else btn.classList.remove('show');
         }
         
-        function adminScrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
+        function adminScrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
         
-        // Добавляем обработчик прокрутки
         window.addEventListener('scroll', adminCheckScroll);
         window.addEventListener('load', adminCheckScroll);
-
-                async function refreshData() {
+        
+        async function refreshData() {
             showMessage('Обновление данных...', 'info');
-            await Promise.all([
-                loadMasks(),
-                loadRoutes(),
-                loadStats()
-            ]);
+            await Promise.all([loadMasks(), loadRoutes(), loadStats()]);
             renderAdminPanel();
             showMessage('Данные обновлены', 'success');
         }
-
-        window.adminScrollToTop = adminScrollToTop;
-                window.publishRoute = publishRoute;
-
-                        function setupPhotoPreview() {
-            setTimeout(() => {
-                const input = document.getElementById('mask-photo');
-                if (!input) return;
-                
-                input.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(ev) {
-                            const preview = document.getElementById('photo-preview');
-                            const img = document.getElementById('photo-preview-img');
-                            if (preview && img) {
-                                img.src = ev.target.result;
-                                preview.style.display = 'block';
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }, 100);
-        }
         
+        window.adminScrollToTop = adminScrollToTop;
+        window.publishRoute = publishRoute;
         init();
     </script>
 </body>
