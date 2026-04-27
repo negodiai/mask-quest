@@ -530,7 +530,6 @@ router.get('/set-mask-numbers', checkAdmin, async (req, res) => {
 // Инициализация прогресса для всех пользователей
 router.get('/init-progress', checkAdmin, async (req, res) => {
     try {
-        const { v4: uuidv4 } = require('uuid');
         
         const users = await db.query('SELECT DISTINCT "userId" FROM user_activations');
         const routes = await db.query('SELECT id FROM routes WHERE "isAvailable" = 1');
