@@ -221,45 +221,51 @@
             padding: 20px;
         }
 
-                .photo-upload-area {
-            border: 1px dashed #3d3d5c;
-            border-radius: 12px;
-            padding: 10px;
-            text-align: center;
+                        .photo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .photo-upload-area {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: 1px solid #3d3d5c;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s ease;
-            margin-bottom: 16px;
             background: #1a1a2e;
         }
         
         .photo-upload-area:hover {
             border-color: #3B82F6;
-            background: rgba(59, 130, 246, 0.05);
+            background: rgba(59, 130, 246, 0.1);
         }
         
         .photo-upload-area i {
-            font-size: 20px;
+            font-size: 14px;
             color: #64748b;
-            margin-right: 8px;
         }
         
         .photo-upload-area span {
-            font-size: 13px;
+            font-size: 12px;
             color: #94a3b8;
         }
         
         .photo-upload-area .upload-hint {
-            font-size: 11px;
+            font-size: 10px;
             color: #64748b;
-            margin-left: 8px;
+            margin-left: 4px;
         }
         
         .photo-preview {
-            width: 80px;
-            height: 80px;
+            width: 40px;
+            height: 40px;
             object-fit: cover;
-            border-radius: 12px;
-            margin-top: 10px;
+            border-radius: 8px;
             border: 1px solid #3d3d5c;
         }
         
@@ -269,13 +275,6 @@
         
         .photo-input {
             display: none;
-        }
-        
-        .photo-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
         }
         
         .stat-grid {
@@ -628,15 +627,16 @@
             showModal('Добавить маску', `
                 <div class="form-group"><label>Название *</label><input type="text" id="mask-name" placeholder="Например: Берёзовая"></div>
 
-                <div class="form-group">
+                                <div class="form-group">
                     <label>Фото маски</label>
-                    <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
-                        <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:#64748b; margin-bottom:8px; display:block;"></i>
-                        <span>Нажмите для загрузки фото</span>
-                        <span style="display:block; font-size:12px; color:#64748b; margin-top:4px;">JPEG, PNG, GIF, WEBP (до 5MB)</span>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Загрузить</span>
+                        </div>
+                        <img id="photo-preview" class="photo-preview hidden" src="">
                     </div>
                     <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
-                    <img id="photo-preview" class="photo-preview hidden" src="">
                     <input type="hidden" id="mask-photoHash" value="">
                 </div>
                 <div class="form-group"><label>Подзаголовок (отображается на карточке в каталоге)</label><input type="text" id="mask-subtitle" placeholder="Краткий подзаголовок"></div>
@@ -708,14 +708,16 @@
             showModal('Редактировать маску', `
                 <div class="form-group"><label>Название</label><input type="text" id="mask-name" value="${escapeHtml(mask.name)}"></div>
 
-                <div class="form-group">
+                                <div class="form-group">
                     <label>Фото маски</label>
-                    <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
-                        <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:#64748b; margin-bottom:8px; display:block;"></i>
-                        <span>Нажмите для загрузки нового фото</span>
+                    <div class="photo-row">
+                        <div class="photo-upload-area" onclick="document.getElementById('mask-photo-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Загрузить</span>
+                        </div>
+                        <img id="photo-preview" class="photo-preview ${!currentPhotoUrl ? 'hidden' : ''}" src="${currentPhotoUrl}">
                     </div>
                     <input type="file" id="mask-photo-input" class="photo-input" accept="image/*">
-                    <img id="photo-preview" class="photo-preview ${!currentPhotoUrl ? 'hidden' : ''}" src="${currentPhotoUrl}">
                     <input type="hidden" id="mask-photoHash" value="${currentPhotoUrl}">
                 </div>
                 <div class="form-group"><label>Подзаголовок</label><input type="text" id="mask-subtitle" value="${escapeHtml(mask.subtitle || '')}"></div>
