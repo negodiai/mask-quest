@@ -2491,13 +2491,16 @@
                 if (!mask) continue;
                 const date = new Date(act.activatedAt);
                 const formattedDate = date.toLocaleDateString('ru-RU');
-                historyHtml += `
+                                historyHtml += `
                     <div class="history-item-new" onclick="showExtendedMaskInfo('${mask.id}')">
                         <div class="history-icon-new">
-                            <img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            ${mask.photoHash ? 
+                                `<img src="${mask.photoHash}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">` :
+                                `<img src="/images/${mask.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">`
+                            }
                             <i class="fas fa-mask" style="display: none; font-size: 32px; color: #3d3d5c;"></i>
                         </div>
-                             <div class="history-content">
+                        <div class="history-content">
                             <h4 class="history-name">${escapeHtml(mask.name)}</h4>
                             <p class="history-subtitle">${escapeHtml(mask.subtitle || '')}</p>
                             <p class="history-date"><i class="fas fa-calendar"></i> ${formattedDate}</p>
