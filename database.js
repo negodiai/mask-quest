@@ -64,15 +64,6 @@ async function runMigrations() {
         try {
             await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS subtitle TEXT`);
             console.log('✅ Добавлено поле subtitle');
-                    // Добавляем поля для хранения массивов фото для каждой эпохи
-        try {
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS present_photos TEXT DEFAULT '[]'`);
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS ussr_photos TEXT DEFAULT '[]'`);
-            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS past_photos TEXT DEFAULT '[]'`);
-            console.log('✅ Добавлены поля present_photos, ussr_photos, past_photos');
-        } catch (err) {
-            console.log('Поля для фото уже существуют:', err.message);
-        }
         } catch (err) {
             console.log('Поле subtitle уже существует или ошибка:', err.message);
         }
@@ -231,6 +222,16 @@ async function initDatabase() {
             console.log('✅ Добавлено поле isAvailable для маршрутов');
         } catch (err) {
             console.log('Поле isAvailable уже существует:', err.message);
+        }
+
+                // Добавляем поля для хранения массивов фото для каждой эпохи
+        try {
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS present_photos TEXT DEFAULT '[]'`);
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS ussr_photos TEXT DEFAULT '[]'`);
+            await pool.query(`ALTER TABLE masks ADD COLUMN IF NOT EXISTS past_photos TEXT DEFAULT '[]'`);
+            console.log('✅ Добавлены поля present_photos, ussr_photos, past_photos');
+        } catch (err) {
+            console.log('Поля для фото уже существуют:', err.message);
         }
         
         console.log('✅ База данных PostgreSQL инициализирована');
