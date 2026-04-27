@@ -2,11 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
-// В начале файла после других require
-const path = require('path');
-
-// Добавьте после app.use(express.static('public'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Подключаем базу данных PostgreSQL
 const db = require('./database');
@@ -27,6 +22,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Статические файлы для загруженных фото
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Подключаем наши API
 app.use('/api/masks', masksRoutes);
@@ -51,7 +49,6 @@ app.get('/m/:maskId', (req, res) => {
     const isVK = userAgent.includes('VK') || userAgent.includes('VKAndroidApp');
     
     if (isTelegram) {
-        // Перенаправляем в мини-приложение с параметром маски
         const botUsername = 'negodiai_quest_bot';
         return res.redirect(`https://t.me/${botUsername}/app?startapp=mask_${maskId}`);
     }
@@ -149,8 +146,8 @@ app.get('/m/:maskId', (req, res) => {
                 <p class="subtitle">Туристический квест по Калининграду</p>
                 <div class="buttons">
                     <a href="https://t.me/negodiai_quest_bot/app?startapp=mask_${maskId}" class="btn btn-telegram">
-    <i class="fab fa-telegram"></i> Открыть в Telegram
-</a>
+                        <i class="fab fa-telegram"></i> Открыть в Telegram
+                    </a>
                     <a href="https://vk.com/negodiai?w=appXXXX#mask_${maskId}" class="btn btn-vk">
                         <i class="fab fa-vk"></i> Открыть в VK
                     </a>
@@ -166,7 +163,7 @@ app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
 
-// Обработка ошибок базы данных
+// Обработка ошибок
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
